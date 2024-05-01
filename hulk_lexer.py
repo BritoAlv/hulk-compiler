@@ -1,17 +1,14 @@
 from enum import Enum
 
-
 class TokenType(Enum):
     NUMBER = "NUMBER"
-    PLUSPLUS = "++"
-    MINUSMINUS = "--"
 
     PLUS = "+"
     MINUS = "-"
     MULT = "*"
     DIV = "/"
-    LPAREN = ")"
-    RPAREN = "("
+    LPAREN = "("
+    RPAREN = ")"
 
     SPACE = " "
     ESCAPE1 = "\r"
@@ -24,9 +21,6 @@ class TokenType(Enum):
 
 digits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 constLex = [
-    TokenType.PLUSPLUS,
-    TokenType.MINUSMINUS,
-    TokenType.MINUSMINUS,
     TokenType.PLUS,
     TokenType.MINUS,
     TokenType.MULT,
@@ -110,19 +104,3 @@ class Lexer:
             for t in tok.lexeme:
                 if t == "\n":
                     line += 1
-        self.tokens.append(Token(TokenType.EOF, "", None, self.line))
-
-
-def solve(inputStr):
-    l = Lexer(inputStr, [automataNumber, automataConst])
-    l.scanTokens()
-    for x in l.tokens:
-        repr = x.toString(True)
-        print(repr, end=" ")
-    print()
-
-t = int(input())
-while t > 0:
-    inp = input()
-    solve(inp)
-    t -= 1
