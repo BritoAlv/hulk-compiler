@@ -20,3 +20,14 @@ def automateConstGenerator(const):
                 return Token(const, lexeme, None, line)
         return None
     return automataConst
+
+def automataIdentifier(offset, inputStr, line):
+    if str.isalpha(inputStr[offset]):
+        ed = offset
+        while ed + 1 < len(inputStr) and (str.isalpha(inputStr[ed + 1]) or str.isnumeric(inputStr[ed + 1]) or inputStr[ed + 1] == "_"):
+            ed += 1
+        ident = inputStr[offset : ed + 1]
+        for resWord in constRes:
+            if resWord.value == ident:
+                return Token(resWord, ident, None, line)
+        return Token(TokenType.IDENTIFIER, ident, None, line)

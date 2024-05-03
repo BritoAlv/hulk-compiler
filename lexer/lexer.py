@@ -1,7 +1,6 @@
-from lexer.automata import automataNumber, automateConstGenerator
+from lexer.automata import automataIdentifier, automataNumber, automateConstGenerator
 from lexer.tokenClass import *
 from lexer.tokenType import *
-
 
 class Lexer:
     def __init__(self, inputStr):
@@ -10,6 +9,7 @@ class Lexer:
         self.line = 1
         self.automatas = [
             automataNumber,
+            automataIdentifier,
             *[automateConstGenerator(x) for x in constLex],
         ]
 

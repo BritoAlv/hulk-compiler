@@ -7,10 +7,27 @@ class TokenType(Enum):
     MINUS = "-"
     MULT = "*"
     EXP = "**"
-    XOR = "^"
     DIV = "/"
     LPAREN = "("
     RPAREN = ")"
+    
+    GREATER_EQUAL = ">="
+    GREATER = ">"
+    LESS = "<"
+    LESS_EQUAL = "<="
+    EQUAL = "=="
+    NOT_EQUAL = "!="
+
+    SHIFT_LEFT = "<<"
+    SHIFT_RIGHT = ">>"
+
+    AND = "and"
+    NOT = "not"
+    OR = "or"
+    XOR = "xor"
+    NAND = "nand"
+
+    IDENTIFIER = "ID"
 
     SPACE = " "
     ESCAPE1 = "\r"
@@ -20,9 +37,25 @@ class TokenType(Enum):
     ILLEGAL = "ILLEGAL"
     EOF = "EOF"
 
+constRes = [
+    TokenType.AND,
+    TokenType.NOT,
+    TokenType.OR,
+    TokenType.XOR,
+    TokenType.NAND
+]
 
 constLex = [
-    TokenType.XOR,
+    TokenType.GREATER_EQUAL,
+    TokenType.GREATER,
+    TokenType.LESS,
+    TokenType.LESS_EQUAL,
+    TokenType.EQUAL,
+    TokenType.NOT_EQUAL,
+
+    TokenType.SHIFT_LEFT,
+    TokenType.SHIFT_RIGHT,
+
     TokenType.EXP,
     TokenType.PLUS,
     TokenType.MINUS,
