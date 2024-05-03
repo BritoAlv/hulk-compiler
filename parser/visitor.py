@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from textwrap import indent
 
 from lexer.lexer import TokenType
 
@@ -28,6 +29,45 @@ class AstPrinter(Visitor):
         return  unary.operator.lexeme + "(" + unary.exp.accept(self) + ")"
     def visitBinary(self, binary):
         return binary.operator.lexeme  + "(" + binary.left.accept(self) + " " + binary.right.accept(self) + ")"
+
+class TreePrinter(Visitor):
+    def __init__(self):
+        self.indent = 0
+        self.current = ""
+
+    def do_space(self):
+        a = ""
+        for i in range(0, self.indent):
+            a += "    "
+        return a + "└── "
+
+
+    def visitLiteral(self, lit):
+        self.current += self.do_space()  + lit.literal.lexeme + "\n"
+        return self.current
+
+    def visitGrouping(self, group):
+        self.current += self.do_space()  + "(" + "\n"
+        self.indent += 1
+        group.inside.accept(self)
+        self.indent -= 1
+        self.current += self.do_space()  +  ")" + "\n"
+        return self.current
+
+    def visitUnary(self, unary):
+        self.current += self.do_space()  + unary.operator.lexeme + "\n"
+        self.indent += 1
+        unary.exp.accept(self)
+        self.indent -= 1
+        return  self.current
+
+    def visitBinary(self, binary):
+        self.current += self.do_space()  + binary.operator.lexeme + "\n"
+        self.indent += 1
+        binary.left.accept(self)
+        binary.right.accept(self)
+        self.indent -= 1
+        return self.current
 
 class AstEvaluator(Visitor):
     def visitLiteral(self, lit):

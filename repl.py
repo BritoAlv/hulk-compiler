@@ -8,7 +8,7 @@ def solve(inputStr):
     l.scanTokens()
     parser = Parser(l.tokens)
     expr = parser.parse()
-    printer = AstPrinter()
+    printer = TreePrinter()
     evaluator = AstEvaluator()
     print(expr.accept(printer))
     print(expr.accept(evaluator))
