@@ -38,7 +38,7 @@ class Lexer:
                 if t == "\n":
                     line += 1
         if len(wrong) > 0:
-            message = "Lexer Error: \n"
+            message = "Unrecognized character: \n"
             for w in wrong:
                 message += w.toString(False) + "\n"
             raise Exception(message)

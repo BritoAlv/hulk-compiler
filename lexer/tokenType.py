@@ -27,6 +27,9 @@ class TokenType(Enum):
     XOR = "xor"
     NAND = "nand"
 
+    TERNARY_COND = "?"
+    TERNARY_SEP = ":"
+
     IDENTIFIER = "ID"
 
     SPACE = " "
@@ -42,16 +45,19 @@ constRes = [
     TokenType.NOT,
     TokenType.OR,
     TokenType.XOR,
-    TokenType.NAND
+    TokenType.NAND,
 ]
 
 constLex = [
+    TokenType.TERNARY_COND,
+    TokenType.TERNARY_SEP,
     TokenType.GREATER_EQUAL,
     TokenType.GREATER,
     TokenType.LESS,
     TokenType.LESS_EQUAL,
     TokenType.EQUAL,
     TokenType.NOT_EQUAL,
+
 
     TokenType.SHIFT_LEFT,
     TokenType.SHIFT_RIGHT,

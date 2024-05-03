@@ -19,7 +19,7 @@ class Parser:
             if self.current_tokenType() == TokenType.LPAREN:
                 lp = self.tokens[self.current]
                 self.current += 1
-                part = self.parseExpr()
+                part = self.parseTernary()
                 if (not self.valid()) or self.tokens[
                     self.current
                 ].tokenType != TokenType.RPAREN:
@@ -52,7 +52,7 @@ class Parser:
             if self.current_tokenType() in [TokenType.MINUS, TokenType.NOT]:
                 op = self.tokens[self.current]
                 self.current += 1
-                part = self.parseExpr()
+                part = self.parseTernary()
                 return UnaryExpr(op, part)
             else:
                 return self.parsePrimary()
@@ -105,8 +105,23 @@ class Parser:
             result = BinaryExpr(result, op, part2)
         return result
 
+    def parseTernary(self):
+        result = self.parseEq()
+        if self.valid() and self.current_tokenType() == TokenType.TERNARY_COND:
+            op1 = self.tokens[self.current]
+            self.current += 1
+            middle = self.parseEq()
+            if self.valid() and self.current_tokenType() == TokenType.TERNARY_SEP:
+                op2 = self.tokens[self.current]
+                self.current += 1
+                right = self.parseEq()
+                return TernaryExpr(result, op1, middle, op2, right)
+            else:
+                raise Exception("Couldn't parse full ternary operator:")
+        return result
+
     def parse(self):
-        expr = self.parseEq()
+        expr = self.parseTernary()
         if self.current != len(self.tokens):
             raise Exception("invalid syntax")
         return expr

@@ -37,3 +37,13 @@ class BinaryExpr(Expr):
 
     def accept(self, visitor):
         return visitor.visitBinary(self)
+
+class TernaryExpr(Expr):
+    def __init__(self, left, op1, middle, op2, right):
+        self.left = left
+        self.op1 = op1
+        self.middle = middle
+        self.op2 = op2
+        self.right = right
+    def accept(self, visitor):
+        return visitor.visitTernary(self)

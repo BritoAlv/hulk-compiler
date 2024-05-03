@@ -3,6 +3,7 @@ from textwrap import indent
 
 from lexer.lexer import TokenType
 
+
 class Visitor(ABC):
     @abstractmethod
     def visitLiteral(self, lit):
@@ -18,6 +19,10 @@ class Visitor(ABC):
 
     @abstractmethod
     def visitBinary(self, binary):
+        pass
+
+    @abstractmethod
+    def visitTernary(self, ternary):
         pass
 
 
@@ -39,6 +44,21 @@ class AstPrinter(Visitor):
             + " "
             + binary.right.accept(self)
             + ")"
+        )
+
+    def visitTernary(self, ternary):
+        return (
+            "["
+            + ternary.op1.lexeme
+            + " "
+            + ternary.left.accept(self)
+            + " "
+            + ternary.middle.accept(self)
+            + " "
+            + ternary.op2.lexeme
+            + " "
+            + ternary.right.accept(self)
+            + "]"
         )
 
 
@@ -80,6 +100,17 @@ class TreePrinter(Visitor):
         self.indent -= 1
         return self.current
 
+    def visitTernary(self, ternary):
+        self.current += self.do_space() + ternary.op1.lexeme + "\n"
+        self.indent += 1
+        ternary.left.accept(self)
+        self.indent -= 1
+        self.current += self.do_space() + ternary.op2.lexeme + "\n"
+        self.indent += 1
+        ternary.middle.accept(self)
+        ternary.right.accept(self)
+        self.indent -= 1 
+        return self.current
 
 class AstEvaluator(Visitor):
     def visitLiteral(self, lit):
@@ -100,6 +131,15 @@ class AstEvaluator(Visitor):
                     return 0
             case _:
                 raise Exception("How evaluates unary operator: ")
+
+    def visitTernary(self, ternary):
+        if ternary.op1.tokenType == TokenType.TERNARY_COND and ternary.op2.tokenType == TokenType.TERNARY_SEP:
+            if ternary.left.accept(self) != 0:
+                return ternary.middle.accept(self)
+            else:
+                return ternary.right.accept(self)
+        else:
+            raise Exception("This ternary combination is not implemented")
 
     def visitBinary(self, binary):
         left = binary.left.accept(self)
@@ -147,7 +187,7 @@ class AstEvaluator(Visitor):
                 if left != right:
                     return 1
                 return 0
-            
+
             case TokenType.SHIFT_LEFT:
                 return left << right
 
