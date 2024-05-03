@@ -1,10 +1,13 @@
 from enum import Enum
+
+
 class TokenType(Enum):
     NUMBER = "NUMBER"
 
     PLUS = "+"
     MINUS = "-"
     MULT = "*"
+    EXP = "**"
     DIV = "/"
     LPAREN = "("
     RPAREN = ")"
@@ -19,6 +22,7 @@ class TokenType(Enum):
 
 
 constLex = [
+    TokenType.EXP,
     TokenType.PLUS,
     TokenType.MINUS,
     TokenType.MULT,

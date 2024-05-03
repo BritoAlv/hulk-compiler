@@ -1,19 +1,24 @@
+from lexer.automata import automataNumber, automateConstGenerator
 from lexer.tokenClass import *
 from lexer.tokenType import *
 
 class Lexer:
-    def __init__(self, inputStr, automatas):
+    def __init__(self, inputStr):
         self.inputStr = inputStr
         self.tokens = []
         self.line = 1
-        self.automatas = automatas
+        self.automatas = [automataNumber, *[automateConstGenerator(x) for x in constLex]]
 
     def scanToken(self, offset):
+        result = Token(TokenType.ILLEGAL, "", None, self.line)
         for automat in self.automatas:
             tk = automat(offset, self.inputStr, self.line)
             if tk is not None:
-                return tk
-        return Token(TokenType.ILLEGAL, self.inputStr[offset], None, self.line)
+                if len(result.lexeme) < len(tk.lexeme):
+                    result = tk
+        if result.tokenType == TokenType.ILLEGAL:
+            result.lexeme = self.inputStr[offset]
+        return result
 
     def scanTokens(self):
         cr = 0

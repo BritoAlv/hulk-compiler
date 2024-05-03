@@ -1,10 +1,9 @@
-from lexer.automata import automataConst, automataNumber
 from lexer.lexer import *
 from parser.visitor import *
 from parser.parser import *
 
 def solve(inputStr):
-    l = Lexer(inputStr, [automataNumber, automataConst])
+    l = Lexer(inputStr)
     l.scanTokens()
     parser = Parser(l.tokens)
     expr = parser.parseExpr()
