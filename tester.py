@@ -2,6 +2,7 @@ from lexer.lexer import *
 from parser.visitor import *
 from parser.parser import *
 
+
 def solve(inputStr):
     l = Lexer(inputStr)
     l.scanTokens()
@@ -15,9 +16,7 @@ def solve(inputStr):
     else:
         print("Null")
 
-
-t = int(input())
-while t > 0:
+while True:
+    print(">> ", end = "")  
     inp = input()
     solve(inp)
-    t -= 1

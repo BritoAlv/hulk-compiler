@@ -25,7 +25,7 @@ class AstPrinter(Visitor):
     def visitGrouping(self, group):
         return "(" + group.inside.accept(self) +  ")"
     def visitUnary(self, unary):
-        return "(" + unary.operator.lexeme + " " + unary.exp.accept(self) + ")"
+        return  unary.operator.lexeme + "(" + unary.exp.accept(self) + ")"
     def visitBinary(self, binary):
         return binary.operator.lexeme  + "(" + binary.left.accept(self) + " " + binary.right.accept(self) + ")"
 
@@ -51,3 +51,5 @@ class AstEvaluator(Visitor):
             return left * right
         elif binary.operator.tokenType == TokenType.DIV:
             return left // right
+        elif binary.operator.tokenType == TokenType.EXP:
+            return left ** right
