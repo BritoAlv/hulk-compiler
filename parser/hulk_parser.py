@@ -1,5 +1,6 @@
-from hulk_lexer import *
+from lexer.hulk_lexer import *
 from hulk_visitor import *
+from hulk_expressions import *
 
 class Parser:
     def __init__(self, tokens):

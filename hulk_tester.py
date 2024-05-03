@@ -1,6 +1,8 @@
-from hulk_lexer import *
-from hulk_visitor import *
-from hulk_parser import *
+from lexer.automata import automataConst, automataNumber
+from lexer.hulk_lexer import *
+from parser.hulk_parser import Parser
+from parser.hulk_visitor import AstEvaluator, AstPrinter
+
 
 
 def solve(inputStr):
@@ -9,8 +11,10 @@ def solve(inputStr):
     parser = Parser(l.tokens)
     expr = parser.parseExpr()
     printer = AstPrinter()
+    evaluator = AstEvaluator()
     if expr is not None:
         print(expr.accept(printer))
+        print(expr.accept(evaluator))
     else:
         print("Null")
 

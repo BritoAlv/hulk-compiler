@@ -5,33 +5,6 @@ class Expr(ABC):
     def accept(self, visitor):
         pass
 
-class Visitor(ABC):
-    @abstractmethod
-    def visitLiteral(self, lit):
-        pass
-
-    @abstractmethod
-    def visitGrouping(self, group):
-        pass
-
-    @abstractmethod
-    def visitUnary(self, unary):
-        pass
-
-    @abstractmethod
-    def visitBinary(self, binary):
-        pass
-
-class AstPrinter(Visitor):
-    def visitLiteral(self, lit):
-        return lit.literal.lexeme
-    def visitGrouping(self, group):
-        return "(group " + group.inside.accept(self) +  ")"
-    def visitUnary(self, unary):
-        return "(" + unary.operator.lexeme + " " + unary.exp.accept(self) + ")"
-    def visitBinary(self, binary):
-        return "(" + binary.left.accept(self) + " " + binary.operator.lexeme   +   " " + binary.right.accept(self) + ")"
-
 class Literal(Expr):
     def __init__(self, token):
         self.literal = token
