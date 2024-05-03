@@ -1,5 +1,5 @@
 from lexer.lexer import *
-from parser.visitor import *
+from visitors.visitor import *
 from parser.expressions import *
 
 

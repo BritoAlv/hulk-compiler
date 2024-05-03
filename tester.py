@@ -1,6 +1,6 @@
 from lexer.lexer import Lexer
 from parser.parser import Parser
-from parser.visitor import AstEvaluator, AstPrinter
+from visitors.visitor import AstEvaluator, AstPrinter
 
 
 def solve(inputStr):

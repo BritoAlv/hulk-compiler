@@ -1,7 +1,6 @@
 from lexer.lexer import *
-from parser.visitor import *
+from visitors.visitor import *
 from parser.parser import *
-
 
 def solve(inputStr):
     l = Lexer(inputStr)
