@@ -1,9 +1,6 @@
 from lexer.tokenClass import Token
 from lexer.tokenType import *
 
-def convert_number(inp):
-    return 
-
 def automataNumber(offset, inputStr, line):
     if inputStr[offset].isdigit():
         ed = offset

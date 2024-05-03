@@ -68,7 +68,7 @@ class Parser:
         result = self.parseTerm()
         while self.valid() and self.tokens[
             self.current
-        ].tokenType in [TokenType.PLUS, TokenType.MINUS]:
+        ].tokenType in [TokenType.PLUS, TokenType.MINUS, TokenType.XOR]:
             op = self.tokens[self.current]
             self.current += 1
             part2 = self.parseTerm()
@@ -79,4 +79,4 @@ class Parser:
         expr = self.parseExpr()
         if self.current != len(self.tokens):
             raise Exception("invalid syntax")
-        return expr        
+        return expr

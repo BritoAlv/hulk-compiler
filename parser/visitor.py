@@ -53,3 +53,5 @@ class AstEvaluator(Visitor):
             return left // right
         elif binary.operator.tokenType == TokenType.EXP:
             return left ** right
+        elif binary.operator.tokenType == TokenType.XOR:
+            return left ^ right
