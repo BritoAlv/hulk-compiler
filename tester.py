@@ -7,7 +7,7 @@ def solve(inputStr):
     l = Lexer(inputStr)
     l.scanTokens()
     parser = Parser(l.tokens)
-    expr = parser.parseExpr()
+    expr = parser.parse()
     printer = AstPrinter()
     evaluator = AstEvaluator()
     if expr is not None:
@@ -19,4 +19,7 @@ def solve(inputStr):
 while True:
     print(">> ", end = "")  
     inp = input()
-    solve(inp)
+    try:
+        solve(inp)
+    except Exception as e:
+        print(e)
