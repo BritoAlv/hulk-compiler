@@ -97,7 +97,7 @@ class Parser:
             TokenType.LESS,
             TokenType.LESS_EQUAL,
             TokenType.EQUAL,
-            TokenType.NOT_EQUAL
+            TokenType.NOT_EQUAL,
         ]:
             op = self.tokens[self.current]
             self.current += 1
@@ -110,11 +110,11 @@ class Parser:
         if self.valid() and self.current_tokenType() == TokenType.TERNARY_COND:
             op1 = self.tokens[self.current]
             self.current += 1
-            middle = self.parseEq()
+            middle = self.parseTernary()
             if self.valid() and self.current_tokenType() == TokenType.TERNARY_SEP:
                 op2 = self.tokens[self.current]
                 self.current += 1
-                right = self.parseEq()
+                right = self.parseTernary()
                 return TernaryExpr(result, op1, middle, op2, right)
             else:
                 raise Exception("Couldn't parse full ternary operator:")
