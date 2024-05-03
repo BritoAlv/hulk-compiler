@@ -26,7 +26,7 @@ class Parser:
                     literal = self.tokens[self.current]
                     self.current += 1
                     return Literal(literal)
-                raise Exception("Expected Number got : " + self.tokens[self.current].toString(True))
+                raise Exception("Expected Literal got : " + self.tokens[self.current].toString(True))
         else:
             raise Exception("Invalid syntax")
             

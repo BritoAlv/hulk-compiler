@@ -41,7 +41,6 @@ class TreePrinter(Visitor):
             a += "    "
         return a + "└── "
 
-
     def visitLiteral(self, lit):
         self.current += self.do_space()  + lit.literal.lexeme + "\n"
         return self.current
