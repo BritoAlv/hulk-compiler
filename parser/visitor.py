@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from lexer.hulk_lexer import TokenType
+from lexer.lexer import TokenType
 
 class Visitor(ABC):
     @abstractmethod
@@ -23,11 +23,11 @@ class AstPrinter(Visitor):
     def visitLiteral(self, lit):
         return lit.literal.lexeme
     def visitGrouping(self, group):
-        return "(group " + group.inside.accept(self) +  ")"
+        return "(" + group.inside.accept(self) +  ")"
     def visitUnary(self, unary):
         return "(" + unary.operator.lexeme + " " + unary.exp.accept(self) + ")"
     def visitBinary(self, binary):
-        return "(" + binary.left.accept(self) + " " + binary.operator.lexeme   +   " " + binary.right.accept(self) + ")"
+        return binary.operator.lexeme  + "(" + binary.left.accept(self) + " " + binary.right.accept(self) + ")"
 
 class AstEvaluator(Visitor):
     def visitLiteral(self, lit):

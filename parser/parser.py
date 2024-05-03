@@ -1,6 +1,6 @@
-from lexer.hulk_lexer import *
-from hulk_visitor import *
-from hulk_expressions import *
+from lexer.lexer import *
+from parser.visitor import *
+from parser.expressions import *
 
 class Parser:
     def __init__(self, tokens):
@@ -40,7 +40,7 @@ class Parser:
         while self.current < len(self.tokens) and self.tokens[self.current].tokenType in [TokenType.MULT, TokenType.DIV]:
             op = self.tokens[self.current]
             self.current += 1
-            part2 = self.parseExpr()
+            part2 = self.parseFactor()
             result = BinaryExpr(result, op, part2)
         return result
 

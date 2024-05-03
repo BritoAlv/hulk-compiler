@@ -1,7 +1,6 @@
 from lexer.tokenClass import *
 from lexer.tokenType import *
 
-
 class Lexer:
     def __init__(self, inputStr, automatas):
         self.inputStr = inputStr
@@ -14,7 +13,7 @@ class Lexer:
             tk = automat(offset, self.inputStr, self.line)
             if tk is not None:
                 return tk
-        return Token(TokenType.ILLEGAL, " ", None, self.line)
+        return Token(TokenType.ILLEGAL, self.inputStr[offset], None, self.line)
 
     def scanTokens(self):
         cr = 0

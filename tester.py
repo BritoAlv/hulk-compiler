@@ -1,9 +1,7 @@
 from lexer.automata import automataConst, automataNumber
-from lexer.hulk_lexer import *
-from parser.hulk_parser import Parser
-from parser.hulk_visitor import AstEvaluator, AstPrinter
-
-
+from lexer.lexer import *
+from parser.visitor import *
+from parser.parser import *
 
 def solve(inputStr):
     l = Lexer(inputStr, [automataNumber, automataConst])
