@@ -22,42 +22,20 @@ class Visitor(ABC):
     def visitTernary(self, ternary):
         pass
 
+    @abstractmethod
+    def visitPrint(self, print):
+        pass
 
-class AstPrinter(Visitor):
-    def visitLiteral(self, lit):
-        return lit.literal.lexeme
+    @abstractmethod
+    def visitDeclaration(self, decl):
+        pass
 
-    def visitGrouping(self, group):
-        return "(" + group.inside.accept(self) + ")"
+    @abstractmethod
+    def visitVariable(self, var):
+        pass
 
-    def visitUnary(self, unary):
-        return unary.operator.lexeme + "(" + unary.exp.accept(self) + ")"
-
-    def visitBinary(self, binary):
-        return (
-            binary.operator.lexeme
-            + "("
-            + binary.left.accept(self)
-            + " "
-            + binary.right.accept(self)
-            + ")"
-        )
-
-    def visitTernary(self, ternary):
-        return (
-            "["
-            + ternary.op1.lexeme
-            + " "
-            + ternary.left.accept(self)
-            + " "
-            + ternary.middle.accept(self)
-            + " "
-            + ternary.op2.lexeme
-            + " "
-            + ternary.right.accept(self)
-            + "]"
-        )
-
+    def visitAssignment(self, assign):
+        pass
 
 class TreePrinter(Visitor):
     def __init__(self):
@@ -72,6 +50,17 @@ class TreePrinter(Visitor):
 
     def visitLiteral(self, lit):
         self.current += self.do_space() + lit.literal.lexeme + "\n"
+        return self.current
+
+    def visitVariable(self, var):
+        self.current += self.do_space() + var.id.lexeme + "\n"
+        return self.current
+
+    def visitAssignment(self, assign):
+        self.current += self.do_space() + "Assign" + "\n"
+        self.indent += 1
+        assign.identifier.accept(self)
+        assign.expr.accept(self)
         return self.current
 
     def visitGrouping(self, group):
@@ -109,12 +98,55 @@ class TreePrinter(Visitor):
         self.indent -= 1 
         return self.current
 
+    def visitPrint(self, printt):
+        self.current += self.do_space() + "print" + "\n"
+        self.indent += 1
+        printt.expr.accept(self)
+        self.indent -= 1
+        return self.current
+    
+    def visitDeclaration(self, decl):
+        self.current += self.do_space() + "var " + decl.identifier.lexeme + "\n"
+        self.indent += 1
+        decl.expr.accept(self)
+        self.indent -= 1
+        return self.current 
+
 class AstEvaluator(Visitor):
+    def __init__(self):
+        self.variables = {}
+
+    def visitPrint(self, printt):
+        value = printt.expr.accept(self)
+        print(value)
+    
+    def visitDeclaration(self, decl):
+        iden = decl.identifier.lexeme
+        if iden in self.variables:
+            raise Exception("Variable " + iden + "already exists")
+        else:
+            value = decl.expr.accept(self)
+            self.variables[iden] = value
+
+    def visitVariable(self, var):
+        if var.id.lexeme in self.variables:
+            if self.variables[var.id.lexeme] is None:
+                raise Exception("Variable being accessed not initialized")
+            return self.variables[var.id.lexeme]
+        else:
+            raise Exception("Variable not found")
+
     def visitLiteral(self, lit):
         return lit.literal.literal
 
     def visitGrouping(self, group):
         return group.inside.accept(self)
+
+    def visitAssignment(self, assign):
+        if assign.identifier.id.lexeme not in self.variables:
+            raise Exception("Variable to be assigned not found")
+        value = assign.expr.accept(self)
+        self.variables[assign.identifier.id.lexeme] = value
 
     def visitUnary(self, unary):
         value = unary.exp.accept(self)
@@ -126,9 +158,6 @@ class AstEvaluator(Visitor):
                     return 1
                 else:
                     return 0
-            case TokenType.PRINT_STATMENT:
-                print(unary.exp.accept(self))
-                return 0
             case _:
                 raise Exception("How evaluates unary operator: ")
 

@@ -17,6 +17,7 @@ class TokenType(Enum):
     LESS_EQUAL = "<="
     EQUAL = "=="
     NOT_EQUAL = "!="
+    ASSIGN = "="
 
     SHIFT_LEFT = "<<"
     SHIFT_RIGHT = ">>"
@@ -26,6 +27,7 @@ class TokenType(Enum):
     OR = "or"
     XOR = "xor"
     NAND = "nand"
+    VAR = "var"
 
     TERNARY_COND = "?"
     TERNARY_SEP = ":"
@@ -49,7 +51,8 @@ constRes = [
     TokenType.OR,
     TokenType.XOR,
     TokenType.NAND,
-    TokenType.PRINT_STATMENT
+    TokenType.PRINT_STATMENT,
+    TokenType.VAR
 ]
 
 constLex = [
@@ -62,7 +65,7 @@ constLex = [
     TokenType.EQUAL,
     TokenType.NOT_EQUAL,
     TokenType.END_STATMENT,
-
+    TokenType.ASSIGN,
     TokenType.SHIFT_LEFT,
     TokenType.SHIFT_RIGHT,
 

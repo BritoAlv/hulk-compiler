@@ -9,9 +9,9 @@ def solve(inputStr):
     l.scanTokens()
     parser = Parser(l.tokens)
     program = parser.parseProgram()
-    printer = TreePrinter() 
     evaluator = AstEvaluator()
     for statment in program:
+        printer = TreePrinter() 
         print(statment.accept(printer))
         statment.accept(evaluator)
 

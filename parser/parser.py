@@ -1,4 +1,5 @@
 from lexer.lexer import *
+from parser.statments import DeclarationStatment, PrintStatment, AssignStatment
 from visitors.visitor import *
 from parser.expressions import *
 
@@ -38,8 +39,10 @@ class Parser:
             part = self.parseTernary()
             rp = self.advance_check(TokenType.RPAREN)
             return Grouping(lp, part, rp)
-        else:
+        elif self.check(TokenType.NUMBER):
             return Literal(self.advance_check(TokenType.NUMBER))
+        else: 
+            return Variable(self.advance_check(TokenType.IDENTIFIER))
 
     def parsePrimary(self):
         result = self.parseLiteral()
@@ -113,22 +116,44 @@ class Parser:
             right = self.parseTernary()
             return TernaryExpr(result, op1, middle, op2, right)
         return result
+    
+    def parseAssignment(self):
+        expr = self.parseTernary()
+        if self.check(TokenType.ASSIGN):
+            op1 = self.advance_check(TokenType.ASSIGN)
+            expr2 = self.parseAssignment()
+            if not isinstance(expr, Variable):
+                raise Exception("Left side is not a variable")
+            return AssignStatment(expr, expr2)
+        return expr    
 
     def parseStatment(self):
         if self.check(TokenType.PRINT_STATMENT):
             op1 = self.advance_check(TokenType.PRINT_STATMENT)
             self.advance_check(TokenType.LPAREN)
-            expr = self.parseTernary()
+            expr = self.parseAssignment()
             self.advance_check(TokenType.RPAREN)
             self.advance_check(TokenType.END_STATMENT)
-            return UnaryExpr(op1, expr)
+            return PrintStatment(op1, expr)
         else:
-            expr = self.parseTernary()
+            expr = self.parseAssignment()
             self.advance_check(TokenType.END_STATMENT)
             return expr
+        
+    def parseDeclaration(self):
+        expr = None
+        if self.check(TokenType.VAR):
+            op1 = self.advance_check(TokenType.VAR)
+            identifier = self.advance_check(TokenType.IDENTIFIER)
+            if self.check(TokenType.ASSIGN):
+                self.advance_check(TokenType.ASSIGN)
+                expr = self.parseAssignment()
+            self.advance_check(TokenType.END_STATMENT)
+            return DeclarationStatment(op1, identifier, expr)
+        return self.parseStatment()
 
     def parseProgram(self):
         statments = []
         while self.valid():
-            statments.append(self.parseStatment())
+            statments.append(self.parseDeclaration())
         return statments

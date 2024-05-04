@@ -12,6 +12,12 @@ class Literal(Expr):
     def accept(self, visitor):
         return visitor.visitLiteral(self)
 
+class Variable(Expr):
+    def __init__(self, token):
+        self.id = token
+    def accept(self, visitor):
+        return visitor.visitVariable(self)
+
 class Grouping(Expr):
     def __init__(self, open, inside, closed):
         self.open = open
