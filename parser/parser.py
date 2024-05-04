@@ -2,7 +2,6 @@ from lexer.lexer import *
 from visitors.visitor import *
 from parser.expressions import *
 
-
 class Parser:
     def __init__(self, tokens):
         self.tokens = tokens
@@ -14,114 +13,122 @@ class Parser:
     def current_tokenType(self):
         return self.tokens[self.current].tokenType
 
+    def advance_check(self, *tokenType):
+        for tok in tokenType:
+            if self.valid() and self.current_tokenType() == tok:
+                t = self.tokens[self.current]
+                self.current += 1
+                return t
+        message = "Expected some token of kind: ["
+        for tok in tokenType:
+            message += tok.value
+            message += ", "
+        message += "]"
+        raise Exception(message)
+
+    def check(self, *tokenType):
+        for tok in tokenType:
+            if self.valid() and self.current_tokenType() == tok:
+                return True
+        return False
+
     def parseLiteral(self):
-        if self.valid():
-            if self.current_tokenType() == TokenType.LPAREN:
-                lp = self.tokens[self.current]
-                self.current += 1
-                part = self.parseTernary()
-                if (not self.valid()) or self.tokens[
-                    self.current
-                ].tokenType != TokenType.RPAREN:
-                    raise Exception("No ) found for " + lp.toString(False))
-                rp = self.tokens[self.current]
-                self.current += 1
-                return Grouping(lp, part, rp)
-            else:
-                if self.current_tokenType() == TokenType.NUMBER:
-                    literal = self.tokens[self.current]
-                    self.current += 1
-                    return Literal(literal)
-                raise Exception(
-                    "Expected Literal got : " + self.tokens[self.current].toString(True)
-                )
+        if self.check(TokenType.LPAREN):
+            lp = self.advance_check(TokenType.LPAREN)
+            part = self.parseTernary()
+            rp = self.advance_check(TokenType.RPAREN)
+            return Grouping(lp, part, rp)
         else:
-            raise Exception("Invalid syntax")
+            return Literal(self.advance_check(TokenType.NUMBER))
 
     def parsePrimary(self):
         result = self.parseLiteral()
-        if self.valid() and self.current_tokenType() in [TokenType.EXP]:
-            op = self.tokens[self.current]
-            self.current += 1
+        if self.check(TokenType.EXP):
+            op = self.advance_check(TokenType.EXP)
             part2 = self.parsePrimary()
             result = BinaryExpr(result, op, part2)
         return result
 
     def parseFactor(self):
-        if self.valid():
-            if self.current_tokenType() in [TokenType.MINUS, TokenType.NOT]:
-                op = self.tokens[self.current]
-                self.current += 1
-                part = self.parseTernary()
-                return UnaryExpr(op, part)
-            else:
-                return self.parsePrimary()
+        operators = [TokenType.MINUS, TokenType.NOT]
+        if self.check(*operators):
+            op = self.advance_check(*operators)
+            part = self.parseTernary()
+            return UnaryExpr(op, part)
         else:
-            raise Exception("Invalid syntax")
+            return self.parsePrimary()
 
     def parseTerm(self):
-        result = self.parseFactor()
-        while self.valid() and self.current_tokenType() in [
+        operators = [
             TokenType.MULT,
             TokenType.DIV,
             TokenType.AND,
             TokenType.NAND,
-        ]:
-            op = self.tokens[self.current]
-            self.current += 1
+        ]
+        result = self.parseFactor()
+        while self.check(*operators):
+            op = self.advance_check(*operators)
             part2 = self.parseFactor()
             result = BinaryExpr(result, op, part2)
         return result
 
     def parseExpr(self):
-        result = self.parseTerm()
-        while self.valid() and self.current_tokenType() in [
+        operators = [
             TokenType.PLUS,
             TokenType.MINUS,
             TokenType.SHIFT_LEFT,
             TokenType.SHIFT_RIGHT,
             TokenType.OR,
             TokenType.XOR,
-        ]:
-            op = self.tokens[self.current]
-            self.current += 1
+        ]
+        result = self.parseTerm()
+        while self.check(*operators):
+            op = self.advance_check(*operators)
             part2 = self.parseTerm()
             result = BinaryExpr(result, op, part2)
         return result
 
     def parseEq(self):
-        result = self.parseExpr()
-        if self.valid() and self.current_tokenType() in [
+        operators = [
             TokenType.GREATER,
             TokenType.GREATER_EQUAL,
             TokenType.LESS,
             TokenType.LESS_EQUAL,
             TokenType.EQUAL,
             TokenType.NOT_EQUAL,
-        ]:
-            op = self.tokens[self.current]
-            self.current += 1
+        ]
+        result = self.parseExpr()
+        if self.check(*operators):
+            op = self.advance_check(*operators)            
             part2 = self.parseEq()
             result = BinaryExpr(result, op, part2)
         return result
 
     def parseTernary(self):
         result = self.parseEq()
-        if self.valid() and self.current_tokenType() == TokenType.TERNARY_COND:
-            op1 = self.tokens[self.current]
-            self.current += 1
+        if self.check(TokenType.TERNARY_COND):
+            op1 = self.advance_check(TokenType.TERNARY_COND)
             middle = self.parseTernary()
-            if self.valid() and self.current_tokenType() == TokenType.TERNARY_SEP:
-                op2 = self.tokens[self.current]
-                self.current += 1
-                right = self.parseTernary()
-                return TernaryExpr(result, op1, middle, op2, right)
-            else:
-                raise Exception("Couldn't parse full ternary operator:")
+            op2 = self.advance_check(TokenType.TERNARY_SEP)
+            right = self.parseTernary()
+            return TernaryExpr(result, op1, middle, op2, right)
         return result
 
-    def parse(self):
-        expr = self.parseTernary()
-        if self.current != len(self.tokens):
-            raise Exception("invalid syntax")
-        return expr
+    def parseStatment(self):
+        if self.check(TokenType.PRINT_STATMENT):
+            op1 = self.advance_check(TokenType.PRINT_STATMENT)
+            self.advance_check(TokenType.LPAREN)
+            expr = self.parseTernary()
+            self.advance_check(TokenType.RPAREN)
+            self.advance_check(TokenType.END_STATMENT)
+            return UnaryExpr(op1, expr)
+        else:
+            expr = self.parseTernary()
+            self.advance_check(TokenType.END_STATMENT)
+            return expr
+
+    def parseProgram(self):
+        statments = []
+        while self.valid():
+            statments.append(self.parseStatment())
+        return statments

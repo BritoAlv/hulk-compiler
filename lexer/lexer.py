@@ -36,7 +36,7 @@ class Lexer:
                 self.tokens.append(tok)
             for t in tok.lexeme:
                 if t == "\n":
-                    line += 1
+                    self.line += 1
         if len(wrong) > 0:
             message = "Unrecognized character: \n"
             for w in wrong:

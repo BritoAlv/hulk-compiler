@@ -32,6 +32,9 @@ class TokenType(Enum):
 
     IDENTIFIER = "ID"
 
+    END_STATMENT = ";"
+    PRINT_STATMENT = "print"
+
     SPACE = " "
     ESCAPE1 = "\r"
     TAB = "\t"
@@ -46,6 +49,7 @@ constRes = [
     TokenType.OR,
     TokenType.XOR,
     TokenType.NAND,
+    TokenType.PRINT_STATMENT
 ]
 
 constLex = [
@@ -57,7 +61,7 @@ constLex = [
     TokenType.LESS_EQUAL,
     TokenType.EQUAL,
     TokenType.NOT_EQUAL,
-
+    TokenType.END_STATMENT,
 
     TokenType.SHIFT_LEFT,
     TokenType.SHIFT_RIGHT,
@@ -74,5 +78,4 @@ constLex = [
     TokenType.TAB,
     TokenType.NEWLINE,
 ]
-
 constIgnore = [TokenType.SPACE, TokenType.ESCAPE1, TokenType.TAB, TokenType.NEWLINE]

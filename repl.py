@@ -6,16 +6,20 @@ def solve(inputStr):
     l = Lexer(inputStr)
     l.scanTokens()
     parser = Parser(l.tokens)
-    expr = parser.parse()
-    printer = TreePrinter()
+    program = parser.parseProgram()
+    printer = TreePrinter() 
     evaluator = AstEvaluator()
-    print(expr.accept(printer))
-    print(expr.accept(evaluator))
+    for statment in program:
+        print(statment.accept(printer))
+        statment.accept(evaluator)
 
 while True:
     print(">> ", end = "")  
     inp = input()
     try:
-        solve(inp)
+        with open(inp, "r") as f:
+            cont = f.read()
+            solve(cont)
+            f.close()
     except Exception as e:
         print(e)

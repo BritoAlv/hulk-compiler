@@ -1,8 +1,5 @@
 from abc import ABC, abstractmethod
-from textwrap import indent
-
 from lexer.lexer import TokenType
-
 
 class Visitor(ABC):
     @abstractmethod
@@ -129,6 +126,9 @@ class AstEvaluator(Visitor):
                     return 1
                 else:
                     return 0
+            case TokenType.PRINT_STATMENT:
+                print(unary.exp.accept(self))
+                return 0
             case _:
                 raise Exception("How evaluates unary operator: ")
 
