@@ -10,6 +10,9 @@ class TokenType(Enum):
     DIV = "/"
     LPAREN = "("
     RPAREN = ")"
+
+    LBRACE = "{"
+    RBRACE = "}"
     
     GREATER_EQUAL = ">="
     GREATER = ">"
@@ -76,6 +79,8 @@ constLex = [
     TokenType.DIV,
     TokenType.LPAREN,
     TokenType.RPAREN,
+    TokenType.LBRACE,
+    TokenType.RBRACE,
     TokenType.SPACE,
     TokenType.ESCAPE1,
     TokenType.TAB,

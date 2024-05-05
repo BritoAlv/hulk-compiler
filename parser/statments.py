@@ -29,3 +29,10 @@ class AssignStatment(Statment):
 
     def accept(self, visitor):
         return visitor.visitAssignment(self)
+    
+class BlockStatment(Statment):
+    def __init__(self, statments):
+        self.statments = statments
+    
+    def accept(self, visitor):
+        return visitor.visitBlock(self)

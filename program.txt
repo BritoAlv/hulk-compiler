@@ -1,3 +1,7 @@
 var a = 1;
-a = 2 > 3 ? 10 : 11;
-print (a);
+{
+    {
+        var b = 3;
+        print(a + b);
+    }
+}

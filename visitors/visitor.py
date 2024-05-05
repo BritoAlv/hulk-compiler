@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from lexer.lexer import TokenType
+from parser.environment import Environment
 
 class Visitor(ABC):
     @abstractmethod
@@ -33,8 +34,13 @@ class Visitor(ABC):
     @abstractmethod
     def visitVariable(self, var):
         pass
-
+    
+    @abstractmethod
     def visitAssignment(self, assign):
+        pass
+
+    @abstractmethod
+    def visitBlock(self, block):
         pass
 
 class TreePrinter(Visitor):
@@ -47,6 +53,14 @@ class TreePrinter(Visitor):
         for i in range(0, self.indent):
             a += "    "
         return a + "└── "
+
+    def visitBlock(self, block):
+        self.current += self.do_space() + "Block" + "\n"
+        self.indent += 1
+        for stat in block.statments:
+            stat.accept(self)
+        self.indent -= 1
+        return self.current
 
     def visitLiteral(self, lit):
         self.current += self.do_space() + lit.literal.lexeme + "\n"
@@ -114,27 +128,25 @@ class TreePrinter(Visitor):
 
 class AstEvaluator(Visitor):
     def __init__(self):
-        self.variables = {}
+        self.environment = Environment()
 
     def visitPrint(self, printt):
         value = printt.expr.accept(self)
         print(value)
     
+    def visitBlock(self, block):
+        self.environment = Environment(self.environment)
+        for stat in block.statments:
+            stat.accept(self)
+        self.environment = self.environment.enclosing
+
     def visitDeclaration(self, decl):
         iden = decl.identifier.lexeme
-        if iden in self.variables:
-            raise Exception("Variable " + iden + "already exists")
-        else:
-            value = decl.expr.accept(self)
-            self.variables[iden] = value
+        value = decl.expr.accept(self)
+        self.environment.define(iden, value)
 
     def visitVariable(self, var):
-        if var.id.lexeme in self.variables:
-            if self.variables[var.id.lexeme] is None:
-                raise Exception("Variable being accessed not initialized")
-            return self.variables[var.id.lexeme]
-        else:
-            raise Exception("Variable not found")
+        return self.environment.get(var.id.lexeme)
 
     def visitLiteral(self, lit):
         return lit.literal.literal
@@ -143,10 +155,8 @@ class AstEvaluator(Visitor):
         return group.inside.accept(self)
 
     def visitAssignment(self, assign):
-        if assign.identifier.id.lexeme not in self.variables:
-            raise Exception("Variable to be assigned not found")
-        value = assign.expr.accept(self)
-        self.variables[assign.identifier.id.lexeme] = value
+        value = assign.expr.accept(self) 
+        return self.environment.set(assign.identifier.id.lexeme, value)
 
     def visitUnary(self, unary):
         value = unary.exp.accept(self)

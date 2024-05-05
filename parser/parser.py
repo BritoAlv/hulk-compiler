@@ -1,5 +1,5 @@
 from lexer.lexer import *
-from parser.statments import DeclarationStatment, PrintStatment, AssignStatment
+from parser.statments import BlockStatment, DeclarationStatment, PrintStatment, AssignStatment
 from visitors.visitor import *
 from parser.expressions import *
 
@@ -135,6 +135,15 @@ class Parser:
             self.advance_check(TokenType.RPAREN)
             self.advance_check(TokenType.END_STATMENT)
             return PrintStatment(op1, expr)
+        elif self.check(TokenType.LBRACE):
+            op1 = self.advance_check(TokenType.LBRACE)
+            statments = []
+            while True:
+                statments.append(self.parseDeclaration())
+                if self.check(TokenType.RBRACE):
+                    break
+            self.advance_check(TokenType.RBRACE)
+            return BlockStatment(statments)
         else:
             expr = self.parseAssignment()
             self.advance_check(TokenType.END_STATMENT)
