@@ -43,6 +43,18 @@ class Visitor(ABC):
     def visitBlock(self, block):
         pass
 
+    @abstractmethod
+    def visitIf(self, iff):
+        pass
+
+    @abstractmethod
+    def visitFor(self, forr):
+        pass
+
+    @abstractmethod
+    def visitWhile(self, whilee):
+        pass
+
 class TreePrinter(Visitor):
     def __init__(self):
         self.indent = 0
@@ -53,6 +65,77 @@ class TreePrinter(Visitor):
         for i in range(0, self.indent):
             a += "    "
         return a + "└── "
+
+    def visitWhile(self, whilee):
+        self.current += self.do_space() + "while" + "\n"
+        self.indent += 1
+        
+        self.current += self.do_space() + "Condition" + "\n"
+        self.indent += 1
+        whilee.condition.accept(self)
+        self.indent -= 1
+        
+        self.current += self.do_space() + "Do" + "\n"
+        self.indent += 1
+        whilee.block.accept(self)
+        self.indent -= 1
+
+        self.indent -= 1
+        return self.current        
+
+    def visitFor(self, forr):
+        self.current += self.do_space() + "For" + "\n"
+        self.indent += 1
+
+        if forr.initializer is not None:
+            self.current += self.do_space() + "Initializer" + "\n"
+            self.indent += 1
+            forr.initializer.accept(self)
+            self.indent -= 1
+
+        if forr.condition is not None:
+            self.current += self.do_space() + "Condition" + "\n"
+            self.indent += 1
+            forr.condition.accept(self)
+            self.indent -= 1
+
+        if forr.action is not None:
+            self.current += self.do_space() + "Action" + "\n"
+            self.indent += 1
+            forr.action.accept(self)
+            self.indent -= 1
+
+        if forr.block is not None:
+            self.current += self.do_space() + "Block" + "\n"
+            self.indent += 1
+            forr.block.accept(self)
+            self.indent -= 1
+
+        self.indent -= 1
+        return self.current
+
+    def visitIf(self, iff):
+        self.current += self.do_space() + "If" + "\n"
+        self.indent += 1
+        
+        self.current += self.do_space() + "Condition" + "\n"
+        self.indent += 1
+        iff.condition.accept(self)
+        self.indent -= 1
+        
+        self.current += self.do_space() + "Then" + "\n"
+        self.indent += 1
+        iff.then.accept(self)
+        self.indent -= 1
+
+        if iff.otherwise is not None:
+            self.current += self.do_space() + "Else" + "\n"
+            self.indent += 1
+            iff.otherwise.accept(self)
+            self.indent -= 1
+            
+        self.indent -= 1
+        return self.current
 
     def visitBlock(self, block):
         self.current += self.do_space() + "Block" + "\n"
@@ -129,6 +212,30 @@ class TreePrinter(Visitor):
 class AstEvaluator(Visitor):
     def __init__(self):
         self.environment = Environment()
+
+    def visitFor(self, forr):
+        self.environment = Environment(self.environment)
+        if forr.initializer is not None:
+            forr.initializer.accept(self)
+
+        while (forr.condition is None) or forr.condition.accept(self):
+            forr.block.accept(self)
+            if forr.action is not None:
+                forr.action.accept(self)  
+        self.environment = self.environment.enclosing
+
+    def visitWhile(self, whilee):
+        condition = whilee.condition.accept(self)
+        while condition:
+            whilee.block.accept(self)
+            condition = whilee.condition.accept(self)
+
+    def visitIf(self, iff):
+        condition = iff.condition.accept(self)
+        if condition:
+            iff.then.accept(self)
+        elif iff.otherwise is not None:
+            iff.otherwise.accept(self)
 
     def visitPrint(self, printt):
         value = printt.expr.accept(self)

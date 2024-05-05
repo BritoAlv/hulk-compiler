@@ -5,6 +5,34 @@ class Statment(ABC):
     def accept(self, visitor):
         pass
 
+class IfStatment(Statment):
+    def __init__(self, condition, then, otherwise):
+        self.condition = condition
+        self.then = then
+        self.otherwise = otherwise
+
+    def accept(self, visitor):
+        return visitor.visitIf(self)
+    
+class ForStatment(Statment):
+    def __init__(self, initializer, condition, action, block):
+        self.initializer = initializer
+        self.condition = condition
+        self.action = action
+        self.block = block
+
+    def accept(self, visitor):
+        return visitor.visitFor(self)
+    
+class WhileStatment(Statment):
+    def __init__(self, condition, block):
+        self.condition = condition
+        self.block = block
+
+    def accept(self, visitor):
+        return visitor.visitWhile(self)
+
+
 class PrintStatment(Statment):
     def __init__(self, printToken, expr):
         self.printToken = printToken

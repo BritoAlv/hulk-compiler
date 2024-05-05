@@ -32,6 +32,12 @@ class TokenType(Enum):
     NAND = "nand"
     VAR = "var"
 
+    IF = "if"
+    ELSE = "else"
+
+    FOR = "for"
+    WHILE = "while"
+
     TERNARY_COND = "?"
     TERNARY_SEP = ":"
 
@@ -55,7 +61,11 @@ constRes = [
     TokenType.XOR,
     TokenType.NAND,
     TokenType.PRINT_STATMENT,
-    TokenType.VAR
+    TokenType.VAR,
+    TokenType.IF,
+    TokenType.ELSE,
+    TokenType.FOR,
+    TokenType.WHILE,
 ]
 
 constLex = [
