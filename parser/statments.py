@@ -64,3 +64,11 @@ class BlockStatment(Statment):
     
     def accept(self, visitor):
         return visitor.visitBlock(self)
+    
+class BreakStatment(Statment):
+    def accept(self, visitor):
+        return visitor.visitBreak(self)
+    
+class ContinueStatment(Statment):
+    def accept(self, visitor):
+        return visitor.visitContinue(self)

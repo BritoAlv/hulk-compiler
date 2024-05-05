@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from lexer.lexer import TokenType
 from parser.environment import Environment
+from parser.statments import BreakStatment, ContinueStatment
 
 class Visitor(ABC):
     @abstractmethod
@@ -34,7 +35,7 @@ class Visitor(ABC):
     @abstractmethod
     def visitVariable(self, var):
         pass
-    
+
     @abstractmethod
     def visitAssignment(self, assign):
         pass
@@ -55,6 +56,15 @@ class Visitor(ABC):
     def visitWhile(self, whilee):
         pass
 
+    @abstractmethod
+    def visitBreak(self, breakk):
+        pass
+
+    @abstractmethod
+    def visitContinue(self, continuee):
+        pass
+
+
 class TreePrinter(Visitor):
     def __init__(self):
         self.indent = 0
@@ -66,22 +76,30 @@ class TreePrinter(Visitor):
             a += "    "
         return a + "└── "
 
+    def visitBreak(self, breakk):
+        self.current += self.do_space() + "break" + "\n"
+        return self.current
+
+    def visitContinue(self, continuee):
+        self.current += self.do_space() + "continue" + "\n"
+        return self.current
+
     def visitWhile(self, whilee):
         self.current += self.do_space() + "while" + "\n"
         self.indent += 1
-        
+
         self.current += self.do_space() + "Condition" + "\n"
         self.indent += 1
         whilee.condition.accept(self)
         self.indent -= 1
-        
+
         self.current += self.do_space() + "Do" + "\n"
         self.indent += 1
         whilee.block.accept(self)
         self.indent -= 1
 
         self.indent -= 1
-        return self.current        
+        return self.current
 
     def visitFor(self, forr):
         self.current += self.do_space() + "For" + "\n"
@@ -117,12 +135,12 @@ class TreePrinter(Visitor):
     def visitIf(self, iff):
         self.current += self.do_space() + "If" + "\n"
         self.indent += 1
-        
+
         self.current += self.do_space() + "Condition" + "\n"
         self.indent += 1
         iff.condition.accept(self)
         self.indent -= 1
-        
+
         self.current += self.do_space() + "Then" + "\n"
         self.indent += 1
         iff.then.accept(self)
@@ -133,7 +151,7 @@ class TreePrinter(Visitor):
             self.indent += 1
             iff.otherwise.accept(self)
             self.indent -= 1
-            
+
         self.indent -= 1
         return self.current
 
@@ -192,7 +210,7 @@ class TreePrinter(Visitor):
         self.indent += 1
         ternary.middle.accept(self)
         ternary.right.accept(self)
-        self.indent -= 1 
+        self.indent -= 1
         return self.current
 
     def visitPrint(self, printt):
@@ -201,17 +219,24 @@ class TreePrinter(Visitor):
         printt.expr.accept(self)
         self.indent -= 1
         return self.current
-    
+
     def visitDeclaration(self, decl):
         self.current += self.do_space() + "var " + decl.identifier.lexeme + "\n"
         self.indent += 1
         decl.expr.accept(self)
         self.indent -= 1
-        return self.current 
+        return self.current
+
 
 class AstEvaluator(Visitor):
     def __init__(self):
         self.environment = Environment()
+
+    def visitBreak(self, breakk):
+        raise Exception(breakk)
+    
+    def visitContinue(self, continuee):
+        raise Exception(continuee)
 
     def visitFor(self, forr):
         self.environment = Environment(self.environment)
@@ -219,15 +244,31 @@ class AstEvaluator(Visitor):
             forr.initializer.accept(self)
 
         while (forr.condition is None) or forr.condition.accept(self):
-            forr.block.accept(self)
+            try:
+                forr.block.accept(self)
+            except Exception as e:
+                if len(e.args) == 0:
+                    raise e
+                elif isinstance(e.args[0], BreakStatment):
+                    break
+                elif not isinstance(e.args[0], ContinueStatment):
+                    raise e
             if forr.action is not None:
-                forr.action.accept(self)  
+                forr.action.accept(self)
         self.environment = self.environment.enclosing
 
     def visitWhile(self, whilee):
         condition = whilee.condition.accept(self)
         while condition:
-            whilee.block.accept(self)
+            try:
+                whilee.block.accept(self)
+            except Exception as e:
+                if len(e.args) == 0:
+                    raise e
+                elif isinstance(e.args[0], BreakStatment):
+                    break
+                elif not isinstance(e.args[0], ContinueStatment):
+                    raise e
             condition = whilee.condition.accept(self)
 
     def visitIf(self, iff):
@@ -240,7 +281,7 @@ class AstEvaluator(Visitor):
     def visitPrint(self, printt):
         value = printt.expr.accept(self)
         print(value)
-    
+
     def visitBlock(self, block):
         self.environment = Environment(self.environment)
         for stat in block.statments:
@@ -262,7 +303,7 @@ class AstEvaluator(Visitor):
         return group.inside.accept(self)
 
     def visitAssignment(self, assign):
-        value = assign.expr.accept(self) 
+        value = assign.expr.accept(self)
         return self.environment.set(assign.identifier.id.lexeme, value)
 
     def visitUnary(self, unary):
@@ -279,7 +320,10 @@ class AstEvaluator(Visitor):
                 raise Exception("How evaluates unary operator: ")
 
     def visitTernary(self, ternary):
-        if ternary.op1.tokenType == TokenType.TERNARY_COND and ternary.op2.tokenType == TokenType.TERNARY_SEP:
+        if (
+            ternary.op1.tokenType == TokenType.TERNARY_COND
+            and ternary.op2.tokenType == TokenType.TERNARY_SEP
+        ):
             if ternary.left.accept(self) != 0:
                 return ternary.middle.accept(self)
             else:

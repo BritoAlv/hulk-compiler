@@ -186,9 +186,23 @@ class Parser:
         self.advance_check(TokenType.END_STATMENT)
         return PrintStatment(op1, expr)
 
+    def parseBreak(self):
+        self.advance_check(TokenType.BREAK)
+        self.advance_check(TokenType.END_STATMENT)
+        return BreakStatment()
+
+    def parseContinue(self):
+        self.advance_check(TokenType.CONTINUE)
+        self.advance_check(TokenType.END_STATMENT)
+        return ContinueStatment()
+
     def parseStatment(self):
         if self.check(TokenType.PRINT_STATMENT):
             return self.parsePrint()
+        if self.check(TokenType.CONTINUE):
+            return self.parseContinue()
+        if self.check(TokenType.BREAK):
+            return self.parseBreak()
         if self.check(TokenType.IF):
             return self.parseIf()
         elif self.check(TokenType.FOR):

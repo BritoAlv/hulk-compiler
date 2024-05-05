@@ -38,6 +38,9 @@ class TokenType(Enum):
     FOR = "for"
     WHILE = "while"
 
+    BREAK = "break"
+    CONTINUE = "continue"
+    
     TERNARY_COND = "?"
     TERNARY_SEP = ":"
 
@@ -66,6 +69,8 @@ constRes = [
     TokenType.ELSE,
     TokenType.FOR,
     TokenType.WHILE,
+    TokenType.BREAK,
+    TokenType.CONTINUE
 ]
 
 constLex = [
