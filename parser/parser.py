@@ -52,7 +52,16 @@ class Parser:
         elif self.check(TokenType.NUMBER):
             return Literal(self.advance_check(TokenType.NUMBER))
         else:
-            return Variable(self.advance_check(TokenType.IDENTIFIER))
+            iden = self.advance_check(TokenType.IDENTIFIER)
+            if self.check(TokenType.LPAREN):
+                op = self.advance_check(TokenType.LPAREN)
+                args = []
+                if not self.check(TokenType.RPAREN):
+                    args = self.parseArguments()
+                self.advance_check(TokenType.RPAREN)
+                callbase = CallExpr(iden, op, args)
+                return callbase
+            return Variable(iden)
 
     def parseArguments(self):
         args = []
@@ -68,20 +77,6 @@ class Parser:
             op = self.advance_check(TokenType.EXP)
             part2 = self.parsePrimary()
             result = BinaryExpr(result, op, part2)
-        elif self.check(TokenType.LPAREN):
-            op = self.advance_check(TokenType.LPAREN)
-            args = []
-            if not self.check(TokenType.RPAREN):
-                args = self.parseArguments()
-            self.advance_check(TokenType.RPAREN)
-            callbase = CallExpr(result, op, args)
-            while self.check(TokenType.LPAREN):
-                op = self.advance_check(TokenType.LPAREN)
-                args = []
-                if not self.check(TokenType.RPAREN):
-                    args = self.parseArguments()
-                self.advance_check(TokenType.RPAREN)
-                callbase = CallExpr(callbase, op, args)
         return result
 
     def parseFactor(self):
@@ -240,7 +235,7 @@ class Parser:
         name = op.lexeme
         self.advance_check(TokenType.LPAREN)
         params = []
-        while not self.advance_check(TokenType.RPAREN):
+        while not self.check(TokenType.RPAREN):
             params.append(self.advance_check(TokenType.IDENTIFIER))
             if not self.check(TokenType.ARG_SEPARATOR):
                 break

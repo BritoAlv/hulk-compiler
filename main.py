@@ -1,6 +1,8 @@
 import argparse
 from pathlib import Path
 from lexer.lexer import *
+from visitors.AstEvaluator import AstEvaluator
+from visitors.AstPrinter import TreePrinter
 from visitors.visitor import *
 from parser.parser import *
 
