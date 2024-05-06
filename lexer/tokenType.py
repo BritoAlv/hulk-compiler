@@ -40,9 +40,13 @@ class TokenType(Enum):
 
     BREAK = "break"
     CONTINUE = "continue"
+    RETURN = "return"
+    DEF = "def"
     
     TERNARY_COND = "?"
     TERNARY_SEP = ":"
+
+    ARG_SEPARATOR = ","
 
     IDENTIFIER = "ID"
 
@@ -70,7 +74,9 @@ constRes = [
     TokenType.FOR,
     TokenType.WHILE,
     TokenType.BREAK,
-    TokenType.CONTINUE
+    TokenType.CONTINUE,
+    TokenType.RETURN,
+    TokenType.DEF,
 ]
 
 constLex = [
@@ -100,5 +106,6 @@ constLex = [
     TokenType.ESCAPE1,
     TokenType.TAB,
     TokenType.NEWLINE,
+    TokenType.ARG_SEPARATOR
 ]
 constIgnore = [TokenType.SPACE, TokenType.ESCAPE1, TokenType.TAB, TokenType.NEWLINE]

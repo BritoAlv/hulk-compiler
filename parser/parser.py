@@ -1,7 +1,17 @@
 from lexer.lexer import *
-from parser.statments import BlockStatment, DeclarationStatment, ForStatment, IfStatment, PrintStatment, AssignStatment, WhileStatment
+from parser.statments import (
+    BlockStatment,
+    DeclarationStatment,
+    ForStatment,
+    IfStatment,
+    PrintStatment,
+    AssignStatment,
+    ReturnStatment,
+    WhileStatment,
+)
 from visitors.visitor import *
 from parser.expressions import *
+
 
 class Parser:
     def __init__(self, tokens):
@@ -41,8 +51,16 @@ class Parser:
             return Grouping(lp, part, rp)
         elif self.check(TokenType.NUMBER):
             return Literal(self.advance_check(TokenType.NUMBER))
-        else: 
+        else:
             return Variable(self.advance_check(TokenType.IDENTIFIER))
+
+    def parseArguments(self):
+        args = []
+        args.append(self.parseTernary())
+        while self.check(TokenType.ARG_SEPARATOR):
+            self.advance_check(TokenType.ARG_SEPARATOR)
+            args.append(self.parseTernary())
+        return args
 
     def parsePrimary(self):
         result = self.parseLiteral()
@@ -50,6 +68,20 @@ class Parser:
             op = self.advance_check(TokenType.EXP)
             part2 = self.parsePrimary()
             result = BinaryExpr(result, op, part2)
+        elif self.check(TokenType.LPAREN):
+            op = self.advance_check(TokenType.LPAREN)
+            args = []
+            if not self.check(TokenType.RPAREN):
+                args = self.parseArguments()
+            self.advance_check(TokenType.RPAREN)
+            callbase = CallExpr(result, op, args)
+            while self.check(TokenType.LPAREN):
+                op = self.advance_check(TokenType.LPAREN)
+                args = []
+                if not self.check(TokenType.RPAREN):
+                    args = self.parseArguments()
+                self.advance_check(TokenType.RPAREN)
+                callbase = CallExpr(callbase, op, args)
         return result
 
     def parseFactor(self):
@@ -102,7 +134,7 @@ class Parser:
         ]
         result = self.parseExpr()
         if self.check(*operators):
-            op = self.advance_check(*operators)            
+            op = self.advance_check(*operators)
             part2 = self.parseEq()
             result = BinaryExpr(result, op, part2)
         return result
@@ -116,7 +148,7 @@ class Parser:
             right = self.parseTernary()
             return TernaryExpr(result, op1, middle, op2, right)
         return result
-    
+
     def parseAssignment(self):
         expr = self.parseTernary()
         if self.check(TokenType.ASSIGN):
@@ -125,7 +157,7 @@ class Parser:
             if not isinstance(expr, Variable):
                 raise Exception("Left side is not a variable")
             return AssignStatment(expr, expr2)
-        return expr    
+        return expr
 
     def parseBlock(self):
         op1 = self.advance_check(TokenType.LBRACE)
@@ -142,11 +174,11 @@ class Parser:
         self.advance_check(TokenType.LPAREN)
         condition = self.parseTernary()
         self.advance_check(TokenType.RPAREN)
-        then = self.parseBlock()
-        otherwise = None 
+        then = self.parseStatment()
+        otherwise = None
         if self.check(TokenType.ELSE):
             self.advance_check(TokenType.ELSE)
-            otherwise = self.parseBlock()
+            otherwise = self.parseStatment()
         return IfStatment(condition, then, otherwise)
 
     def parseFor(self):
@@ -157,7 +189,7 @@ class Parser:
         action = None
         if self.check(TokenType.VAR):
             initializer = self.parseVar()
-        else :
+        else:
             self.advance_check(TokenType.END_STATMENT)
 
         if not self.check(TokenType.END_STATMENT):
@@ -167,7 +199,7 @@ class Parser:
         if not self.check(TokenType.RPAREN):
             action = self.parseAssignment()
         op3 = self.advance_check(TokenType.RPAREN)
-        block = self.parseBlock()
+        block = self.parseStatment()
         return ForStatment(initializer, condition, action, block)
 
     def parseWhile(self):
@@ -175,7 +207,7 @@ class Parser:
         self.advance_check(TokenType.LPAREN)
         condition = self.parseTernary()
         self.advance_check(TokenType.RPAREN)
-        then = self.parseBlock()
+        then = self.parseStatment()
         return WhileStatment(condition, then)
 
     def parsePrint(self):
@@ -196,26 +228,53 @@ class Parser:
         self.advance_check(TokenType.END_STATMENT)
         return ContinueStatment()
 
+    def parseReturn(self):
+        self.advance_check(TokenType.RETURN)
+        expr = self.parseTernary()
+        self.advance_check(TokenType.END_STATMENT)
+        return ReturnStatment(expr)
+
+    def parseFunctionDeclaration(self):
+        self.advance_check(TokenType.DEF)
+        op = self.advance_check(TokenType.IDENTIFIER)
+        name = op.lexeme
+        self.advance_check(TokenType.LPAREN)
+        params = []
+        while not self.advance_check(TokenType.RPAREN):
+            params.append(self.advance_check(TokenType.IDENTIFIER))
+            if not self.check(TokenType.ARG_SEPARATOR):
+                break
+            self.advance_check(TokenType.ARG_SEPARATOR)
+        self.advance_check(TokenType.RPAREN)
+        body = self.parseBlock()
+        return FunctionDeclaration(name, params, body)
+
     def parseStatment(self):
         if self.check(TokenType.PRINT_STATMENT):
             return self.parsePrint()
-        if self.check(TokenType.CONTINUE):
+        elif self.check(TokenType.LBRACE):
+            return self.parseBlock()
+        elif self.check(TokenType.CONTINUE):
             return self.parseContinue()
-        if self.check(TokenType.BREAK):
+        elif self.check(TokenType.BREAK):
             return self.parseBreak()
-        if self.check(TokenType.IF):
+        elif self.check(TokenType.IF):
             return self.parseIf()
+        elif self.check(TokenType.RETURN):
+            return self.parseReturn()
         elif self.check(TokenType.FOR):
             return self.parseFor()
         elif self.check(TokenType.WHILE):
             return self.parseWhile()
+        elif self.check(TokenType.DEF):
+            return self.parseFunctionDeclaration()
         elif self.check(TokenType.LBRACE):
             return self.parseBlock()
         else:
             expr = self.parseAssignment()
             self.advance_check(TokenType.END_STATMENT)
             return expr
-    
+
     def parseVar(self):
         op1 = self.advance_check(TokenType.VAR)
         identifier = self.advance_check(TokenType.IDENTIFIER)
@@ -224,7 +283,6 @@ class Parser:
             expr = self.parseAssignment()
         self.advance_check(TokenType.END_STATMENT)
         return DeclarationStatment(op1, identifier, expr)
-
 
     def parseDeclaration(self):
         expr = None

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from lexer.lexer import TokenType
 from parser.environment import Environment
-from parser.statments import BreakStatment, ContinueStatment
+from parser.statments import BreakStatment, ContinueStatment, FunctionDeclaration
 
 class Visitor(ABC):
     @abstractmethod
@@ -64,6 +64,13 @@ class Visitor(ABC):
     def visitContinue(self, continuee):
         pass
 
+    @abstractmethod
+    def visitCall(self, call):
+        pass
+
+    @abstractmethod
+    def visitFunctionDeclaration(self, fnDecl):
+        pass
 
 class TreePrinter(Visitor):
     def __init__(self):
@@ -75,6 +82,37 @@ class TreePrinter(Visitor):
         for i in range(0, self.indent):
             a += "    "
         return a + "└── "
+
+    def visitFunctionDeclaration(self, fnDecl):
+        self.current += self.do_space() + "define : " + fnDecl.name + "\n"
+        self.indent += 1
+        self.current += self.do_space() + "params :" + "\n"
+        self.indent += 1
+        for param in fnDecl:
+            param.accept(self)
+        self.indent -= 1
+        self.current += self.do_space() + "body : " + "\n"
+        self.indent += 1
+        fnDecl.bodyBlock.accept(self)
+        self.indent -= 1
+        self.indent -= 1
+        return self.current
+
+    def visitCall(self, call):
+        self.current += self.do_space() + "call to " + "\n"
+        self.indent += 1
+        call.callee.accept(self)
+        call.arguments.accept(self)
+        self.indent -= 1
+        return self.current
+
+
+    def visitReturn(self, returnn):
+        self.current += self.do_space() + "return" + "\n"
+        self.indent += 1
+        returnn.expr.accept(self)
+        self.indent -= 1
+        return self.current
 
     def visitBreak(self, breakk):
         self.current += self.do_space() + "break" + "\n"
@@ -232,6 +270,38 @@ class AstEvaluator(Visitor):
     def __init__(self):
         self.environment = Environment()
 
+    def visitFunctionDeclaration(self, fnDecl):
+        self.environment.define(fnDecl.name, fnDecl)
+
+    def visitCall(self, call):
+        fn = call.callee.accept(self)
+        try:
+            if isinstance(fn, FunctionDeclaration):
+                args_ev = []
+                for arg1 in call.arguments:
+                    args_ev.append(arg1.accept(self))
+                if len(args_ev) != fn.arity:
+                    raise Exception("Call to function but not with the same number of arguments")
+                
+                self.environment = Environment(self.environment)
+                for i in range(0, len(args_ev)):
+                    self.environment.define(fn.params[i].lexeme , args_ev[i])
+                result = None
+                try:
+                    self.visitBlock(fn.bodyBlock)
+                except Exception as e:
+                    if len(e.args) > 0 and isinstance(e.args[0], ReturnStatment):
+                        result = e.args[1].result
+                self.environment = self.environment.enclosing
+                return result       
+            else:
+                raise Exception("Trying to call something that is not a function")
+        except:
+            raise Exception("No identifier for this function")
+
+    def visitReturn(self, returnn):
+        raise Exception(returnn, returnn.expr.accept(self))
+    
     def visitBreak(self, breakk):
         raise Exception(breakk)
     

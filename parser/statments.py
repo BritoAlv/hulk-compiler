@@ -5,6 +5,23 @@ class Statment(ABC):
     def accept(self, visitor):
         pass
 
+class FunctionDeclaration(Statment):
+    def __init__(self, name, params, bodyBlock):
+        self.name = name
+        self.params = params
+        self.bodyBlock = bodyBlock
+        self.arity = len(params)
+    
+    def accept(self, visitor):
+        return visitor.visitFunctionDeclaration(self)
+
+class ReturnStatment(Statment):
+    def __init__(self, expr):
+        self.expr = expr
+
+    def accept(self, visitor):
+        return visitor.visitReturn(self)
+
 class IfStatment(Statment):
     def __init__(self, condition, then, otherwise):
         self.condition = condition
