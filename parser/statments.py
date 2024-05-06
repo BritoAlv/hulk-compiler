@@ -6,7 +6,7 @@ class Statment(ABC):
         pass
 
 class FunctionDeclaration(Statment):
-    def __init__(self, name, params, bodyBlock):
+    def __init__(self, name,  params, bodyBlock):
         self.name = name
         self.params = params
         self.bodyBlock = bodyBlock

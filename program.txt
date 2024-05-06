@@ -1,5 +1,9 @@
 def myfnc(a, b)
 {
-    print(a+b);
+    def third()
+    {
+        print(a+b);
+    }
+    return third;
 }
-myfnc(10, 20);
+myfnc(10,20)();

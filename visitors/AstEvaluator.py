@@ -3,7 +3,6 @@ from parser.environment import Environment
 from parser.statments import BreakStatment, ContinueStatment, FunctionDeclaration, ReturnStatment
 from visitors.visitor import Visitor
 
-
 class AstEvaluator(Visitor):
     def __init__(self):
         self.environment = Environment()
@@ -12,7 +11,7 @@ class AstEvaluator(Visitor):
         self.environment.define(fnDecl.name, fnDecl)
 
     def visitCall(self, call):
-        fn = self.environment.get(call.callee.lexeme)
+        fn = call.callee.accept(self)
         try:
             if isinstance(fn, FunctionDeclaration):
                 args_ev = []
@@ -29,7 +28,7 @@ class AstEvaluator(Visitor):
                     self.visitBlock(fn.bodyBlock)
                 except Exception as e:
                     if len(e.args) > 0 and isinstance(e.args[0], ReturnStatment):
-                        result = e.args[1].result
+                        result = e.args[1]
                 self.environment = self.environment.enclosing
                 return result       
             else:

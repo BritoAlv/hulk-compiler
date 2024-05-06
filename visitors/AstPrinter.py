@@ -28,10 +28,13 @@ class TreePrinter(Visitor):
         return self.current
 
     def visitCall(self, call):
-        self.current += self.do_space() + "call to " + call.callee.lexeme + "\n"
+        self.current += self.do_space() + "call to " + "\n"
+        self.indent += 1
+        call.callee.accept(self)
         self.indent += 1
         for arg in call.arguments:
             arg.accept(self)
+        self.indent -= 1
         self.indent -= 1
         return self.current
 

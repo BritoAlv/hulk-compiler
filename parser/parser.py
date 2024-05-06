@@ -52,7 +52,7 @@ class Parser:
         elif self.check(TokenType.NUMBER):
             return Literal(self.advance_check(TokenType.NUMBER))
         else:
-            iden = self.advance_check(TokenType.IDENTIFIER)
+            iden = Variable(self.advance_check(TokenType.IDENTIFIER))
             if self.check(TokenType.LPAREN):
                 op = self.advance_check(TokenType.LPAREN)
                 args = []
@@ -60,8 +60,15 @@ class Parser:
                     args = self.parseArguments()
                 self.advance_check(TokenType.RPAREN)
                 callbase = CallExpr(iden, op, args)
+                while self.check(TokenType.LPAREN):
+                    op = self.advance_check(TokenType.LPAREN)
+                    args = []
+                    if not self.check(TokenType.RPAREN):
+                        args = self.parseArguments()
+                    self.advance_check(TokenType.RPAREN)
+                    callbase = CallExpr(callbase, op, args)    
                 return callbase
-            return Variable(iden)
+            return iden
 
     def parseArguments(self):
         args = []

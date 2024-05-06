@@ -40,4 +40,4 @@ def main():
         print(f'File does not exist: {args.file_path}')
 
 if __name__ == '__main__':
-    main() 
+    main()

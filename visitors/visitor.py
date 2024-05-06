@@ -71,4 +71,3 @@ class Visitor(ABC):
     @abstractmethod
     def visitFunctionDeclaration(self, fnDecl):
         pass
-
