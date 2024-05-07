@@ -29,12 +29,14 @@ class AstEvaluator(Visitor):
                 except Exception as e:
                     if len(e.args) > 0 and isinstance(e.args[0], ReturnStatment):
                         result = e.args[1]
+                    else:
+                        raise e
                 self.environment = self.environment.enclosing
                 return result       
             else:
                 raise Exception("Trying to call something that is not a function")
-        except:
-            raise Exception("No identifier for this function")
+        except Exception as e:
+            raise e
 
     def visitReturn(self, returnn):
         raise Exception(returnn, returnn.expr.accept(self))
