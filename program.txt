@@ -1,9 +1,12 @@
-def myfnc(a, b)
-{
-    def third()
+def makeCounter(){
+    var i = 0;
+    def count()
     {
-        print(a+b);
+        i = i+1;
+        print(i);
     }
-    return third;
+    return count;
 }
-myfnc(10,20)();
+
+var counter = makeCounter();
+counter();
