@@ -231,8 +231,10 @@ class Parser:
         return ContinueStatment()
 
     def parseReturn(self):
+        expr = None
         self.advance_check(TokenType.RETURN)
-        expr = self.parseTernary()
+        if not self.check(TokenType.END_STATMENT):
+            expr = self.parseTernary()
         self.advance_check(TokenType.END_STATMENT)
         return ReturnStatment(expr)
 

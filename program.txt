@@ -1,12 +1,14 @@
-def makeCounter(){
-    var i = 0;
-    def count()
+def count(n)
+{
+    print(n);
+    if(n == 1)
     {
-        i = i+1;
-        print(i);
+        return;
     }
-    return count;
+    else
+    {
+        count(n-1);
+    }
 }
-
-var counter = makeCounter();
-counter();
+var a = count(10);
+print(a);

@@ -42,7 +42,8 @@ class TreePrinter(Visitor):
     def visitReturn(self, returnn):
         self.current += self.do_space() + "return" + "\n"
         self.indent += 1
-        returnn.expr.accept(self)
+        if returnn.expr != None:
+            returnn.expr.accept(self)
         self.indent -= 1
         return self.current
 

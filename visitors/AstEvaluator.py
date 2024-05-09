@@ -7,6 +7,10 @@ class AstEvaluator(Visitor):
     def __init__(self):
         self.environment = Environment()
 
+    def visitBlockEnvironment(self, block):
+        for stat in block.statments:
+            stat.accept(self)
+
     def visitFunctionDeclaration(self, fnDecl):
         self.environment.define(fnDecl.name, fnDecl)
 
@@ -25,7 +29,7 @@ class AstEvaluator(Visitor):
                     self.environment.define(fn.params[i].lexeme , args_ev[i])
                 result = None
                 try:
-                    self.visitBlock(fn.bodyBlock)
+                    self.visitBlockEnvironment(fn.bodyBlock)
                 except Exception as e:
                     if len(e.args) > 0 and isinstance(e.args[0], ReturnStatment):
                         result = e.args[1]
@@ -39,7 +43,10 @@ class AstEvaluator(Visitor):
             raise e
 
     def visitReturn(self, returnn):
-        raise Exception(returnn, returnn.expr.accept(self))
+        if returnn.expr != None:
+            raise Exception(returnn, returnn.expr.accept(self))
+        else:
+            raise Exception(returnn, None)
     
     def visitBreak(self, breakk):
         raise Exception(breakk)
@@ -54,7 +61,7 @@ class AstEvaluator(Visitor):
 
         while (forr.condition is None) or forr.condition.accept(self):
             try:
-                forr.block.accept(self)
+                self.visitBlockEnvironment(forr.block)
             except Exception as e:
                 if len(e.args) == 0:
                     raise e
@@ -93,8 +100,7 @@ class AstEvaluator(Visitor):
 
     def visitBlock(self, block):
         self.environment = Environment(self.environment)
-        for stat in block.statments:
-            stat.accept(self)
+        self.visitBlockEnvironment(block)
         self.environment = self.environment.enclosing
 
     def visitDeclaration(self, decl):
