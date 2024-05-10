@@ -1,21 +1,21 @@
 import argparse
 from pathlib import Path
-from lexer.lexer import *
-from visitors.AstEvaluator import AstEvaluator
-from visitors.AstPrinter import TreePrinter
-from visitors.visitor import *
+
 from parser.parser import *
+from visitors.AstEvaluator import AstEvaluator
+from visitors.AstResolver import AstResolver
+
 
 def solve(inputStr):
     l = Lexer(inputStr)
-    l.scanTokens()
+    l.scan_tokens()
     parser = Parser(l.tokens)
     program = parser.parseProgram()
-    evaluator = AstEvaluator()
-    for statment in program:
-        printer = TreePrinter() 
-        print(statment.accept(printer))
-        statment.accept(evaluator)
+    resolver = AstResolver()
+    result = resolver.resolveProgram(program)
+    evaluator = AstEvaluator(result)
+    for statement in program:
+        statement.accept(evaluator)
 
 def main():
     # Create the parser

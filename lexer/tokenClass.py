@@ -4,6 +4,7 @@ class Token:
         self.lexeme = lexeme
         self.literal = literal
         self.line = line
+        self.position = 0
 
     def toString(self, short):
         if short:

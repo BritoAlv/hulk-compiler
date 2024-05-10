@@ -2,6 +2,7 @@ from lexer.automata import automataIdentifier, automataNumber, automateConstGene
 from lexer.tokenClass import *
 from lexer.tokenType import *
 
+
 class Lexer:
     def __init__(self, inputStr):
         self.inputStr = inputStr
@@ -22,9 +23,10 @@ class Lexer:
                     result = tk
         if result.tokenType == TokenType.ILLEGAL:
             result.lexeme = self.inputStr[offset]
+        result.position = offset
         return result
 
-    def scanTokens(self):
+    def scan_tokens(self):
         cr = 0
         wrong = []
         while cr < len(self.inputStr):
@@ -38,7 +40,4 @@ class Lexer:
                 if t == "\n":
                     self.line += 1
         if len(wrong) > 0:
-            message = "Unrecognized character: \n"
-            for w in wrong:
-                message += w.toString(False) + "\n"
-            raise Exception(message)
+            raise Exception("Lexer failed")

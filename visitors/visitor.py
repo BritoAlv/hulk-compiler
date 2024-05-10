@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
-from lexer.lexer import TokenType
-from parser.environment import Environment
-from parser.statments import BreakStatment, ContinueStatment, FunctionDeclaration
+
 
 class Visitor(ABC):
     @abstractmethod
@@ -66,6 +64,10 @@ class Visitor(ABC):
 
     @abstractmethod
     def visitCall(self, call):
+        pass
+
+    @abstractmethod
+    def visitReturn(self, returnn):
         pass
 
     @abstractmethod

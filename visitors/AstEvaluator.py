@@ -1,61 +1,73 @@
 from lexer.tokenType import TokenType
-from parser.environment import Environment
-from parser.statments import BreakStatment, ContinueStatment, FunctionDeclaration, ReturnStatment
+from visitors.environment import Environment
+from parser.statments import BreakStatement, ContinueStatement, ReturnStatement
+from visitors.Callable import FunctionCallable
 from visitors.visitor import Visitor
 
+
 class AstEvaluator(Visitor):
-    def __init__(self):
+    def __init__(self, variables):
         self.environment = Environment()
+        self.locals = variables
+
+    def set_environment(self, environment):
+        self.environment = environment
+
+    def push_environment(self):
+        self.environment = Environment(self.environment)
+
+    def pop_environment(self):
+        self.environment = self.environment.enclosing
 
     def visitBlockEnvironment(self, block):
         for stat in block.statments:
             stat.accept(self)
 
-    def visitFunctionDeclaration(self, fnDecl):
-        self.environment.define(fnDecl.name, fnDecl)
+    def visitFunctionDeclaration(self, fn_decl):
+        callableFunction = FunctionCallable(fn_decl, self.environment)
+        self.environment.define(self.locals[fn_decl], fn_decl.name, callableFunction)
 
     def visitCall(self, call):
         fn = call.callee.accept(self)
         try:
-            if isinstance(fn, FunctionDeclaration):
+            if isinstance(fn, FunctionCallable):
                 args_ev = []
                 for arg1 in call.arguments:
                     args_ev.append(arg1.accept(self))
-                if len(args_ev) != fn.arity:
+                if len(args_ev) != fn.fnDecl.arity:
                     raise Exception("Call to function but not with the same number of arguments")
-                
-                self.environment = Environment(self.environment)
+                prev = self.environment
+                self.set_environment(fn.environment)
+                self.push_environment()
                 for i in range(0, len(args_ev)):
-                    self.environment.define(fn.params[i].lexeme , args_ev[i])
+                    self.environment.define(0, fn.fnDecl.params[i].lexeme, args_ev[i])
                 result = None
                 try:
-                    self.visitBlockEnvironment(fn.bodyBlock)
+                    self.visitBlockEnvironment(fn.fnDecl.bodyBlock)
                 except Exception as e:
-                    if len(e.args) > 0 and isinstance(e.args[0], ReturnStatment):
-                        result = e.args[1]
+                    if len(e.args) > 0 and isinstance(e.args[0], ReturnStatement):
+                        result = (None if e.args[0] is None else e.args[0].expr.accept(self))
                     else:
                         raise e
-                self.environment = self.environment.enclosing
-                return result       
+                self.pop_environment()
+                self.set_environment(prev)
+                return result
             else:
                 raise Exception("Trying to call something that is not a function")
         except Exception as e:
             raise e
 
     def visitReturn(self, returnn):
-        if returnn.expr != None:
-            raise Exception(returnn, returnn.expr.accept(self))
-        else:
-            raise Exception(returnn, None)
-    
+        raise Exception(returnn)
+
     def visitBreak(self, breakk):
         raise Exception(breakk)
-    
+
     def visitContinue(self, continuee):
         raise Exception(continuee)
 
     def visitFor(self, forr):
-        self.environment = Environment(self.environment)
+        self.push_environment()
         if forr.initializer is not None:
             forr.initializer.accept(self)
 
@@ -65,13 +77,13 @@ class AstEvaluator(Visitor):
             except Exception as e:
                 if len(e.args) == 0:
                     raise e
-                elif isinstance(e.args[0], BreakStatment):
+                elif isinstance(e.args[0], BreakStatement):
                     break
-                elif not isinstance(e.args[0], ContinueStatment):
+                elif not isinstance(e.args[0], ContinueStatement):
                     raise e
             if forr.action is not None:
                 forr.action.accept(self)
-        self.environment = self.environment.enclosing
+        self.pop_environment()
 
     def visitWhile(self, whilee):
         condition = whilee.condition.accept(self)
@@ -81,9 +93,9 @@ class AstEvaluator(Visitor):
             except Exception as e:
                 if len(e.args) == 0:
                     raise e
-                elif isinstance(e.args[0], BreakStatment):
+                elif isinstance(e.args[0], BreakStatement):
                     break
-                elif not isinstance(e.args[0], ContinueStatment):
+                elif not isinstance(e.args[0], ContinueStatement):
                     raise e
             condition = whilee.condition.accept(self)
 
@@ -99,17 +111,18 @@ class AstEvaluator(Visitor):
         print(value)
 
     def visitBlock(self, block):
-        self.environment = Environment(self.environment)
+        self.push_environment()
         self.visitBlockEnvironment(block)
-        self.environment = self.environment.enclosing
+        self.pop_environment()
 
     def visitDeclaration(self, decl):
         iden = decl.identifier.lexeme
         value = decl.expr.accept(self)
-        self.environment.define(iden, value)
+        self.environment.define(self.locals[decl], iden, value)
 
     def visitVariable(self, var):
-        return self.environment.get(var.id.lexeme)
+        d = self.locals[var]
+        return self.environment.get(d, var.id.lexeme)
 
     def visitLiteral(self, lit):
         return lit.literal.literal
@@ -119,7 +132,7 @@ class AstEvaluator(Visitor):
 
     def visitAssignment(self, assign):
         value = assign.expr.accept(self)
-        return self.environment.set(assign.identifier.id.lexeme, value)
+        return self.environment.set(self.locals[assign], assign.identifier.id.lexeme, value)
 
     def visitUnary(self, unary):
         value = unary.exp.accept(self)
@@ -136,8 +149,8 @@ class AstEvaluator(Visitor):
 
     def visitTernary(self, ternary):
         if (
-            ternary.op1.tokenType == TokenType.TERNARY_COND
-            and ternary.op2.tokenType == TokenType.TERNARY_SEP
+                ternary.op1.tokenType == TokenType.TERNARY_COND
+                and ternary.op2.tokenType == TokenType.TERNARY_SEP
         ):
             if ternary.left.accept(self) != 0:
                 return ternary.middle.accept(self)
@@ -159,7 +172,7 @@ class AstEvaluator(Visitor):
             case TokenType.DIV:
                 return left // right
             case TokenType.EXP:
-                return left**right
+                return left ** right
             case TokenType.XOR:
                 return left ^ right
             case TokenType.AND:

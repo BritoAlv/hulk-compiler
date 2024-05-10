@@ -38,7 +38,6 @@ class TreePrinter(Visitor):
         self.indent -= 1
         return self.current
 
-
     def visitReturn(self, returnn):
         self.current += self.do_space() + "return" + "\n"
         self.indent += 1
@@ -130,12 +129,10 @@ class TreePrinter(Visitor):
         self.current += self.do_space() + "Block" + "\n"
         self.indent += 1
         self.current += self.do_space() + "{" +"\n"
-        self.indent += 1
         for stat in block.statments:
             stat.accept(self)
-        self.indent -= 1
-        self.indent -= 1 
         self.current += self.do_space() + "}" + "\n"
+        self.indent -= 1 
         return self.current
 
     def visitLiteral(self, lit):
