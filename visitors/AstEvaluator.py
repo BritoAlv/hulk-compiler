@@ -4,7 +4,6 @@ from parser.statments import BreakStatement, ContinueStatement, ReturnStatement
 from visitors.Callable import FunctionCallable
 from visitors.visitor import Visitor
 
-
 class AstEvaluator(Visitor):
     def __init__(self, variables):
         self.environment = Environment()
@@ -17,7 +16,7 @@ class AstEvaluator(Visitor):
         self.environment = Environment(self.environment)
 
     def pop_environment(self):
-        self.environment = self.environment.enclosing
+        self.environment = self.environment.get_distance(1)
 
     def visitBlockEnvironment(self, block):
         for stat in block.statments:

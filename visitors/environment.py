@@ -6,6 +6,8 @@ class Environment:
     def get_distance(self, distance):
         act = self
         while distance > 0:
+            if act.enclosing is None:
+                raise Exception("Distance out of scope")
             act = act.enclosing
             distance -= 1
         return act
