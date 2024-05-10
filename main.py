@@ -2,9 +2,9 @@ import argparse
 from pathlib import Path
 
 from parser.parser import *
-from visitors.AstEvaluator import AstEvaluator
-from visitors.AstResolver import AstResolver
-from visitors.AstPrinter import TreePrinter
+from visitors.Evaluator.AstEvaluator import AstEvaluator
+from visitors.Evaluator.AstResolver import AstResolver
+from visitors.Printer.AstPrinter import TreePrinter
 
 def solve(inputStr):
     l = Lexer(inputStr)

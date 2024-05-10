@@ -1,7 +1,7 @@
 from lexer.tokenType import TokenType
-from visitors.environment import Environment
 from parser.statments import BreakStatement, ContinueStatement, ReturnStatement
-from visitors.Callable import FunctionCallable
+from visitors.Evaluator.Callable import FunctionCallable
+from visitors.Evaluator.environment import Environment
 from visitors.visitor import Visitor
 
 class AstEvaluator(Visitor):
