@@ -26,18 +26,18 @@ def main():
     
     # Parse the arguments
     args = parser.parse_args()
-    
-    # Check if the file exists
-    if args.file_path.exists():
-        try:
-            with open(args.file_path, "r") as f:
-                cont = f.read()
-                solve(cont)
-                f.close()
-        except Exception as e:
-            print(e)    
-    else:
-        print(f'File does not exist: {args.file_path}')
+    print()
+    for file in args.file_path.iterdir():
+            try:
+                with open(file, "r") as f:
+                    cont = f.read()
+                    print("Behaviors for script:")
+                    print(cont.split("\n")[0])
+                    solve(cont)
+                    f.close()
+            except Exception as e:
+                print(e)
+            print("---------------------")    
 
 if __name__ == '__main__':
     main()

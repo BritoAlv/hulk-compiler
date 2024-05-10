@@ -1,3 +1,4 @@
+// test closures, should print 31.
 var a = 20;
 def makeCuba(n)
 {

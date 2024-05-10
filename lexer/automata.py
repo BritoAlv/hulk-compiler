@@ -1,6 +1,14 @@
 from lexer.tokenClass import Token
 from lexer.tokenType import *
 
+def automataLineComment(offset, inputStr, line):
+    if offset + 1 < len(inputStr) and inputStr[offset] == "/" and inputStr[offset + 1] == "/":
+        ed = offset + 2
+        while ed < len(inputStr) and inputStr[ed] != "\n":
+            ed += 1
+        return Token(TokenType.LINE_COMMENT, inputStr[offset : ed], None, line)
+    return None
+
 def automataNumber(offset, inputStr, line):
     if inputStr[offset].isdigit():
         ed = offset

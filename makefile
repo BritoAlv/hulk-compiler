@@ -1,2 +1,2 @@
 make run:
-	python3 main.py "./program.txt"
+	python3 main.py "./scripts/"

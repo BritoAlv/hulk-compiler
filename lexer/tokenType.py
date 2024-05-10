@@ -43,6 +43,8 @@ class TokenType(Enum):
     RETURN = "return"
     DEF = "def"
     
+    LINE_COMMENT = "//"
+
     TERNARY_COND = "?"
     TERNARY_SEP = ":"
 
@@ -108,4 +110,4 @@ constLex = [
     TokenType.NEWLINE,
     TokenType.ARG_SEPARATOR
 ]
-constIgnore = [TokenType.SPACE, TokenType.ESCAPE1, TokenType.TAB, TokenType.NEWLINE]
+constIgnore = [TokenType.SPACE, TokenType.ESCAPE1, TokenType.TAB, TokenType.NEWLINE, TokenType.LINE_COMMENT]

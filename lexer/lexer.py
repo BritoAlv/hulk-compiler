@@ -1,4 +1,4 @@
-from lexer.automata import automataIdentifier, automataNumber, automateConstGenerator
+from lexer.automata import *
 from lexer.tokenClass import *
 from lexer.tokenType import *
 
@@ -11,6 +11,7 @@ class Lexer:
         self.automatas = [
             automataNumber,
             automataIdentifier,
+            automataLineComment,
             *[automateConstGenerator(x) for x in constLex],
         ]
 
