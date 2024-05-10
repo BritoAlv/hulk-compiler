@@ -4,7 +4,7 @@ from pathlib import Path
 from parser.parser import *
 from visitors.AstEvaluator import AstEvaluator
 from visitors.AstResolver import AstResolver
-
+from visitors.AstPrinter import TreePrinter
 
 def solve(inputStr):
     l = Lexer(inputStr)
@@ -15,6 +15,8 @@ def solve(inputStr):
     result = resolver.resolveProgram(program)
     evaluator = AstEvaluator(result)
     for statement in program:
+        printer = TreePrinter()
+        print(statement.accept(printer))
         statement.accept(evaluator)
 
 def main():

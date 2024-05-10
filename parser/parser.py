@@ -228,6 +228,7 @@ class Parser:
             expr = self.parseTernary()
         self.advance_check(TokenType.END_STATMENT)
         return ReturnStatement(expr)
+    
     def parseFunctionDeclaration(self):
         self.advance_check(TokenType.DEF)
         op = self.advance_check(TokenType.IDENTIFIER)
@@ -242,6 +243,7 @@ class Parser:
         self.advance_check(TokenType.RPAREN)
         body = self.parseBlock()
         return FunctionDeclaration(name, params, body)
+    
     def parseStatment(self):
         if self.check(TokenType.PRINT_STATMENT):
             return self.parsePrint()
@@ -267,6 +269,7 @@ class Parser:
             expr = self.parseAssignment()
             self.advance_check(TokenType.END_STATMENT)
             return expr
+    
     def parseVar(self):
         op1 = self.advance_check(TokenType.VAR)
         identifier = self.advance_check(TokenType.IDENTIFIER)
@@ -274,12 +277,14 @@ class Parser:
             self.advance_check(TokenType.ASSIGN)
             expr = self.parseAssignment()
         self.advance_check(TokenType.END_STATMENT)
-        return DeclarationStatement(op1, identifier, expr)
+        return VariableDeclarationStatement(op1, identifier, expr)
+    
     def parseDeclaration(self):
         expr = None
         if self.check(TokenType.VAR):
             return self.parseVar()
         return self.parseStatment()
+    
     def parseProgram(self):
         statments = []
         while self.valid():

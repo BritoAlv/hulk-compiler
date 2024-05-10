@@ -64,7 +64,7 @@ class PrintStatement(Statement):
         return visitor.visitPrint(self)
 
 
-class DeclarationStatement(Statement):
+class VariableDeclarationStatement(Statement):
     def __init__(self, varToken, identifier, expr):
         self.varToken = varToken
         self.identifier = identifier
