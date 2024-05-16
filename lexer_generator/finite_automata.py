@@ -168,51 +168,6 @@ class NFA:
                     table[ch][set1 - 1].append(binary_set - 1)
         return DFA(start_state, total_states, alphabet, accepting_states, table)
 
-
-def Remove_Unreachable_States(FA: DFA | NFA):
-    print("STARTS WITH " + str(FA.total_states))
-    reach = dfs(
-        FA.start_state, [False for x in range(0, FA.total_states)], FA.alphabet, FA
-    )
-    for st in FA.accepting_states:
-        reach = UnionSets(
-            reach, dfs(st, [False for x in range(0, FA.total_states)], FA.alphabet, FA)
-        )
-    to_delete = []
-    for i in range(FA.total_states - 1, -1, -1):
-        if i not in reach:
-            to_delete.append(i)
-
-    def remove(FA: NFA | DFA, st: int):
-        for i in range(0, len(FA.alphabet)):
-            for j in range(0, FA.total_states):
-                if st in FA.table[i][j]:
-                    FA.table[i][j].remove(st)
-                for k in range(0, len(FA.table[i][j])):
-                    if FA.table[i][j][k] > st:
-                        FA.table[i][j][k] -= 1
-            del FA.table[i][st]
-        FA.total_states -= 1
-
-    for st in to_delete:
-        remove(FA, st)
-
-    for i in range(0, len(FA.accepting_states)):
-        reduce = 0
-        for y in to_delete:
-            if FA.accepting_states[i] > y:
-                reduce += 1
-        FA.accepting_states[i] -= reduce
-
-    reduce = 0
-    for y in to_delete:
-        if FA.start_state > y:
-            reduce += 1
-    FA.start_state -= reduce
-    print("ENDS WITH " + str(FA.total_states))
-    return FA
-
-
 def dfs(state: int, visited: list[bool], choices: list[str], FA: NFA | DFA):
     cr = [state]
     visited[state] = True
@@ -250,6 +205,7 @@ def Remove_Equal(FA: NFA | DFA):
     accepting_states = [
         map_keys[(hashes[x], x in FA.accepting_states)] for x in FA.accepting_states
     ]
+    accepting_states = list(set(accepting_states))
     table = [[] for _ in range(0, len(FA.alphabet))]
     for z in range(0, len(FA.alphabet)):
         for j in range(0, total_states):
