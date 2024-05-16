@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
-from const import *
+from common import *
+from operations import ConcatenateNFA, NFAfor_char, Question, Star, UnionNFA
 from regular_expressions import *
 from finite_automata import *
 from lexer_generator import *
@@ -94,6 +95,9 @@ print(exp.accept(printer))
 eval = Evaluator()
 M = UnaryExpression(exp, STAR).accept(eval)
 D = M.ConvertNFA_DFA()
-print(D.simulate("aab1aabba"))
-print(D.simulate("1aab"))
-print(D.simulate("1ab1"))
+print(D.simulate("a1b"))
+print(D.simulate("ab"))
+print(D.simulate("ac"))
+print(D.simulate("aab"))
+print(D.simulate("ab1"))
+print(D.simulate(""))

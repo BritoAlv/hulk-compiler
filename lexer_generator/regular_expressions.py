@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from const import QUESTION, STAR
+from common import QUESTION, STAR
 
 class RegularExpression(ABC):
     @abstractmethod
