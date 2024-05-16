@@ -1,20 +1,22 @@
 class Token:
-    def __init__(self, tokenType, lexeme, literal, line):
+    def __init__(self, tokenType : str, lexeme : str, line : int, offsetLine : int):
         self.tokenType = tokenType
         self.lexeme = lexeme
-        self.literal = literal
         self.line = line
-        self.position = 0
+        self.offsetLine = offsetLine
 
     def toString(self, short):
         if short:
-            return str(self.tokenType.value)
+            return self.tokenType
         return (
-            str(self.tokenType.value)
+            self.tokenType
             + " "
             + self.lexeme
             + " "
-            + str(self.literal)
-            + " at line "
+            " at line "
             + str(self.line)
+            + " "
+            + "at position "
+            + str(self.offsetLine)
+            + " "
         )

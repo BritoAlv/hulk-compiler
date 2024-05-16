@@ -1,0 +1,5 @@
+STAR = "*"
+UNION = "+"
+EPSILON = "€"
+QUESTION = "?"
+CONCATENATE = ""
