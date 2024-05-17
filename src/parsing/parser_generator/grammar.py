@@ -278,6 +278,7 @@ class Grammar:
             else:
                 # Match it
                 if top.value == token_type:
+                    top.token = input[input_index]
                     stack.pop()
                     # Move forward on the input
                     input_index += 1
