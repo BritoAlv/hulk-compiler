@@ -1,5 +1,5 @@
 from lexer_generator.lexer_generator import LexerGenerator
-from tokenClass import Token
+from ...common.token_class import Token
 
 class Lexer:
     def __init__(self, specs: list[tuple[str, str]]):

@@ -1,15 +1,15 @@
 class Token:
-    def __init__(self, tokenType : str, lexeme : str, line : int, offsetLine : int):
-        self.tokenType = tokenType
+    def __init__(self, type : str, lexeme : str, line : int, offsetLine : int):
+        self.type = type
         self.lexeme = lexeme
         self.line = line
         self.offsetLine = offsetLine
 
     def toString(self, short):
         if short:
-            return self.tokenType
+            return self.type
         return (
-            self.tokenType
+            self.type
             + " "
             + self.lexeme
             + " "
