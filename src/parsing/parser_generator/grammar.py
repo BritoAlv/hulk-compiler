@@ -1,7 +1,7 @@
 from graph import Graph
-from ..common.token_class import Token
-from ..common.parse_node import ParseNode
-from ..common.parse_tree import ParseTree
+from common.token_class import Token
+from common.parse_nodes.parse_node import ParseNode
+from common.parse_nodes.parse_tree import ParseTree
 
 EPSILON = ""
 EOF = "$"
