@@ -21,7 +21,10 @@ class ParseNode:
                 branch += '_'
 
         print(extending_branch)
-        print(f'{branch}{self.value}')
+        if self.token != None:
+            print(f'{branch}{self.value}:{self.token.lexeme}')
+        else:
+            print(f'{branch}{self.value}:∅')
 
         if last_one:
             ancestors_depth.pop()
