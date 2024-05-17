@@ -6,7 +6,6 @@ class Expr(ABC):
     def accept(self, visitor):
         pass
 
-
 class Literal(Expr):
     def __init__(self, token):
         self.literal = token
@@ -14,14 +13,12 @@ class Literal(Expr):
     def accept(self, visitor):
         return visitor.visitLiteral(self)
 
-
 class Variable(Expr):
     def __init__(self, token):
         self.id = token
 
     def accept(self, visitor):
         return visitor.visitVariable(self)
-
 
 class Grouping(Expr):
     def __init__(self, open, inside, closed):
@@ -32,7 +29,6 @@ class Grouping(Expr):
     def accept(self, visitor):
         return visitor.visitGrouping(self)
 
-
 class UnaryExpr(Expr):
     def __init__(self, op, exp):
         self.operator = op
@@ -40,7 +36,6 @@ class UnaryExpr(Expr):
 
     def accept(self, visitor):
         return visitor.visitUnary(self)
-
 
 class BinaryExpr(Expr):
     def __init__(self, left, op, right):
@@ -50,7 +45,6 @@ class BinaryExpr(Expr):
 
     def accept(self, visitor):
         return visitor.visitBinary(self)
-
 
 class TernaryExpr(Expr):
     def __init__(self, left, op1, middle, op2, right):

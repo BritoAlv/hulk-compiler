@@ -1,4 +1,3 @@
-from re import I
 from visitors.visitor import Visitor
 
 

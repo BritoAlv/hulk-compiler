@@ -4,7 +4,8 @@ from ...common.token_class import Token
 class Lexer:
     def __init__(self, specs: list[tuple[str, str]]):
         self.specs = specs
-        self.automatas = [LexerGenerator.Parse(x[1]) for x in specs]
+        lexGen = LexerGenerator()
+        self.automatas = [lexGen.Compile(x[1]) for x in specs]
         self.currentLine = 0
         self.positionInLine = 0
 
@@ -26,7 +27,7 @@ class Lexer:
             cr += len(tok.lexeme)
             self.positionInLine += len(tok.lexeme)
             tokens.append(tok)
-        tokens.append(Token("EOF", "", self.currentLine, self.positionInLine))
+        tokens.append(Token("$", "", self.currentLine, self.positionInLine))
         return tokens
 
     def scanToken(self, inputStr: str, offset: int):
@@ -51,7 +52,7 @@ class Lexer:
             return Token("Error", "", self.currentLine, self.positionInLine)
         return Token(
             self.specs[i][0],
-            inputStr[offset : self.specs[i][1]],
+            inputStr[offset : matched[1]],
             self.currentLine,
             self.positionInLine,
         )

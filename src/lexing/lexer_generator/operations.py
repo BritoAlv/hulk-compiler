@@ -1,4 +1,4 @@
-from common import EPSILON, UnionSets
+from const import EPSILON, UnionSets
 from finite_automata import NFA
 
 def NFAfor_char(char: str):

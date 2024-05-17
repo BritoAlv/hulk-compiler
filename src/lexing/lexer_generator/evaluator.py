@@ -1,11 +1,9 @@
 from abc import ABC, abstractmethod
 
-from common import *
+from const import *
 from operations import ConcatenateNFA, NFAfor_char, Question, Star, UnionNFA
 from regular_expressions import *
 from finite_automata import *
-from lexer_generator import *
-
 
 class VisitorExp(ABC):
     @abstractmethod
@@ -69,6 +67,9 @@ class Printer:
 
     def visitParen(self, expr) -> str:
         return "(" + expr.expr.accept(self) + ")"
+    
+
+
 
 
 front = ParenExpression(
@@ -96,8 +97,8 @@ eval = Evaluator()
 M = UnaryExpression(exp, STAR).accept(eval)
 D = M.ConvertNFA_DFA()
 print(D.simulate("a1b"))
-print(D.simulate("ab"))
-print(D.simulate("1c"))
-print(D.simulate("aab"))
-print(D.simulate("ab1"))
+print(D.simulate("abb"))
+print(D.simulate("b11"))
+print(D.simulate("b11bb"))
+print(D.simulate("c1a"))
 print(D.simulate(""))

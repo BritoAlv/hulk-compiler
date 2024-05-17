@@ -1,5 +1,4 @@
-from common import EPSILON, UnionSets
-
+from const import EPSILON, UnionSets
 
 class DFA:
     def __init__(
@@ -39,6 +38,7 @@ class DFA:
                     assert 0 <= table[i][j][m] < self.total_states
 
         self = Remove_Equal(self)
+        self = Remove_Disconnected(self)
 
     def next_state(self, char: str, actual: int):
         assert 0 <= actual < self.total_states
@@ -100,6 +100,7 @@ class NFA:
                     assert 0 <= st < self.total_states
 
         self = Remove_Equal(self)
+        self = Remove_Disconnected(self)
 
     def next_stateS(self, char: str, actual: int):
         assert char in self.alphabet
@@ -181,9 +182,42 @@ def dfs(state: int, visited: list[bool], choices: list[str], FA: NFA | DFA):
                         cr.append(rs)
     return cr
 
+def Remove_Disconnected(FA : NFA | DFA):
+    # print("STARTS WITH " + str(FA.total_states))
+    reachable = dfs(FA.start_state, [False for _ in range(0, FA.total_states)], FA.alphabet, FA)
+    # print(reachable)
+    #print(FA.start_state)
+    remove = []
+    for i in range(FA.total_states-1, -1, -1):
+        if i not in reachable:
+            remove.append(i)
+    for x in remove:
+        remove_state(FA, x)
+    #print("ENDS WITH " + str(FA.total_states))
+    return FA
+        
+def remove_state(FA : NFA | DFA, st : int):
+    if FA.start_state > st:
+        FA.start_state -= 1
+    if st in FA.accepting_states:
+        FA.accepting_states.remove(st)
+    for z in range(0, len(FA.accepting_states)):
+        if FA.accepting_states[z] > st:
+            FA.accepting_states[z] -= 1
+    for z in range(0, len(FA.alphabet)):
+        for q in range(0, FA.total_states):
+            if st in FA.table[z][q]:
+                FA.table[z][q].remove(st)
+            for d in range(0, len(FA.table[z][q])):
+                if FA.table[z][q][d] > st:
+                    FA.table[z][q][d] -= 1
+    for z in range(0, len(FA.alphabet)):
+        del FA.table[z][st]
+    FA.total_states -= 1
+    return FA
 
 def Remove_Equal(FA: NFA | DFA):
-    print("STARTS WITH " + str(FA.total_states))
+    #print("STARTS WITH " + str(FA.total_states))
     dict = {}
     hashes = [compute_hash(i, FA) for i in range(0, FA.total_states)]
     for i in range(0, FA.total_states):
@@ -222,7 +256,7 @@ def Remove_Equal(FA: NFA | DFA):
     FA.total_states = total_states
     FA.alphabet = alphabet
     FA.start_state = start_state
-    print("ENDS WITH " + str(FA.total_states))
+    #print("ENDS WITH " + str(FA.total_states))
     return FA
 
 def print_row(FA: NFA | DFA, i: int):

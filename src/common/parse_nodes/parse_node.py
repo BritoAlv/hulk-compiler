@@ -1,4 +1,4 @@
-from token_class import Token
+from common.token_class import Token
 
 class ParseNode:
     def __init__(self, value: str) -> None:

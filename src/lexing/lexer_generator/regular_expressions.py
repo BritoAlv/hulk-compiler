@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from common import QUESTION, STAR
+from const import CONCATENATE, QUESTION, STAR, UNION
 
 class RegularExpression(ABC):
     @abstractmethod
@@ -8,6 +8,7 @@ class RegularExpression(ABC):
 
 class BinaryExpression(RegularExpression):
     def __init__(self, left : RegularExpression, op : str, right : RegularExpression):
+        assert(op in [CONCATENATE, UNION])
         self.left = left
         self.op = op
         self.right = right
