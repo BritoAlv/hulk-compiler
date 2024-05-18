@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from const import CONCATENATE, QUESTION, STAR, UNION
+from lexing.lexer_generator.const import CONCATENATE, QUESTION, STAR, UNION
 
 class RegularExpression(ABC):
     @abstractmethod

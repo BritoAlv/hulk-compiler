@@ -1,6 +1,4 @@
-from distutils.errors import LinkError
 from common.parse_nodes.parse_node import ParseNode
-from common.parse_nodes.parse_tree import ParseTree
 from common.token_class import Token
 from lexing.lexer_generator.const import CONCATENATE, UNION
 from lexing.lexer_generator.evaluator import Evaluator
@@ -63,12 +61,12 @@ class LexerGenerator:
             if tree.children[1].children[0].value == EPSILON:
                 return rExp
             else:
-                lExp = self.ConvertToAST(tree.children[1].children[1])
+                lExp = self.ConvertToAST(tree.children[1].children[0])
                 return BinaryExpression(rExp, CONCATENATE, lExp)
         elif tree.value == "C":
             rExp = LiteralExpression("1")
             if tree.children[0].value == "c":
-                rExp = LiteralExpression("a") # temporal fix to a bug.
+                rExp = LiteralExpression(tree.children[0].token.lexeme) # temporal fix to a bug.
             elif tree.children[0].value == "(":
                 rExp = ParenExpression("(", self.ConvertToAST(tree.children[1]), ")")
             else:
@@ -92,9 +90,8 @@ class LexerGenerator:
         tokens.append(Token(EOF, "\0", 0, 0))
         # pass tokens to the parser to generate derivation tree.
         derivation_tree = self.grammar.parse(tokens)
-        derivation_tree.root.print([0], 0, True)
         # convert tree to abstract syntax tree.
         ast = self.ConvertToAST(derivation_tree.root)
         # pass tree to evaluator.
         ev = Evaluator()
-        return ast.accept(ev)
+        return ast.accept(ev).ConvertNFA_DFA()

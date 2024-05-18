@@ -1,5 +1,5 @@
-from const import EPSILON, UnionSets
-from finite_automata import NFA
+from lexing.lexer_generator.const import EPSILON, UnionSets
+from lexing.lexer_generator.finite_automata import NFA
 
 def NFAfor_char(char: str):
     return NFA(0, 2, [char], [1], [[[1], []]])

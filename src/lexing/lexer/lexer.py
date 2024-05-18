@@ -1,15 +1,15 @@
-from lexer_generator.lexer_generator import LexerGenerator
-from ...common.token_class import Token
+from common.token_class import Token
+from lexing.lexer_generator  import lexer_generator
 
 class Lexer:
     def __init__(self, specs: list[tuple[str, str]]):
         self.specs = specs
-        lexGen = LexerGenerator()
+        lexGen = lexer_generator.LexerGenerator()
         self.automatas = [lexGen.Compile(x[1]) for x in specs]
         self.currentLine = 0
         self.positionInLine = 0
 
-    def scanTokens(self, inputStr: str):
+    def scanTokens(self, inputStr: str) -> list[Token]:
         tokens = []
         cr = 0
         while cr < len(inputStr):
@@ -51,19 +51,23 @@ class Lexer:
         if matched == (-1, -1):
             return Token("Error", "", self.currentLine, self.positionInLine)
         return Token(
-            self.specs[i][0],
+            self.specs[matched[0]][0],
             inputStr[offset : matched[1]],
             self.currentLine,
             self.positionInLine,
         )
 
+alphabet = "a+b+c+d+e+f+g"
+digits = "1+2+3+4"
+
 lexer = Lexer(
     [
-        ("PLUS", "+"),
-        ("GREATER_EQUAL", ">="),
-        (
-            "NUMBER",
-            "(1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 0)(0 + 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9)*",
-        ),
+        ("IDENTIFIER", "(" + alphabet +")"),
+        ("LBRACE", "{"),
+        ("RBRACE", "}"),
+        ("GREATER", ">"),
+        ("SEMICOLON", ";")        
     ]
 )
+
+print("Done building the lexer and its automatas")

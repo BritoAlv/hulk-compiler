@@ -1,4 +1,4 @@
-from const import EPSILON, UnionSets
+from lexing.lexer_generator.const import EPSILON, UnionSets
 
 class DFA:
     def __init__(
@@ -98,7 +98,7 @@ class NFA:
                 assert 0 <= len(table[i][j]) <= self.total_states
                 for st in table[i][j]:
                     assert 0 <= st < self.total_states
-
+        
         self = Remove_Equal(self)
         self = Remove_Disconnected(self)
 
@@ -109,6 +109,8 @@ class NFA:
 
     def EpsilonClosure(self, state: int):
         assert 0 <= state < self.total_states
+        if EPSILON not in self.alphabet:
+            return [state]
         visited = [False for _ in range(0, self.total_states)]
         return dfs(state, visited, [EPSILON], self)
 

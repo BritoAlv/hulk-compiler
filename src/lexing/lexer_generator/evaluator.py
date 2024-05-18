@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 
-from const import *
-from operations import ConcatenateNFA, NFAfor_char, Question, Star, UnionNFA
-from regular_expressions import *
-from finite_automata import *
+from lexing.lexer_generator.const import *
+from lexing.lexer_generator.operations import ConcatenateNFA, NFAfor_char, Question, Star, UnionNFA
+from lexing.lexer_generator.regular_expressions import *
+from lexing.lexer_generator.finite_automata import *
 
 class VisitorExp(ABC):
     @abstractmethod
@@ -67,38 +67,3 @@ class Printer:
 
     def visitParen(self, expr) -> str:
         return "(" + expr.expr.accept(self) + ")"
-    
-
-
-
-
-front = ParenExpression(
-    "(", BinaryExpression(LiteralExpression("a"), UNION, LiteralExpression("b")), ")"
-)
-
-end = ParenExpression(
-    "(",
-    BinaryExpression(
-        LiteralExpression("a"),
-        UNION,
-        BinaryExpression(LiteralExpression("b"), UNION, LiteralExpression("1")),
-    ),
-    ")",
-)
-
-unary = UnaryExpression(end, STAR)
-
-exp = BinaryExpression(front, CONCATENATE, unary)
-
-
-printer = Printer()
-print(exp.accept(printer))
-eval = Evaluator()
-M = UnaryExpression(exp, STAR).accept(eval)
-D = M.ConvertNFA_DFA()
-print(D.simulate("a1b"))
-print(D.simulate("abb"))
-print(D.simulate("b11"))
-print(D.simulate("b11bb"))
-print(D.simulate("c1a"))
-print(D.simulate(""))
