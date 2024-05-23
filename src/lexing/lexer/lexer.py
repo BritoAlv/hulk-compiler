@@ -1,5 +1,7 @@
 from common.token_class import Token
 from lexing.lexer_generator  import lexer_generator
+from lexing.lexer_generator import const
+
 
 class Lexer:
     def __init__(self, specs: list[tuple[str, str]]):
@@ -57,12 +59,13 @@ class Lexer:
             self.positionInLine,
         )
 
-alphabet = "a+b+c+d+e+f+g"
-digits = "1+2+3+4"
+alphabet = "a" + const.plus + "b" + const.plus + "c"
+
+
 
 lexer = Lexer(
     [
-        ("IDENTIFIER", "(" + alphabet +")"),
+        ("IDENTIFIER", const.opar + alphabet + const.cpar),
         ("LBRACE", "{"),
         ("RBRACE", "}"),
         ("GREATER", ">"),

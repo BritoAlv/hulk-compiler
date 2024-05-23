@@ -4,6 +4,13 @@ EPSILON = "€"
 QUESTION = "?"
 CONCATENATE = ""
 
+
+opar = "\\\\("
+cpar = "\\\\)"
+plus = "\\\\+"
+question = "\\\\?"
+star = "\\\\*"
+
 def UnionSets(A, B):
     C = []
     for c in A:

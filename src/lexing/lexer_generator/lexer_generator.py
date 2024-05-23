@@ -13,7 +13,7 @@ from lexing.lexer_generator.regular_expressions import (
 )
 from parsing.parser_generator import *
 from parsing.parser_generator.grammar import EOF, EPSILON, Grammar
-
+from lexing.lexer_generator import const
 """
 Goal of this is :
     given a regular expression in a string return an abstract syntax tree so that the evaluator can create the automatas.
@@ -77,12 +77,17 @@ class LexerGenerator:
                 return rExp
         return LiteralExpression("1")
 
+    def check_regular_operator(self, offset : int, input : str):
+        return offset + 2 < len(input) and input[offset] == "\\" and input[offset+1] == "\\" and input[offset+2] in ["*", "?", "+", "(", ")"]
+
+
     def Compile(self, inputS: str) -> DFA:
         # convert string into tokens.
         tokens = []
         cr = 0
         while cr < len(inputS):
-            if inputS[cr] in ["*", "?", "(", ")", "+"]:
+            if self.check_regular_operator(cr, inputS):
+                cr += 2
                 tokens.append(Token(inputS[cr], inputS[cr], 0, 0))
             else:
                 tokens.append(Token("c", inputS[cr], 0, 0))
