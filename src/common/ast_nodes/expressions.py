@@ -13,15 +13,6 @@ class Literal(Expr):
     def accept(self, visitor):
         return visitor.visitLiteral(self)
 
-class Grouping(Expr):
-    def __init__(self, open, inside, closed):
-        self.open = open
-        self.inside = inside
-        self.closed = closed
-
-    def accept(self, visitor):
-        return visitor.visitGrouping(self)
-
 class BinaryExpr(Expr):
     def __init__(self, left, op, right):
         self.left = left
