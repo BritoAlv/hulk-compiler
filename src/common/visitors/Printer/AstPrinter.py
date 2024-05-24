@@ -1,4 +1,4 @@
-from visitors.visitor import Visitor
+from common.visitors import visitor
 
 
 class IndentManager:
@@ -12,7 +12,7 @@ class IndentManager:
         self.printer.indent -= 1
 
 
-class TreePrinter(Visitor):
+class TreePrinter(visitor.Visitor):
     def __init__(self):
         self.indent = 0
         self.current = ""
