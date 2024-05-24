@@ -5,11 +5,11 @@ QUESTION = "?"
 CONCATENATE = ""
 
 
-opar = "\\\\("
-cpar = "\\\\)"
-plus = "\\\\+"
-question = "\\\\?"
-star = "\\\\*"
+opar = "\\("
+cpar = "\\)"
+plus = "\\+"
+question = "\\?"
+star = "\\*"
 
 def UnionSets(A, B):
     C = []

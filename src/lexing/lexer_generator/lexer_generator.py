@@ -78,7 +78,7 @@ class LexerGenerator:
         return LiteralExpression("1")
 
     def check_regular_operator(self, offset : int, input : str):
-        return offset + 2 < len(input) and input[offset] == "\\" and input[offset+1] == "\\" and input[offset+2] in ["*", "?", "+", "(", ")"]
+        return offset + 1 < len(input) and input[offset] == "\\" and input[offset+1] in ["*", "?", "+", "(", ")"]
 
 
     def Compile(self, inputS: str) -> DFA:
@@ -87,12 +87,14 @@ class LexerGenerator:
         cr = 0
         while cr < len(inputS):
             if self.check_regular_operator(cr, inputS):
-                cr += 2
+                cr += 1
                 tokens.append(Token(inputS[cr], inputS[cr], 0, 0))
             else:
                 tokens.append(Token("c", inputS[cr], 0, 0))
             cr += 1
         tokens.append(Token(EOF, "\0", 0, 0))
+        for tok in tokens:
+            print(tok.type, tok.lexeme)
         # pass tokens to the parser to generate derivation tree.
         derivation_tree = self.grammar.parse(tokens)
         # convert tree to abstract syntax tree.

@@ -59,13 +59,28 @@ class Lexer:
             self.positionInLine,
         )
 
-alphabet = "a" + const.plus + "b" + const.plus + "c"
+
+import string
+letter = ""
+for let in string.ascii_letters:
+    letter += let +  const.plus
+letter = letter[:-2]
+letter = const.opar + letter + const.cpar
+
+digits = ""
+for dig in string.digits:
+    digits += dig + const.plus
+digits = digits[:-2]
+digtis = const.opar + digits + const.cpar
+
+# let (let + dig + _)*
+identifier = letter + const.opar + letter + const.plus + digits  +  const.plus + "_" + const.cpar + const.star 
 
 
 
 lexer = Lexer(
     [
-        ("IDENTIFIER", const.opar + alphabet + const.cpar),
+        ("IDENTIFIER", identifier),
         ("LBRACE", "{"),
         ("RBRACE", "}"),
         ("GREATER", ">"),
@@ -74,3 +89,9 @@ lexer = Lexer(
 )
 
 print("Done building the lexer and its automatas")
+
+print(lexer.automatas[0].simulate("abc_"))
+print(lexer.automatas[0].simulate("1bc_"))
+print(lexer.automatas[0].simulate("c1_"))
+print(lexer.automatas[0].simulate("c2_."))
+print(lexer.automatas[0].simulate("a332_."))

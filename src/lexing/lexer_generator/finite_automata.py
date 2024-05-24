@@ -1,3 +1,4 @@
+from unittest import result
 from lexing.lexer_generator.const import EPSILON, UnionSets
 
 class DFA:
@@ -56,7 +57,6 @@ class DFA:
             if actual_state == -1:
                 return False
         return actual_state in self.accepting_states
-
 
 class NFA:
 
@@ -142,33 +142,52 @@ class NFA:
         return rs
 
     def ConvertNFA_DFA(self):
-        start_state = self.ConvertBinary(self.EpsilonClosure(self.start_state)) - 1
-        total_states = (1 << self.total_states) - 1
+        new_states = []
+        pending = []
+        mapped = {}
+
+        start_state = self.ConvertBinary(self.EpsilonClosure(self.start_state))
         alphabet = []
         for ch in self.alphabet:
             if ch != EPSILON:
                 alphabet.append(ch)
+        transitions = []
         accepting_states = []
-        for i in range(0, 1 << self.total_states):
-            for j in self.accepting_states:
-                if (i & (1 << j)) > 0:
-                    accepting_states.append(i - 1)
-                    break
+
+        new_states.append(start_state)
+        mapped[start_state] = 0
+        pending.append(start_state)
+        start_state = 0
+        while len(pending) > 0:
+            next = pending.pop(0)
+            print(len(pending))
+            for i in range(0, len(alphabet)):
+                ch = alphabet[i]
+                reachable = self.reachable(ch, self.ConvertSet(next))
+                reachable_closure = []
+                for x in reachable:
+                    for y in self.EpsilonClosure(x):
+                        if y not in reachable_closure:
+                            reachable_closure.append(y)
+                result_state = self.ConvertBinary(reachable_closure)
+                if result_state > 0: # this states has out-going transitions to other states.
+                    if result_state not in mapped:
+                        mapped[result_state] = len(new_states)
+                        new_states.append(result_state)
+                        pending.append(result_state)
+                        for st in reachable_closure:
+                            if st in self.accepting_states:
+                                if st not in accepting_states:
+                                    accepting_states.append(mapped[result_state]) 
+                    transitions.append((i, mapped[next], mapped[result_state]))
 
         table = []
+        total_states = len(new_states)
         for ch in range(0, len(alphabet)):
-            table.append([[] for i in range(1, 1 << self.total_states)])
-            for set1 in range(1, 1 << self.total_states):
-                set = self.ConvertSet(set1)
-                reachable = self.reachable(alphabet[ch], set)
-                partX = []
-                for st in reachable:
-                    for el in self.EpsilonClosure(st):
-                        if el not in partX:
-                            partX.append(el)
-                binary_set = self.ConvertBinary(partX)
-                if len(partX) > 0:
-                    table[ch][set1 - 1].append(binary_set - 1)
+            table.append([[] for i in range(0, total_states)])
+        for tr in transitions:
+            assert(len(table[tr[0]][tr[1]]) == 0)
+            table[tr[0]][tr[1]].append(tr[2])      
         return DFA(start_state, total_states, alphabet, accepting_states, table)
 
 def dfs(state: int, visited: list[bool], choices: list[str], FA: NFA | DFA):
