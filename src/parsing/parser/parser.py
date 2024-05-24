@@ -1,7 +1,8 @@
+import common
 from common.ast_nodes.expressions import BinaryExpr, Literal
 from common.parse_nodes.parse_node import ParseNode
 from common.parse_nodes.parse_tree import ParseTree
-
+from common.visitors.Printer import AstPrinter
 from common.token_class import Token
 from parsing.parser_generator.grammar import EOF, EPSILON, Grammar
 
@@ -114,3 +115,6 @@ tree = parser.parse(
 )
 
 ast_tree = parser.convertAst(tree.root)
+
+printer = AstPrinter.TreePrinter()
+print(ast_tree.accept(printer))
