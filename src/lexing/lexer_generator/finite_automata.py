@@ -1,4 +1,3 @@
-from unittest import result
 from lexing.lexer_generator.const import EPSILON, UnionSets
 
 class DFA:
@@ -37,7 +36,8 @@ class DFA:
                 assert 0 <= len(table[i][j]) <= 1
                 for m in range(0, len(table[i][j])):
                     assert 0 <= table[i][j][m] < self.total_states
-
+        
+        self.additional_info = [[] for i in range(0, self.total_states)]
         self = Remove_Equal(self)
         self = Remove_Disconnected(self)
 
@@ -59,7 +59,6 @@ class DFA:
         return actual_state in self.accepting_states
 
 class NFA:
-
     def __init__(
         self,
         start_state: int,
@@ -98,7 +97,7 @@ class NFA:
                 assert 0 <= len(table[i][j]) <= self.total_states
                 for st in table[i][j]:
                     assert 0 <= st < self.total_states
-        
+        self.additional_info = [[] for i in range(0, total_states)]        
         self = Remove_Equal(self)
         self = Remove_Disconnected(self)
 
@@ -153,14 +152,16 @@ class NFA:
                 alphabet.append(ch)
         transitions = []
         accepting_states = []
-
+        additional_info = []
         new_states.append(start_state)
         mapped[start_state] = 0
+        additional_info.append([])
+        for st in self.ConvertSet(start_state):
+            additional_info[-1] += self.additional_info[st]
         pending.append(start_state)
         start_state = 0
         while len(pending) > 0:
             next = pending.pop(0)
-            print(len(pending))
             for i in range(0, len(alphabet)):
                 ch = alphabet[i]
                 reachable = self.reachable(ch, self.ConvertSet(next))
@@ -173,6 +174,9 @@ class NFA:
                 if result_state > 0: # this states has out-going transitions to other states.
                     if result_state not in mapped:
                         mapped[result_state] = len(new_states)
+                        additional_info.append([])
+                        for st in self.ConvertSet(st):
+                            additional_info[-1] += self.additional_info[st]
                         new_states.append(result_state)
                         pending.append(result_state)
                         for st in reachable_closure:
@@ -234,6 +238,7 @@ def remove_state(FA : NFA | DFA, st : int):
                     FA.table[z][q][d] -= 1
     for z in range(0, len(FA.alphabet)):
         del FA.table[z][st]
+    FA.additional_info.pop(st)
     FA.total_states -= 1
     return FA
 
@@ -256,6 +261,9 @@ def Remove_Equal(FA: NFA | DFA):
         (hashes[FA.start_state], FA.start_state in FA.accepting_states)
     ]
     total_states = len(keys)
+    additional_info = [[] for i in range(0, total_states)]
+    for i in range(0, FA.total_states):
+        additional_info[map_keys[(hashes[i], i in FA.accepting_states)]] += FA.additional_info[i]
     alphabet = FA.alphabet
     accepting_states = [
         map_keys[(hashes[x], x in FA.accepting_states)] for x in FA.accepting_states
@@ -280,19 +288,6 @@ def Remove_Equal(FA: NFA | DFA):
     #print("ENDS WITH " + str(FA.total_states))
     return FA
 
-def print_row(FA: NFA | DFA, i: int):
-    print("BEGIN")
-    for z in range(0, len(FA.alphabet)):
-        print(FA.alphabet[z], FA.table[z][i])
-    print("END")
-
-def equal_rows(FA: NFA | DFA, i: int, j: int):
-    for z in range(0, len(FA.alphabet)):
-        FA.table[z][i].sort()
-        FA.table[z][j].sort()
-        if FA.table[z][i] != FA.table[z][j]:
-            return False
-    return True
 
 def compute_hash(st: int, FA: NFA | DFA):
     MOD = 1000000007
