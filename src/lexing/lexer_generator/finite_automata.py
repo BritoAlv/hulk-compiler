@@ -177,58 +177,65 @@ class NFA:
         return rs
 
     def ConvertNFA_DFA(self):
-        print("Before convert to DFA")
-        print("---------------------")
-        automata_print(self)
-        print("---------------------")
-        new_states = []
+
         pending = []
         mapped = {}
+        transitions = []
+        accepting_states = []
+        additional_info = []
 
-        start_state = self.ConvertBinary(self.EpsilonClosure(self.start_state))
         alphabet = []
         for ch in self.alphabet:
             if ch != EPSILON:
                 alphabet.append(ch)
-        transitions = []
-        accepting_states = []
-        additional_info = []
-        new_states.append(start_state)
-        mapped[start_state] = 0
-        additional_info.append([])
-        for st in self.ConvertSet(start_state):
-            additional_info[-1] += self.additional_info[st]
-            self.additional_info[st] = []
-        pending.append(start_state)
-        start_state = 0
+
+        def get_closure_state( old_state : int) -> int:
+            return self.ConvertBinary(self.EpsilonClosure(old_state))
+
+        def check_accept_state( new_state : int) :
+            for st in self.ConvertSet(new_state):
+                if st in self.accepting_states and st not in accepting_states:
+                    accepting_states.append(mapped[new_state])
+
+        def reachable_closure( letter : str ,state : int ):
+            reachable = self.reachable(letter, self.ConvertSet(next))
+            reachable_closure = []
+            for x in reachable:
+                for y in self.EpsilonClosure(x):
+                    if y not in reachable_closure:
+                        reachable_closure.append(y)
+            return reachable_closure
+
+
+        def add_new_state( new_state : int):
+            mapped[new_state] = len(mapped)
+            additional_info.append([])
+            for st in self.ConvertSet(new_state):
+                additional_info[-1] += self.additional_info[st]
+                self.additional_info[st]  = []
+            check_accept_state(new_state)
+            pending.append(new_state)
+
+        print("Before convert to DFA")
+        print("---------------------")
+        automata_print(self)
+        print("---------------------")
+
+        start_state = get_closure_state(self.start_state)
+        add_new_state(start_state)
+
         while len(pending) > 0:
             next = pending.pop(0)
             for i in range(0, len(alphabet)):
                 ch = alphabet[i]
-                reachable = self.reachable(ch, self.ConvertSet(next))
-                reachable_closure = []
-                for x in reachable:
-                    for y in self.EpsilonClosure(x):
-                        if y not in reachable_closure:
-                            reachable_closure.append(y)
-                result_state = self.ConvertBinary(reachable_closure)
+                result_state = self.ConvertBinary(reachable_closure(ch, next))
                 if result_state > 0:  # this state has outgoing transitions.
                     if result_state not in mapped:
-                        mapped[result_state] = len(new_states)
-                        additional_info.append([])
-                        for st in self.ConvertSet(result_state):
-                            additional_info[-1] += self.additional_info[st]
-                            self.additional_info[st] = []
-                        new_states.append(result_state)
-                        pending.append(result_state)
-                        for st in reachable_closure:
-                            if st in self.accepting_states:
-                                if mapped[result_state] not in accepting_states:
-                                    accepting_states.append(mapped[result_state])
+                        add_new_state(result_state)
                     transitions.append((i, mapped[next], mapped[result_state]))
 
         table = []
-        total_states = len(new_states)
+        total_states = len(mapped)
         for ch in range(0, len(alphabet)):
             table.append([[] for i in range(0, total_states)])
         for tr in transitions:
@@ -236,7 +243,7 @@ class NFA:
             table[tr[0]][tr[1]].append(tr[2])
         
         dfa = DFA(
-            start_state,
+            0,
             total_states,
             alphabet,
             accepting_states,
