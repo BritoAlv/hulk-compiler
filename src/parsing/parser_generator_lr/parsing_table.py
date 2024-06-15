@@ -6,9 +6,11 @@ from common.parse_nodes.parse_node import *
 EOF = "$"
 
 class ParsingTable:
-    def __init__(self, total_states: int):
+    def __init__(self, total_states: int, terminals : list[str], non_terminals : list[str]):
         self.table_input = [{} for i in range(0, total_states)]
         self.table_nonterminals = [{} for i in range(0, total_states)]
+        self.terminals = terminals
+        self.non_terminals = non_terminals
 
     def add_reduce_transition(self, st: int, terminal: str, key: str, len: int):
         if terminal in self.table_input[st]:
@@ -34,7 +36,6 @@ class ParsingTable:
                     terminal,
                     "is supposed to be AC, not reduce",
                 )
-            print("BOOM")
             return
         else:
             self.table_input[st][terminal] = ("r", key, len)
@@ -122,6 +123,10 @@ class ParsingTable:
         stackParse: list[ParseNode] = []
         cr = 0
         while True:
+            if inputTokens[cr].type not in self.table_input[stackStates[-1]]:
+                print("Parsing error, no transition for", inputTokens[cr].type, "at state", stackStates[-1])
+                return ParseTree(ParseNode("ERROR"))
+
             next_action = self.table_input[stackStates[-1]][inputTokens[cr].type]
             if next_action[0] == "a":
                 if cr != len(inputTokens) - 1:
@@ -151,13 +156,13 @@ class ParsingTable:
                 )
 
     def __str__(self):
-        header = "State".ljust(20) + "".join([x.ljust(20) for x in terminals]) + "".join([x.ljust(20) for x in non_terminals])
+        header = "State".ljust(20) + "".join([x.ljust(20) for x in self.terminals]) + "".join([x.ljust(20) for x in self.non_terminals])
         rows = [
             str(i).ljust(20)
             + "".join(
                 [
                     str(self.table_input[i][x]).ljust(20) if x in self.table_input[i] else "".ljust(20)
-                    for x in terminals
+                    for x in self.terminals
                 ]
             )
             + "".join(
@@ -167,48 +172,9 @@ class ParsingTable:
                         if x in self.table_nonterminals[i]
                         else "".ljust(20)
                     )
-                    for x in non_terminals
+                    for x in self.non_terminals
                 ]
             )
             for i in range(0, len(self.table_input))
         ]
         return header + "\n" + "\n".join(rows)
-
-pt = ParsingTable(8)
-terminals = ["a", "b", "c", "$"]
-non_terminals = ["S"]
-for nont in terminals:
-    pt.add_accept_transition(1, nont)
-
-pt.add_nonterminal_transition(0, "S", 1)
-pt.add_nonterminal_transition(2, "S", 4)
-
-for nont in terminals:
-    pt.add_reduce_transition(5, nont, "S", 2)
-    pt.add_reduce_transition(6, nont, "S", 3)
-    pt.add_reduce_transition(7, nont, "S", 3)
-
-pt.add_shift_transition(0, "a", 2)
-pt.add_shift_transition(0, "b", 3)
-
-pt.add_shift_transition(2, "a", 2)
-pt.add_shift_transition(2, "b", 3)
-
-pt.add_shift_transition(3, "c", 5)
-
-pt.add_shift_transition(4, "b", 6)
-pt.add_shift_transition(4, "c", 7)
-
-print(pt)
-
-tree = pt.parse([Token(x) for x in [*list("bc"), EOF]])
-tree.root.print([], 0, False)
-
-tree = pt.parse([Token(x) for x in [*list("abcc"), EOF]])
-tree.root.print([], 0, False)
-
-tree = pt.parse([Token(x) for x in [*list("aaabcccc"), EOF]])
-tree.root.print([], 0, False)
-
-tree = pt.parse([Token(x) for x in [*list("aabccc"), EOF]])
-tree.root.print([], 0, False)

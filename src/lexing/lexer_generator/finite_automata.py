@@ -28,7 +28,6 @@ class DFA:
             self.reverse[alphabet[i]] = i
 
         self.accepting_states = accepting_states
-        assert len(self.accepting_states) > 0
         for i in range(0, len(self.accepting_states)):
             assert 0 <= self.accepting_states[i] < self.total_states
 
@@ -44,20 +43,8 @@ class DFA:
         self.additional_info = additional_info
         assert len(self.additional_info) == total_states
         if reduce:
-            print("DFA----------------------------")
-            print("Before removing equal and disconnected states")
-            automata_print(self)
             self = Remove_Equal(self)
-            print("After removing equal states")
-            automata_print(self)
             self = Remove_Disconnected(self)
-            print("After removing disconnected states")
-            automata_print(self)
-            print("DFA----------------------------")
-        else:
-            print("DFA----------------------------")
-            automata_print(self)
-            print("DFA----------------------------")
 
     def next_state(self, char: str, actual: int) -> int:
         assert 0 <= actual < self.total_states
@@ -105,7 +92,6 @@ class NFA:
 
         self.accepting_states = accepting_states
 
-        assert len(self.accepting_states) > 0
         for i in range(0, len(self.accepting_states)):
             assert 0 <= self.accepting_states[i] < self.total_states
 
@@ -122,20 +108,8 @@ class NFA:
         self.additional_info = additional_info
 
         if self.reduce:
-            print("DFA----------------------------")
-            print("Before removing equal and disconnected states")
-            automata_print(self)
             self = Remove_Equal(self)
-            print("After removing equal states")
-            automata_print(self)
             self = Remove_Disconnected(self)
-            print("After removing disconnected states")
-            automata_print(self)
-            print("DFA----------------------------")
-        else:
-            print("DFA----------------------------")
-            automata_print(self)
-            print("DFA----------------------------")
 
     def next_stateS(self, char: str, actual: int):
         assert char in self.alphabet
@@ -216,10 +190,6 @@ class NFA:
             check_accept_state(new_state)
             pending.append(new_state)
 
-        print("Before convert to DFA")
-        print("---------------------")
-        automata_print(self)
-        print("---------------------")
 
         start_state = get_closure_state(self.start_state)
         add_new_state(start_state)
@@ -251,10 +221,6 @@ class NFA:
             additional_info,
             self.reduce
         )
-        print("After convert to DFA")
-        print("---------------------")
-        automata_print(dfa)
-        print("---------------------")
         return dfa
 
 
@@ -362,7 +328,6 @@ def Remove_Equal(FA: NFA | DFA):
     FA.alphabet = alphabet
     FA.start_state = start_state
     FA.additional_info = additional_info
-    # print("ENDS WITH " + str(FA.total_states))
     return FA
 
 
@@ -376,22 +341,5 @@ def compute_hash(st: int, FA: NFA | DFA):
         M *= hash(tuple(FA.table[i][st])) % MOD
         M %= MOD
         rs += M
+        rs %= MOD
     return rs
-
-
-def automata_print(FA: NFA | DFA):
-    print("Start state: " + str(FA.start_state))
-    print("Total states: " + str(FA.total_states))
-    print("Alphabet: " + str(FA.alphabet))
-    print("Accepting states: " + str(FA.accepting_states))
-    print("Table: ")
-    for i in range(0, len(FA.alphabet)):
-        print("For character " + FA.alphabet[i])
-        for j in range(0, FA.total_states):
-            if len(FA.table[i][j]) > 0:
-                print("From state " + str(j) + " to states " + str(FA.table[i][j]))
-    print("Additional info: ")
-    for i in range(0, FA.total_states):
-        if len(FA.additional_info[i]) > 0:
-            print("For state " + str(i) + " : " + str(FA.additional_info[i]))
-    print("")
