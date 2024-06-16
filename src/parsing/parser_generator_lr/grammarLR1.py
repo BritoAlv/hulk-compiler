@@ -5,6 +5,21 @@ from common.parse_nodes.parse_node import *
 from parsing.parser_generator_lr.parsing_table import ParsingTable
 from parsing.parser_generator_lr.first_set import First_Set_Calculator
 
+class LR1Item:
+    def __init__(self, production: list[str], dot_index: int, prod_key : str, lookahead : str) -> None:
+        self.production = production
+        self.dot_index = dot_index
+        self.prod_key = prod_key
+        self.lookahead = lookahead
+
+    def __str__(self) -> str:
+        return f"{self.prod_key} -> {' '.join(self.production[:self.dot_index])} . {' '.join(self.production[self.dot_index:])}, {self.lookahead}"
+
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, LR1Item):
+            return False
+        return self.production == value.production and self.dot_index == value.dot_index and self.prod_key == value.prod_key and self.lookahead == value.lookahead
+
 class GrammarLR1:
     # Parameters
     def __init__(
@@ -23,6 +38,7 @@ class GrammarLR1:
         self.First_Set_Calculator = First_Set_Calculator(self.non_terminals, self.terminals, self.start_symbol, self.productions)
         self.automatonLR1 = self.build_lr1_automaton()
 
+        
     def is_production(self, prod : list[str]) -> bool:
         for key in self.productions:
             for pr in self.productions[key]:
@@ -37,7 +53,7 @@ class GrammarLR1:
                     return key
         return ""
 
-    def find_st_given_item(self, itemToFound : tuple[int, list[str], str]) -> int:
+    def find_st_given_item(self, itemToFound : LR1Item) -> int:
         for st in range(0, self.automatonLR1.total_states):
             for item in self.automatonLR1.additional_info[st]:
                 if itemToFound == item:
@@ -58,53 +74,55 @@ class GrammarLR1:
                     else:
                         pt.add_nonterminal_transition(st, ch, to)
 
-        pt.add_accept_transition(self.find_st_given_item((1, [self.start_symbol], self.EOF)), self.EOF)
+        pt.add_accept_transition(
+            self.find_st_given_item(LR1Item([self.start_symbol], 1, self.start_symbol, self.EOF)), 
+            self.EOF
+        )
 
         for st in range(0, self.automatonLR1.total_states):
             for item in self.automatonLR1.additional_info[st]:
-                if item[0] == len(item[1]) and self.is_production(item[1]):
-                    key = self.find_key_given_prod(item[1])
-                    pt.add_reduce_transition(st, item[2], key, len(item[1]))
-
+                if item.dot_index == len(item.production) and self.is_production(item.production):
+                    key = item.prod_key
+                    pt.add_reduce_transition(st, item.lookahead, key, len(item.production))
         return pt
                     
     def build_lr1_automaton(self):
         transitions = []
-        mapped: list[tuple[int, list[str], str]] = []
+        mapped: list[LR1Item] = []
 
-        def add_new_state(st: tuple[int, list[str], str]) -> bool:
+        def add_new_state(st: LR1Item) -> bool:
             if st not in mapped:
                 mapped.append(st)
                 return True
             return False
 
-        def map_state(st: tuple[int, list[str], str]) -> int:
+        def map_state(st: LR1Item) -> int:
             return mapped.index(st)
 
         def add_transition(
-            letter: str, source: tuple[int, list[str], str], dest: tuple[int, list[str], str]
+            letter: str, source: LR1Item, dest: LR1Item
         ):
             transitions.append([map_state(source), map_state(dest), letter])
 
         accepting_states = []
 
-        start_state = (0, [self.start_symbol], self.EOF)
+        start_state = LR1Item([self.start_symbol], 0, self.start_symbol, self.EOF)
         add_new_state(start_state)
-        pending : list[tuple[int, list[str], str]] = []
+        pending : list[LR1Item] = []
         pending.append(start_state)
         while len(pending) > 0:
             next = pending.pop()
-            if next[0] < len(next[1]):
-                next_symbol = next[1][next[0]]
+            if next.dot_index < len(next.production):
+                next_symbol = next.production[next.dot_index]
                 if next_symbol in self.non_terminals:
                     for prod in self.productions[next_symbol]:
-                        for term in self.First_Set_Calculator.list_first_set( next[1][next[0]+1:]  + [next[2]]):
-                            new_st = (0, prod, term)
+                        for term in self.First_Set_Calculator.list_first_set( next.production[next.dot_index+1:]  + [next.lookahead]):
+                            new_st = LR1Item(prod, 0, next_symbol, term)
                             if add_new_state(new_st):
                                 pending.append(new_st)
                             add_transition(EPSILON, next, new_st)
                 
-                new_st = (next[0] + 1, next[1], next[2])
+                new_st = LR1Item(next.production, next.dot_index + 1, next.prod_key, next.lookahead)
                 if add_new_state(new_st):
                     pending.append(new_st)
                 add_transition(next_symbol, next, new_st)

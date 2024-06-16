@@ -2,7 +2,7 @@ from lexing.lexer_generator.const import EPSILON, UnionSets
 from lexing.lexer_generator.finite_automata import NFA
 
 def NFAfor_char(char: str):
-    return NFA(0, 2, [char], [1], [[[1], []]])
+    return NFA(0, 2, [char], [1], [[[1], []]], additional_info=[])
 
 def ConcatenateNFA(A: NFA, B: NFA):
     start_state = A.start_state
@@ -30,7 +30,7 @@ def ConcatenateNFA(A: NFA, B: NFA):
             for st in A.accepting_states:
                 table[t][st].append(B.start_state + A.total_states)
 
-    return NFA(start_state, total_states, alphabet, accepting_states, table)
+    return NFA(start_state, total_states, alphabet, accepting_states, table, [])
 
 
 def UnionNFA(A: NFA, B: NFA):
@@ -66,7 +66,7 @@ def UnionNFA(A: NFA, B: NFA):
                 B.start_state + A.total_states,
             ]
 
-    return NFA(start_state, total_states, alphabet, accepting_states, table)
+    return NFA(start_state, total_states, alphabet, accepting_states, table, [])
 
 
 def Star(A: NFA):
@@ -91,7 +91,7 @@ def Star(A: NFA):
             for st in A.accepting_states:
                 table[t][st].append(final_state)
                 table[t][st].append(A.start_state)
-    return NFA(start_state, total_states, alphabet, accepting_states, table)
+    return NFA(start_state, total_states, alphabet, accepting_states, table, [])
 
 def Question(A: NFA):
     start_state = A.start_state
@@ -105,4 +105,4 @@ def Question(A: NFA):
         table.append([[] for j in range(0, total_states)])
         for j in range(0, A.total_states):
             table[i][j] = A.table[A.reverse[alphabet[i]]][j].copy()
-    return NFA(start_state, total_states, alphabet, accepting_states, table)
+    return NFA(start_state, total_states, alphabet, accepting_states, table, [])

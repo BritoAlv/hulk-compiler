@@ -11,13 +11,11 @@ class First_Set_Calculator:
                 start_terminal: str, 
                 productions: dict[str, list[list[str]]]) -> None:
         # Body
-        self.non_terminals = non_terminals
+        self.non_terminals = non_terminals.copy()
         self.terminals = terminals
         self.start_terminal = start_terminal 
         self.productions = productions
-        self.EPSILON = ""
         
-
         # Initialize nullables
         # Nullables is a dictionary that gathers foreach non-terminal the information (boolean pair) about whether it has been verified through a nullable() call (first element of the tuple) and if so if it derives an epsilon (second element of the tuple)
         self._nullables: dict[str, tuple[bool, bool]] = {}
@@ -60,10 +58,6 @@ class First_Set_Calculator:
             for product in production:
                 # Verify the product is a terminal
                 if product in self.terminals:
-                    # The only valid terminal is epsilon itself
-                    if product is self.EPSILON:
-                        break
-                    # If it's not epsilon discard production
                     epsilon_production = False
                     break
 
@@ -137,15 +131,11 @@ class First_Set_Calculator:
         first_set: list[str] = []
         for element in elements:
             process_next = False
+            if element in self.non_terminals and self._nullables[element][1]:
+                process_next = True
             for literal in self.first_set(element):
-                if literal is not self.EPSILON:
+                if literal not in first_set:
                     first_set.append(literal)
-                else:
-                    process_next = True
-
-            if(process_next and element is elements[len(elements) - 1]):
-                first_set.append(self.EPSILON)
-
             if not process_next:
                 break
 

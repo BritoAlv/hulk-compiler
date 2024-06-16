@@ -7,28 +7,28 @@ EOF = "$"
 
 class ParsingTable:
     def __init__(self, total_states: int, terminals : list[str], non_terminals : list[str]):
-        self.table_input = [{} for i in range(0, total_states)]
+        self.table_input : list[dict] = [{} for i in range(0, total_states)]
         self.table_nonterminals = [{} for i in range(0, total_states)]
         self.terminals = terminals
         self.non_terminals = non_terminals
 
     def add_reduce_transition(self, st: int, terminal: str, key: str, len: int):
         if terminal in self.table_input[st]:
-            if self.table_input[st][terminal] == "s":
+            if self.table_input[st][terminal][0] == "s":
                 print(
                     "Grammar is not LR contains a shift reduce conflict at state",
                     st,
                     "with terminal",
                     terminal,
                 )
-            if self.table_input[st][terminal] == "r":
+            if self.table_input[st][terminal][0] == "r":
                 print(
                     "Grammar is not LR contains a reduce reduce conflict at state",
                     st,
                     "with terminal",
                     terminal,
                 )
-            if self.table_input[st][terminal] == "a":
+            if self.table_input[st][terminal][0] == "a":
                 print(
                     "Grammar is not LR, this state",
                     st,
@@ -43,8 +43,8 @@ class ParsingTable:
     def add_shift_transition(self, st: int, terminal: str, new_state: int):
         if terminal in self.table_input[st]:
             if (
-                self.table_input[st][terminal] == "s"
-                and self.table_input[st][1] != new_state
+                self.table_input[st][terminal][0] == "s"
+                and self.table_input[st][terminal][1] != new_state
             ):
                 print(
                     "Grammar is not LR contains a shift shift conflict at state",
@@ -53,14 +53,14 @@ class ParsingTable:
                     terminal,
                 )
                 print("This is not supposed to happen")
-            if self.table_input[st][terminal] == "r":
+            if self.table_input[st][terminal][0] == "r":
                 print(
                     "Grammar is not LR contains a shift reduce conflict at state",
                     st,
                     "with terminal",
                     terminal,
                 )
-            if self.table_input[st][terminal] == "a":
+            if self.table_input[st][terminal][0] == "a":
                 print(
                     "Grammar is not LR, this state",
                     st,
@@ -75,7 +75,7 @@ class ParsingTable:
 
     def add_accept_transition(self, st: int, terminal: str):
         if terminal in self.table_input[st]:
-            if self.table_input[st][terminal] == "s":
+            if self.table_input[st][terminal][0] == "s":
                 print(
                     "Grammar is not LR contains a shift accept conflict at state",
                     st,
@@ -83,22 +83,13 @@ class ParsingTable:
                     terminal,
                 )
                 print("This is not supposed to happen")
-            if self.table_input[st][terminal] == "r":
+            if self.table_input[st][terminal][0] == "r":
                 print(
                     "Grammar is not LR contains a reduce accept conflict at state",
                     st,
                     "with terminal",
                     terminal,
                 )
-            if self.table_input[st][terminal] == "a":
-                print(
-                    "Grammar is not LR, this state",
-                    st,
-                    " with therminal",
-                    terminal,
-                    "is supposed to be AC, not shift",
-                )
-            print("BOOM")
             return
         else:
             self.table_input[st][terminal] = ("a", "accept")
