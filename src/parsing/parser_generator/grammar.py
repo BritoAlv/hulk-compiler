@@ -132,13 +132,13 @@ class Grammar:
                 # First(B1) ⊆ First(A) and if B1 ->*epsilon, then First(B2) ⊆ First(A), and if B2 ->*epsilon, then First(B3) ⊆ First(A), ..., and so on.
 
                 # If it's a non terminal add edge to null graph
-                if product in self.non_terminals:
+                if product in self.non_terminals and not self._derivation_graph.contains_edge((element, product)):
                     self._derivation_graph.add((element, product))
                 
                 # Verify null graph is cyclic, if so remove the edge and discard product
                 if self._derivation_graph.is_cyclic():
                     self._derivation_graph.remove((element, product))
-                    continue
+                    break
 
                 for terminal in self.first_set(product):
                     if terminal not in first_set:
@@ -181,14 +181,14 @@ class Grammar:
 
             for non_terminal in self.non_terminals:
                 for production in self.productions[non_terminal]:
+                    # Index of product in productions
+                    index = 0
                     for product in production:
                         # If it's a terminal continue
                         if product not in self.non_terminals:
+                            index += 1
                             continue
                             
-                        # Find index of product in productions
-                        index = production.index(product)
-                        
                         # Get the first set of the suffix starting after product 
                         suffix_first_set = self.list_first_set(production[index+1:len(production)])
                         # Remove epsilon from suffix's first set
@@ -203,9 +203,12 @@ class Grammar:
                         # If suffix's first set contained epsilon or product is the last one of production
                         if epsilon_in_suffix or index is (len(production) - 1):
                             changes_ocurred = self._add_to_follow(product, self._follow_sets[non_terminal]) or changes_ocurred
+
+                        # Increase index for the next product
+                        index += 1 
                         
             if not changes_ocurred:
-                break;
+                break
 
     def _add_to_follow(self, non_terminal: str, set: list[str]) -> bool:
         changes_ocurred = False
@@ -278,7 +281,6 @@ class Grammar:
             else:
                 # Match it
                 if top.value == token_type:
-                    top.token = input[input_index]
                     stack.pop()
                     # Move forward on the input
                     input_index += 1

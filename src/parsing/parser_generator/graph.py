@@ -2,6 +2,9 @@ class Graph:
     def __init__(self) -> None:
         self.vertices: dict[str, list[str]] = {}
 
+    def contains_edge(self, pair: tuple[str, str]) -> bool:
+        return pair[0] in self.vertices and pair[1] in self.vertices[pair[0]]
+
     def add(self, pair: tuple[str, str]) -> None:
 
         if pair[0] in self.vertices: # Verify that the first vertex is in the graph
