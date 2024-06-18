@@ -5,9 +5,12 @@ from common.parse_nodes.parse_node import *
 
 EOF = "$"
 
+
 class ParsingTable:
-    def __init__(self, total_states: int, terminals : list[str], non_terminals : list[str]):
-        self.table_input : list[dict] = [{} for i in range(0, total_states)]
+    def __init__(
+        self, total_states: int, terminals: list[str], non_terminals: list[str]
+    ):
+        self.table_input: list[dict] = [{} for i in range(0, total_states)]
         self.table_nonterminals = [{} for i in range(0, total_states)]
         self.terminals = terminals
         self.non_terminals = non_terminals
@@ -115,7 +118,12 @@ class ParsingTable:
         cr = 0
         while True:
             if inputTokens[cr].type not in self.table_input[stackStates[-1]]:
-                print("Parsing error, no transition for", inputTokens[cr].type, "at state", stackStates[-1])
+                print(
+                    "Parsing error, no transition for",
+                    inputTokens[cr].type,
+                    "at state",
+                    stackStates[-1],
+                )
                 return ParseTree(ParseNode("ERROR"))
 
             next_action = self.table_input[stackStates[-1]][inputTokens[cr].type]
@@ -147,21 +155,32 @@ class ParsingTable:
                 )
 
     def __str__(self):
-        header = "State".ljust(20) + "".join([x.ljust(20) for x in self.terminals]) + "".join([x.ljust(20) for x in self.non_terminals])
+        space = max(
+            20, max([len(x) for x in self.non_terminals] + [len(x) for x in self.terminals])
+        )
+        header = (
+            "State".ljust(space)
+            + "".join([x.ljust(space) for x in self.terminals])
+            + "".join([x.ljust(space) for x in self.non_terminals])
+        )
         rows = [
-            str(i).ljust(20)
+            str(i).ljust(space)
             + "".join(
                 [
-                    str(self.table_input[i][x]).ljust(20) if x in self.table_input[i] else "".ljust(20)
+                    (
+                        str(self.table_input[i][x]).ljust(space)
+                        if x in self.table_input[i]
+                        else "".ljust(space)
+                    )
                     for x in self.terminals
                 ]
             )
             + "".join(
                 [
                     (
-                        str(self.table_nonterminals[i][x]).ljust(20)
+                        str(self.table_nonterminals[i][x]).ljust(space)
                         if x in self.table_nonterminals[i]
-                        else "".ljust(20)
+                        else "".ljust(space)
                     )
                     for x in self.non_terminals
                 ]
