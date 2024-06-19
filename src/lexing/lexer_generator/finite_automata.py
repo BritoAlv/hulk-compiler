@@ -1,5 +1,12 @@
+from os import listxattr
 from lexing.lexer_generator.const import EPSILON, UnionSets
 
+def remove_repeated( listt : list):
+    result = []
+    for x in listt:
+        if x not in result:
+            result.append(x)
+    return result
 
 class DFA:
     def __init__(
@@ -163,15 +170,15 @@ class NFA:
             if ch != EPSILON:
                 alphabet.append(ch)
 
-        def get_closure_state( old_state : int) -> int:
+        def get_closure_state(old_state: int) -> int:
             return self.ConvertBinary(self.EpsilonClosure(old_state))
 
-        def check_accept_state( new_state : int) :
+        def check_accept_state(new_state: int):
             for st in self.ConvertSet(new_state):
                 if st in self.accepting_states and st not in accepting_states:
                     accepting_states.append(mapped[new_state])
 
-        def reachable_closure( letter : str ,state : int ):
+        def reachable_closure(letter: str, state: int):
             reachable = self.reachable(letter, self.ConvertSet(next))
             reachable_closure = []
             for x in reachable:
@@ -180,16 +187,14 @@ class NFA:
                         reachable_closure.append(y)
             return reachable_closure
 
-
-        def add_new_state( new_state : int):
+        def add_new_state(new_state: int):
             mapped[new_state] = len(mapped)
             additional_info.append([])
             for st in self.ConvertSet(new_state):
                 additional_info[-1] += self.additional_info[st]
-                self.additional_info[st]  = []
+                additional_info[-1] = remove_repeated(additional_info[-1])
             check_accept_state(new_state)
             pending.append(new_state)
-
 
         start_state = get_closure_state(self.start_state)
         add_new_state(start_state)
@@ -211,7 +216,7 @@ class NFA:
         for tr in transitions:
             assert len(table[tr[0]][tr[1]]) == 0
             table[tr[0]][tr[1]].append(tr[2])
-        
+
         dfa = DFA(
             0,
             total_states,
@@ -219,7 +224,7 @@ class NFA:
             accepting_states,
             table,
             additional_info,
-            self.reduce
+            self.reduce,
         )
         return dfa
 
@@ -301,6 +306,9 @@ def Remove_Equal(FA: NFA | DFA):
         additional_info[
             map_keys[(hashes[i], i in FA.accepting_states)]
         ] += FA.additional_info[i]
+        additional_info[map_keys[(hashes[i], i in FA.accepting_states)]] = list(
+            set(additional_info[map_keys[(hashes[i], i in FA.accepting_states)]])
+        )
     alphabet = FA.alphabet
     accepting_states = [
         map_keys[(hashes[x], x in FA.accepting_states)] for x in FA.accepting_states

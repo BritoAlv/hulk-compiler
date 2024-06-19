@@ -148,6 +148,7 @@ class ParsingTable:
                     next = stackParse.pop()
                     nodeResult.children.append(next)
                     stackStates.pop()
+                nodeResult.children.reverse()
                 stackParse.append(nodeResult)
                 assert stackParse[-1].value in self.table_nonterminals[stackStates[-1]]
                 stackStates.append(
@@ -157,7 +158,7 @@ class ParsingTable:
     def __str__(self):
         space = max(
             20, max([len(x) for x in self.non_terminals] + [len(x) for x in self.terminals])
-        )
+        ) * 2
         header = (
             "State".ljust(space)
             + "".join([x.ljust(space) for x in self.terminals])

@@ -53,12 +53,13 @@ class GrammarLR1:
                     return key
         return ""
 
-    def find_st_given_item(self, itemToFound : LR1Item) -> int:
+    def find_st_given_item(self, itemToFound : LR1Item) -> list[int]:
+        result = []
         for st in range(0, self.automatonLR1.total_states):
             for item in self.automatonLR1.additional_info[st]:
                 if itemToFound == item:
-                    return st
-        return -1
+                    result.append(st)
+        return result
 
     def build_parsing_table(self) -> ParsingTable:
         pt = ParsingTable(
@@ -74,10 +75,8 @@ class GrammarLR1:
                     else:
                         pt.add_nonterminal_transition(st, ch, to)
 
-        pt.add_accept_transition(
-            self.find_st_given_item(LR1Item([self.start_symbol], 1, self.start_symbol, self.EOF)), 
-            self.EOF
-        )
+        for st in self.find_st_given_item(LR1Item([self.start_symbol], 1, self.start_symbol, self.EOF)):
+            pt.add_accept_transition(st, self.EOF)
 
         for st in range(0, self.automatonLR1.total_states):
             for item in self.automatonLR1.additional_info[st]:
