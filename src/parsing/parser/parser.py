@@ -1,5 +1,28 @@
-from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, ForNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, SetNode, VectorGetNode, VectorSetNode, WhileNode
-from common.ast_nodes.statements import AttributeNode, MethodNode, ProgramNode, ProtocolNode, SignatureNode, TypeNode
+from common.ast_nodes.expressions import (
+    BinaryNode,
+    BlockNode,
+    CallNode,
+    DestructorNode,
+    ExplicitVectorNode,
+    ForNode,
+    GetNode,
+    IfNode,
+    ImplicitVectorNode,
+    LetNode,
+    LiteralNode,
+    SetNode,
+    VectorGetNode,
+    VectorSetNode,
+    WhileNode,
+)
+from common.ast_nodes.statements import (
+    AttributeNode,
+    MethodNode,
+    ProgramNode,
+    ProtocolNode,
+    SignatureNode,
+    TypeNode,
+)
 from common.parse_nodes.parse_node import ParseNode
 from common.parse_nodes.parse_tree import ParseTree
 from common.visitors.Printer import AstPrinter
@@ -7,15 +30,16 @@ from common.token_class import Token
 from parsing.parser_generator_ll.grammar import EOF, EPSILON, Grammar
 from parsing.parser_generator_lr.grammarLR1 import GrammarLR1
 
-def gramophoneSyntaxParser( inputTokens : str) -> GrammarLR1:
+
+def gramophoneSyntaxParser(inputTokens: str) -> GrammarLR1:
     non_terminals = []
     terminals = []
     start_symbol = ""
     productions = {}
-    
-    def add_symbol( symbol : str):
+
+    def add_symbol(symbol: str):
         symbol = symbol.strip()
-        if len(symbol)  == 0:
+        if len(symbol) == 0:
             pass
         elif symbol[0].islower():
             if symbol not in terminals:
@@ -26,11 +50,10 @@ def gramophoneSyntaxParser( inputTokens : str) -> GrammarLR1:
                 productions[symbol] = []
         return symbol
 
-
     lines = inputTokens.split("\n")
     for line in lines:
         if len(line) > 0:
-            line = line.strip() 
+            line = line.strip()
             line = line[:-1]
             parts = line.split("->")
             non_terminal = add_symbol(parts[0])
@@ -117,6 +140,7 @@ ArgTail -> comma Expr ArgTail | .
 
 """
 
+
 class Parser:
     def __init__(self):
         self.grammar = gramophoneSyntaxParser(grammar)
@@ -127,78 +151,44 @@ class Parser:
                 lambda s: [s[1]] + s[2],
                 lambda s: [s[1]] + s[2],
                 lambda s: [s[1]] + s[2],
-                lambda s: []
+                lambda s: [],
             ],
-            "ProtocolDecls": [
-                lambda s: ProtocolNode(s[2], s[5], s[3])
-            ],
-            "OptExtension": [
-                lambda s: s[2],
-                lambda s: None
-            ],
-            "ProtocolElems": [
-                lambda s: [s[1]] + s[2],
-                lambda s: []
-            ],
-            "MethodSignature": [
-                lambda s: SignatureNode(s[1], s[3], s[6])
-            ],
-            "TypedParamList": [
-                lambda s: [(s[1], s[3])] + s[4],
-                lambda s: []
-            ],
-            "TypedParamTail": [
-                lambda s: [(s[2], s[4])] + s[5],
-                lambda s: []
-            ],
+            "ProtocolDecls": [lambda s: ProtocolNode(s[2].token, s[5], s[3].token if s[3] != None else s[3])],
+            "OptExtension": [lambda s: s[2], lambda s: None],
+            "ProtocolElems": [lambda s: [s[1]] + s[2], lambda s: []],
+            "MethodSignature": [lambda s: SignatureNode(s[1], [(x.token, y.token) for (x, y) in s[3]], s[6])],
+            "TypedParamList": [lambda s: [(s[1], s[3])] + s[4], lambda s: []],
+            "TypedParamTail": [lambda s: [(s[2], s[4])] + s[5], lambda s: []],
             "TypeDecl": [
-                lambda s: TypeNode(s[2], s[3], s[6][0], s[6][1], s[4][0], s[4][1])
+                lambda s: TypeNode(s[2].token, [(x.token, y.token) for (x, y) in s[3]], s[6][0], s[6][1], s[4][0], s[4][1])
             ],
-            "OptParams": [
-                lambda s: s[2],
-                lambda s: []
-            ],
-            "OptInheritance": [
-                lambda s: (s[2], s[3]),
-                lambda s: (None, None)
-            ],
-            "OptArgs": [
-                lambda s: s[2],
-                lambda s: None
-            ],
+            "OptParams": [lambda s: s[2], lambda s: []],
+            "OptInheritance": [lambda s: (s[2], s[3]), lambda s: (None, None)],
+            "OptArgs": [lambda s: s[2], lambda s: None],
             "TypeElems": [
                 lambda s: ([s[1]] + [x for x in s[2][0]], s[2][1]),
                 lambda s: (s[2][0], [s[1]] + [x for x in s[2][1]]),
-                lambda s: ([], [])
+                lambda s: ([], []),
             ],
-            "AttributeDecl": [
-                lambda s: s[1]
-            ],
+            "AttributeDecl": [lambda s: s[1]],
             "MethodDecl": [
-                lambda s: MethodNode(s[1], s[3], s[6], s[5])
+                lambda s: MethodNode(
+                    s[1].token,
+                    [(x.token, y.token) for (x, y) in s[3]],
+                    s[6],
+                    s[5].token if s[5] != None else s[5],
+                )
             ],
-            "ParamList": [
-                lambda s: [(s[1], s[2])] + s[3],
-                lambda s: []
-            ],
-            "ParamTail": [
-                lambda s: [(s[2], s[3])] + s[4],
-                lambda s: []
-            ],
-            "FuncBody": [
-                lambda s: s[2],
-                lambda s: s[1]
-            ],
+            "ParamList": [lambda s: [(s[1], s[2])] + s[3], lambda s: []],
+            "ParamTail": [lambda s: [(s[2], s[3])] + s[4], lambda s: []],
+            "FuncBody": [lambda s: s[2], lambda s: s[1]],
             "Assignment": [
-                lambda s: AttributeNode(s[1], s[4], s[2])
+                lambda s: AttributeNode(
+                    s[1].token, s[4], s[2].token if s[2] != None else s[2]
+                )
             ],
-            "OptType": [
-                lambda s: s[2],
-                lambda s: None
-            ],
-            "FuncDecl": [
-                lambda s: s[2]
-            ],
+            "OptType": [lambda s: s[2], lambda s: None],
+            "FuncDecl": [lambda s: s[2]],
             "Expr": [
                 lambda s: s[1],
                 lambda s: s[1],
@@ -210,127 +200,72 @@ class Parser:
                 lambda s: s[1],
             ],
             "LetExpr": [
-                lambda s: LetNode([s[2]] + s[3], s[5])
+                lambda s: LetNode([(x.token, y) for (x, y) in [s[2]] + s[3]], s[5])
             ],
-            "AssignmentList": [
-                lambda s: [s[2]] + s[3],
-                lambda s: []
-            ],
-            "BlockExpr": [
-                lambda s: BlockNode(s[2])
-            ],
+            "AssignmentList": [lambda s: [s[2]] + s[3], lambda s: []],
+            "BlockExpr": [lambda s: BlockNode(s[2])],
             "ExprList": [
                 lambda s: [s[1]] + s[3],
             ],
-            "ExprTail": [
-                lambda s: [s[1]] + s[3],
-                lambda s: []
-            ],
-            "IfExpr": [
-                lambda s: IfNode( [(s[3], s[5])] + s[6] , s[8])
-            ],
-            "OptElif": [
-                lambda s: [(s[3], s[5])] + s[6],
-                lambda s: []
-            ],
-            "WhileExpr": [
-                lambda s: WhileNode(s[3], s[5])
-            ],
-            "ForExpr": [
-                lambda s: ForNode(s[3], s[5], s[7])
-            ],
-            "DestrucExpr": [
-                self.destruct_Expr
-            ],
+            "ExprTail": [lambda s: [s[1]] + s[3], lambda s: []],
+            "IfExpr": [lambda s: IfNode([(s[3], s[5])] + s[6], s[8])],
+            "OptElif": [lambda s: [(s[3], s[5])] + s[6], lambda s: []],
+            "WhileExpr": [lambda s: WhileNode(s[3], s[5])],
+            "ForExpr": [lambda s: ForNode(s[3].token, s[5], s[7])],
+            "DestrucExpr": [self.destruct_Expr],
             "VectorExpr": [
                 lambda s: ExplicitVectorNode(s[2]),
-                lambda s: ImplicitVectorNode(s[2], s[4], s[6])
+                lambda s: ImplicitVectorNode(s[2], s[4].token, s[6]),
             ],
-            "VectorElems": [
-                lambda s: [s[1]] + s[2],
-                lambda s: []
-            ],
-            "VectorTail": [
-                lambda s: [s[2]] + s[3],
-                lambda s: []
-            ],
-            "As": [
-                lambda s: BinaryNode(s[1], s[2], s[3]),
-                lambda s: s[1]
-            ],
-            "LogicOr": [
-                lambda s: BinaryNode(s[1], s[2], s[3]),
-                lambda s: s[1]
-            ],
-            "LogicAnd": [
-                lambda s: BinaryNode(s[1], s[2], s[3]),
-                lambda s: s[1]
-            ],
+            "VectorElems": [lambda s: [s[1]] + s[2], lambda s: []],
+            "VectorTail": [lambda s: [s[2]] + s[3], lambda s: []],
+            "As": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
+            "LogicOr": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
+            "LogicAnd": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
             "Equality": [
-                lambda s: BinaryNode(s[1], s[2], s[3]),
-                lambda s: BinaryNode(s[1], s[2], s[3]),
-                lambda s: s[1]
+                lambda s: BinaryNode(s[1], s[2].token, s[3]),
+                lambda s: BinaryNode(s[1], s[2].token, s[3]),
+                lambda s: s[1],
             ],
             "Comparison": [
-                lambda s: BinaryNode(s[1], s[2], s[3]),
-                lambda s: BinaryNode(s[1], s[2], s[3]),
-                lambda s: BinaryNode(s[1], s[2], s[3]),
-                lambda s: BinaryNode(s[1], s[2], s[3]),
-                lambda s: s[1]
-            ],
-            "Is": [
-                lambda s: BinaryNode(s[1], s[2], s[3]),
-                lambda s: s[1]
-            ],
-            "Str": [
-                lambda s: BinaryNode(s[1], s[2], s[3]),
-                lambda s: s[1]
-            ],
-            "StrOp": [
+                lambda s: BinaryNode(s[1], s[2].token, s[3]),
+                lambda s: BinaryNode(s[1], s[2].token, s[3]),
+                lambda s: BinaryNode(s[1], s[2].token, s[3]),
+                lambda s: BinaryNode(s[1], s[2].token, s[3]),
                 lambda s: s[1],
-                lambda s: s[1]
             ],
+            "Is": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
+            "Str": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
+            "StrOp": [lambda s: s[1], lambda s: s[1]],
             "Term": [
-                lambda s: BinaryNode(s[1], s[2], s[3]),
-                lambda s: BinaryNode(s[1], s[2], s[3]),
-                lambda s: s[1]
+                lambda s: BinaryNode(s[1], s[2].token, s[3]),
+                lambda s: BinaryNode(s[1], s[2].token, s[3]),
+                lambda s: s[1],
             ],
             "Factor": [
                 lambda s: BinaryNode(s[1], s[2], s[3]),
                 lambda s: BinaryNode(s[1], s[2], s[3]),
-                lambda s: s[1]
+                lambda s: s[1],
             ],
-            "Mod": [
-                lambda s: BinaryNode(s[1], s[2], s[3]),
-                lambda s: s[1]
-            ],
-            "Power": [
-                lambda s: BinaryNode(s[1], s[2], s[3]),
-                lambda s: s[1]
-            ],
+            "Mod": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
+            "Power": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
             "Primary": [
-                lambda s: LiteralNode(s[1]),
-                lambda s: LiteralNode(s[1]),
-                lambda s: LiteralNode(s[1]),
-                lambda s: LiteralNode(s[1]),
-                lambda s: LiteralNode(s[1]),
+                lambda s: LiteralNode(s[1].token),
+                lambda s: LiteralNode(s[1].token),
+                lambda s: LiteralNode(s[1].token),
+                lambda s: LiteralNode(s[1].token),
+                lambda s: LiteralNode(s[1].token),
             ],
-            'CallList': [
-                lambda s: GetNode(s[1], s[3]),
+            "CallList": [
+                lambda s: GetNode(s[1], s[3].token),
                 lambda s: CallNode(s[1], s[3]),
                 lambda s: VectorGetNode(s[1], s[3]),
-                lambda s: LiteralNode(s[1]),
-                lambda s: LiteralNode(s[1]),
+                lambda s: LiteralNode(s[1].token),
+                lambda s: LiteralNode(s[1].token),
                 lambda s: s[2],
             ],
-            'ArgList': [
-                lambda s: [s[1]] + s[2],
-                lambda s: []
-            ],
-            'ArgTail':[
-                lambda s: [s[2]] + s[3],
-                lambda s: []
-            ]
+            "ArgList": [lambda s: [s[1]] + s[2], lambda s: []],
+            "ArgTail": [lambda s: [s[2]] + s[3], lambda s: []],
         }
 
     def destruct_Expr(self, s):
@@ -345,9 +280,10 @@ class Parser:
     def parse(self, tokens: list[Token]) -> ParseTree:
         return self.parsing_table.parse(tokens)
 
-    def toAst(self, tree : ParseTree):
+    def toAst(self, tree: ParseTree):
         return self.parsing_table.convertAst(tree.root)
-    
+
+
 ps = Parser()
 
 print(ps.grammar.terminals)
