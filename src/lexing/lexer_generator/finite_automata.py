@@ -1,4 +1,5 @@
 from os import listxattr
+from tkinter import NO
 from lexing.lexer_generator.const import EPSILON, UnionSets
 
 def remove_repeated( listt : list):
@@ -16,7 +17,7 @@ class DFA:
         alphabet: list[str],
         accepting_states: list[int],
         table: list[list[list[int]]],
-        additional_info=[],
+        additional_info=None,
         reduce: bool = True,
     ):
         self.start_state = start_state
@@ -48,6 +49,10 @@ class DFA:
                     assert 0 <= table[i][j][m] < self.total_states
 
         self.additional_info = additional_info
+        if self.additional_info == None:
+            self.additional_info = [[] for _ in range(0, self.total_states)]
+        else:
+            assert(self.total_states == len(self.additional_info))
         assert len(self.additional_info) == total_states
         if reduce:
             self = Remove_Equal(self)
@@ -79,7 +84,7 @@ class NFA:
         alphabet: list[str],
         accepting_states: list[int],
         table: list[list[list[int]]],
-        additional_info,
+        additional_info = None,
         reduce: bool = True,
     ):
 
@@ -113,7 +118,10 @@ class NFA:
                     assert 0 <= st < self.total_states
 
         self.additional_info = additional_info
-
+        if self.additional_info == None:
+            self.additional_info = [[] for _ in range(0, self.total_states)]
+        else:
+            assert(self.total_states == len(self.additional_info))
         if self.reduce:
             self = Remove_Equal(self)
             self = Remove_Disconnected(self)
@@ -279,10 +287,12 @@ def remove_state(FA: NFA | DFA, st: int):
         del FA.table[z][st]
     FA.additional_info.pop(st)
     FA.total_states -= 1
+    assert(len(FA.additional_info) == FA.total_states) # type: ignore
     return FA
 
 
 def Remove_Equal(FA: NFA | DFA):
+    assert(FA.total_states == len(FA.additional_info)) # type: ignore
     # print("STARTS WITH " + str(FA.total_states))
     dict = {}
     hashes = [compute_hash(i, FA) for i in range(0, FA.total_states)]

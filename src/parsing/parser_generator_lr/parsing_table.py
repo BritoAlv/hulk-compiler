@@ -8,12 +8,19 @@ EOF = "$"
 
 class ParsingTable:
     def __init__(
-        self, total_states: int, terminals: list[str], non_terminals: list[str]
+        self,
+        total_states: int,
+        terminals: list[str],
+        non_terminals: list[str],
+        productions: dict[str, list[list[str]]] | None = None,
+        attributed_productions=None,
     ):
         self.table_input: list[dict] = [{} for i in range(0, total_states)]
         self.table_nonterminals = [{} for i in range(0, total_states)]
         self.terminals = terminals
         self.non_terminals = non_terminals
+        self.productions = productions
+        self.attributed_productions = attributed_productions
 
     def add_reduce_transition(self, st: int, terminal: str, key: str, len: int):
         if terminal in self.table_input[st]:
@@ -155,10 +162,46 @@ class ParsingTable:
                     self.table_nonterminals[stackStates[-1]][stackParse[-1].value]
                 )
 
+    def get_index(self, tree: ParseNode):
+        value = tree.value
+        for i in range(0, len(self.productions[value])):  # type: ignore
+            if len(self.productions[value][i]) == len(tree.children): # type: ignore
+                flag = True
+                for j in range(0, len(tree.children)):
+                    if (tree.children[j].value != self.productions[value][i][j]):
+                        flag = False
+                if flag:
+                    return i
+
+    def convertAst(self, tree: ParseNode):
+        body = tree.children
+        s = []
+
+        for i in range(0, len(body) + 1):
+            s.append(None)
+
+        for i, node in enumerate(body, 1):
+            if node != None:
+                if node.value in self.terminals:
+                    s[i] = node
+                else:
+                    s[i] = self.convertAst(body[i - 1])
+
+        lambda_list = self.attributed_productions[tree.value]
+        lambda_index = self.get_index(tree)
+        return lambda_list[lambda_index](s)  # type: ignore
+
     def __str__(self):
-        space = max(
-            20, max([len(x) for x in self.non_terminals] + [len(x) for x in self.terminals])
-        ) * 2
+        space = (
+            max(
+                20,
+                max(
+                    [len(x) for x in self.non_terminals]
+                    + [len(x) for x in self.terminals]
+                ),
+            )
+            * 2
+        )
         header = (
             "State".ljust(space)
             + "".join([x.ljust(space) for x in self.terminals])

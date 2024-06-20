@@ -5,7 +5,7 @@ class Token:
         self.line = line
         self.offsetLine = offsetLine
 
-    def toString(self, short = False):
+    def __str__(self, short = False):
         if short:
             return self.type
         return (

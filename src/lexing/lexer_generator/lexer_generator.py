@@ -14,72 +14,39 @@ from lexing.lexer_generator.regular_expressions import (
 from parsing.parser_generator import *
 from parsing.parser_generator.grammar import EOF, EPSILON, Grammar
 from lexing.lexer_generator import const
-"""
-Goal of this is :
-
-    given a regular expression in a string return an abstract syntax tree so that the evaluator can create the automatas.
-    use parser generator to parse gramatic, and then apply algorithm to convert
-    from parser derivation tree to abstract syntax tree. Once done 
-
-Regular Expressions follows this grammar:
-
-A => B X
-X => +A | epsilon
-B => C Y
-Y => B | epsilon
-C => cZ | (A)Z
-Z => * | ? | epsilon 
-"""
-
+from parsing.parser_generator_lr.grammarLR1 import GrammarLR1
 
 class LexerGenerator:
     def __init__(self):
-        self.grammar = Grammar(
-            ["A", "B", "C", "X", "Y", "Z"],
-            ["+", EPSILON, "c", "(", ")", "*", "?"],
+        self.grammar = GrammarLR1(
+            ["A", "B", "C", "D", "Z"],
+            ["+", "c", "(", ")", "*", "?"],
             "A",
             {
-                "A": [["B", "X"]],
-                "X": [["+", "A"], [EPSILON]],
-                "B": [["C", "Y"]],
-                "Y": [["B"], [EPSILON]],
-                "C": [["c", "Z"], ["(", "A", ")", "Z"]],
-                "Z": [["*"], ["?"], [EPSILON]],
-            },
+                "A": [["A", "+", "B"], ["B"]],
+                "B": [["B", "C"], ["C"]],
+                "C": [["D", "Z"], ["D"]],
+                "D": [["c"], ["(", "A", ")"]],
+                "Z": [["*"], ["?"]]
+            }
         )
+        self.table = self.grammar.build_parsing_table()
+        self.table.attributed_productions = {
+            "A" : [lambda s: BinaryExpression(s[1], UNION, s[3]), 
+                   lambda s: s[1]],
+            "B" : [lambda s: BinaryExpression(s[1], CONCATENATE, s[2]), lambda s: s[1]],
+            "C" : [lambda s: UnaryExpression(s[1], s[2]), 
+                   lambda s: s[1]],
+            "D" : [lambda s: LiteralExpression(s[1].token.lexeme),
+                   lambda s: ParenExpression(s[1].token.lexeme, s[2], s[3].token.lexeme)],
+            "Z" : [lambda s: s[1].token.lexeme]
+        }
 
     def ConvertToAST(self, tree: ParseNode) -> RegularExpression:
-        if tree.value == "A":
-            rExp = self.ConvertToAST(tree.children[0])
-            if tree.children[1].children[0].value == EPSILON:
-                return rExp
-            else:
-                lExp = self.ConvertToAST(tree.children[1].children[1])
-                return BinaryExpression(rExp, UNION, lExp)
-        elif tree.value == "B":
-            rExp = self.ConvertToAST(tree.children[0])
-            if tree.children[1].children[0].value == EPSILON:
-                return rExp
-            else:
-                lExp = self.ConvertToAST(tree.children[1].children[0])
-                return BinaryExpression(rExp, CONCATENATE, lExp)
-        elif tree.value == "C":
-            rExp = LiteralExpression("1")
-            if tree.children[0].value == "c":
-                rExp = LiteralExpression(tree.children[0].token.lexeme) # temporal fix to a bug.
-            elif tree.children[0].value == "(":
-                rExp = ParenExpression("(", self.ConvertToAST(tree.children[1]), ")")
-            else:
-                raise Exception("Wrong Logic")
-            if tree.children[-1].children[0].value != EPSILON:
-                return UnaryExpression(rExp, tree.children[-1].children[0].value)
-            else:
-                return rExp
-        return LiteralExpression("1")
+        return self.table.convertAst(tree)
 
     def check_regular_operator(self, offset : int, input : str):
         return offset + 1 < len(input) and input[offset] == "\\" and input[offset+1] in ["*", "?", "+", "(", ")"]
-
 
     def Compile(self, inputS: str) -> DFA:
         # convert string into tokens.
@@ -92,11 +59,12 @@ class LexerGenerator:
             else:
                 tokens.append(Token("c", inputS[cr], 0, 0))
             cr += 1
-        tokens.append(Token(EOF, "\0", 0, 0))
-        for tok in tokens:
-            print(tok.type, tok.lexeme)
+        tokens.append(Token(EOF, EOF, 0, 0))
         # pass tokens to the parser to generate derivation tree.
-        derivation_tree = self.grammar.parse(tokens)
+        derivation_tree = self.table.parse(tokens)
+
+        derivation_tree.root.print([0], 0, True)
+
         # convert tree to abstract syntax tree.
         ast = self.ConvertToAST(derivation_tree.root)
         # pass tree to evaluator.

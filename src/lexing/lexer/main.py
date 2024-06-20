@@ -1,6 +1,6 @@
 import string
+
 from lexing.lexer_generator import const
-from lexer import Lexer
 letter = ""
 
 for let in string.ascii_letters:
@@ -18,17 +18,24 @@ digits_greater_zero = const.opar
 for dig in string.digits:
     if int(dig) > 0:
         digits_greater_zero += dig + const.plus
+digits_greater_zero = digits_greater_zero[:-2]
 digits_greater_zero += const.cpar
 
-identifier = letter + const.opar + letter + const.plus + digits + const.plus + "_" + const.plus +  const.cpar + const.star 
+identifier = letter + const.opar + letter + const.plus + digits + const.plus + "_"  +  const.cpar + const.star 
 
-number = const.opar + digits_greater_zero + digits + const.star + const.opar + "." + digits + const.star + const.cpar + const.question + const.cpar
+number1 = const.opar + digits_greater_zero + digits + const.star + const.cpar
+number2 = const.opar + digits + digits + const.star + "." + digits + digits + const.star + const.cpar
+number3 = const.opar + "0" + const.cpar
+
+number = const.opar + number1 + const.plus + number2 + const.plus + number3 +  const.cpar
 
 stringg = "\"" + const.opar + digits + const.plus + letter + const.cpar + "\""
 
-print(identifier, number, stringg)
+from lexing.lexer.lexer import Lexer
 
-lexer = Lexer(
+
+
+lexer1 = Lexer(
     [
         ("powerOp", "^"),
         ("modOp", "%"),
@@ -48,7 +55,7 @@ lexer = Lexer(
         ("type", "type"),
         ("arrow", "->"),
         ("equal", "="),
-        *[(x, x) for x in ["if", "else", "elif", "protocol", "in", "let", "function", "inherits", "extends", "while", "for", "true", "false", "self"]],
+        *[(x, x) for x in ["if", "else", "elif", "protocol", "in", "let", "function", "inherits", "extends", "while", "for", "true", "false", "self", "new"]],
         ("destrucOp", ":="),
         ("doubleOr", "||"),
         ("or", "|"),
@@ -64,8 +71,25 @@ lexer = Lexer(
         ("dot", "."),
         ("id", identifier),
         ("number", number),
-        ("string", stringg),
+        ("string", stringg)
     ]
 )
 
-print("Done building the lexer and its automatas")
+print("Lexer automatas were built")
+print("Now I can start testing the lexer")
+
+testCases = [
+    "print(42);",
+    """let x=1 in
+            let y = 2 in""",
+    ]
+
+for i in range(0, len(testCases)):
+    print("-------------------")
+    print(testCases[i])
+    for tok in lexer1.scanTokens(testCases[i]):
+        print(tok)
+    print("-------------------")
+
+for tok in lexer1.scanTokens(""):
+    print(tok)

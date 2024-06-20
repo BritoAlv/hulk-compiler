@@ -214,5 +214,5 @@ class AstEvaluator(Visitor):
             case _:
                 raise Exception(
                     "How evaluates binary operator: "
-                    + binary.operator.tokentype.toString(False)
+                    + binary.operator.tokentype.__str__(False)
                 )
