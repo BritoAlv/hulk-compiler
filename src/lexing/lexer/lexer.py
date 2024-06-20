@@ -29,7 +29,7 @@ class Lexer:
             cr += len(tok.lexeme)
             self.positionInLine += len(tok.lexeme)
             tokens.append(tok)
-        tokens.append(Token("$", "", self.currentLine, self.positionInLine))
+        tokens.append(Token("$", "$", self.currentLine, self.positionInLine))
         return tokens
 
     def scanToken(self, inputStr: str, offset: int):
@@ -47,7 +47,7 @@ class Lexer:
                 if st in self.automatas[i].accepting_states:
                     longest_matched = cr
             if longest_matched != -1:
-                if matched == (-1, -1) or matched[1] < (longest_matched):
+                if matched == (-1, -1) or matched[1] < longest_matched:
                     matched = (i, longest_matched)
 
         if matched == (-1, -1):
@@ -60,38 +60,3 @@ class Lexer:
         )
 
 
-import string
-letter = ""
-for let in string.ascii_letters:
-    letter += let +  const.plus
-letter = letter[:-2]
-letter = const.opar + letter + const.cpar
-
-digits = ""
-for dig in string.digits:
-    digits += dig + const.plus
-digits = digits[:-2]
-digtis = const.opar + digits + const.cpar
-
-# let (let + dig + _)*
-identifier = letter + const.opar + letter + const.plus + digits  +  const.plus + "_" + const.cpar + const.star 
-
-
-
-lexer = Lexer(
-    [
-        ("IDENTIFIER", identifier),
-        ("LBRACE", "{"),
-        ("RBRACE", "}"),
-        ("GREATER", ">"),
-        ("SEMICOLON", ";")        
-    ]
-)
-
-print("Done building the lexer and its automatas")
-
-print(lexer.automatas[0].simulate("abc_"))
-print(lexer.automatas[0].simulate("1bc_"))
-print(lexer.automatas[0].simulate("c1_"))
-print(lexer.automatas[0].simulate("c2_."))
-print(lexer.automatas[0].simulate("a332_."))

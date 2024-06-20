@@ -16,8 +16,8 @@ from parsing.parser_generator.grammar import EOF, EPSILON, Grammar
 from lexing.lexer_generator import const
 """
 Goal of this is :
-    given a regular expression in a string return an abstract syntax tree so that the evaluator can create the automatas.
 
+    given a regular expression in a string return an abstract syntax tree so that the evaluator can create the automatas.
     use parser generator to parse gramatic, and then apply algorithm to convert
     from parser derivation tree to abstract syntax tree. Once done 
 
