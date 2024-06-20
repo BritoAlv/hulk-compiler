@@ -14,7 +14,11 @@ for dig in string.digits:
 digits = digits[:-2]
 digits = const.opar + digits + const.cpar
 
-digits_greater_zero = const.opar + "1+2+3+4+5+6+7+8+9" + const.cpar
+digits_greater_zero = const.opar
+for dig in string.digits:
+    if int(dig) > 0:
+        digits_greater_zero += dig + const.plus
+digits_greater_zero += const.cpar
 
 identifier = letter + const.opar + letter + const.plus + digits + const.plus + "_" + const.plus +  const.cpar + const.star 
 
