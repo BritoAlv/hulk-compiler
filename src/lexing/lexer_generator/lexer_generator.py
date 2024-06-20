@@ -11,8 +11,6 @@ from lexing.lexer_generator.regular_expressions import (
     RegularExpression,
     UnaryExpression,
 )
-from parsing.parser_generator import *
-from parsing.parser_generator.grammar import EOF, EPSILON, Grammar
 from lexing.lexer_generator import const
 from parsing.parser_generator_lr.grammarLR1 import GrammarLR1
 
@@ -59,7 +57,7 @@ class LexerGenerator:
             else:
                 tokens.append(Token("c", inputS[cr], 0, 0))
             cr += 1
-        tokens.append(Token(EOF, EOF, 0, 0))
+        tokens.append(Token("$", "$", 0, 0))
         # pass tokens to the parser to generate derivation tree.
         derivation_tree = self.table.parse(tokens)
 

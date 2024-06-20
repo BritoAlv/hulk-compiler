@@ -6,6 +6,8 @@ from common.parse_nodes.parse_node import *
 EOF = "$"
 
 
+        
+
 class ParsingTable:
     def __init__(
         self,
@@ -21,7 +23,7 @@ class ParsingTable:
         self.non_terminals = non_terminals
         self.productions = productions
         self.attributed_productions = attributed_productions
-
+        
     def add_reduce_transition(self, st: int, terminal: str, key: str, len: int):
         if terminal in self.table_input[st]:
             if self.table_input[st][terminal][0] == "s":
