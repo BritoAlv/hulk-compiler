@@ -26,7 +26,7 @@ OptType -> colon id | .
 
 FuncDecl -> function MethodDecl .
 
-Expr -> BlockExpr | IfExpr | WhileExpr | ForExpr | LetExpr | DestrucExpr | VectorExpr | As .
+Expr -> BlockExpr | IfExpr | WhileExpr | ForExpr | LetExpr | DestrucExpr | VectorExpr | NewExpr | As .
 
 LetExpr -> let Assignment AssignmentList in Expr .
 AssignmentList -> comma Assignment AssignmentList | .
@@ -46,6 +46,8 @@ DestrucExpr -> Primary destrucOp Expr .
 VectorExpr -> lbracket VectorElems rbracket | lbracket Expr doubleOr id in Expr rbracket .
 VectorElems -> Expr VectorTail | .
 VectorTail -> comma Expr VectorTail | .
+
+NewExpr -> new CallList .
 
 As -> LogicOr asOp id | LogicOr .
 LogicOr -> LogicOr or LogicAnd | LogicAnd .
