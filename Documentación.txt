@@ -58,10 +58,10 @@ StrOp -> at | doubleAt .
 Term -> Term plus Factor | Term minus Factor | Factor .
 Factor -> Factor star Mod | Factor div Mod | Mod .
 Mod -> Mod modOp Power | Power .
-Power -> Primary powerOp number | Primary .
+Power -> CallList powerOp number | CallList .
 
-Primary -> false | true | number | string | self CallList | id CallList | lparen Expr rparen CallList .
-
-CallList -> dot id CallList | lparen ArgList rparen CallList | lbracket Expr rbracket CallList | .
+CallList -> CallList dot id | CallList lparen ArgList rparen | CallList lbracket Expr rbracket | Primary .
 ArgList -> Expr ArgTail | .
 ArgTail -> comma Expr ArgTail | .
+
+Primary -> false | true | number | string | self | id | lparen Expr rparen .
