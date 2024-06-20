@@ -36,7 +36,7 @@ ExprList -> Expr semicolon ExprTail .
 ExprTail -> Expr semicolon ExprTail | .
 
 IfExpr -> if lparen Expr rparen Expr OptElif else Expr .
-OptElif -> elif lparen Expr rparen Expr | .
+OptElif -> elif lparen Expr rparen Expr OptElif | .
 
 WhileExpr -> while lparen Expr rparen Expr .
 ForExpr -> for lparen id in Expr rparen Expr .

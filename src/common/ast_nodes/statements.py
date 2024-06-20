@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+from common.ast_nodes.expressions import Expr
 from common.token_class import Token
 
 
@@ -69,7 +70,7 @@ class ProtocolNode(Statement):
     def __init__(self, 
                  id : Token, 
                  signatures : list[SignatureNode],
-                 ancestor_node : Token | None):
+                 ancestor_node : Token | None = None):
         self.id = id
         self.signatures = signatures
         self.ancestor_node = ancestor_node

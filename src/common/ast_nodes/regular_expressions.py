@@ -1,3 +1,6 @@
+from common.ast_nodes.expressions import Expr
+
+
 class Literal(Expr):
     def __init__(self, token):
         self.literal = token
