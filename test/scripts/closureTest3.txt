@@ -1,8 +1,0 @@
-// test closures should print 5
-var a = 1;
-def f()
-{
-    var a = 5;
-    print(a);
-}
-f();

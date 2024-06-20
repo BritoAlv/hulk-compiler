@@ -4,7 +4,7 @@ from common.parse_nodes.parse_node import ParseNode
 from common.parse_nodes.parse_tree import ParseTree
 from common.visitors.Printer import AstPrinter
 from common.token_class import Token
-from parsing.parser_generator.grammar import EOF, EPSILON, Grammar
+from parsing.parser_generator_ll.grammar import EOF, EPSILON, Grammar
 from parsing.parser_generator_lr.grammarLR1 import GrammarLR1
 
 def gramophoneSyntaxParser( inputTokens : str) -> GrammarLR1:
