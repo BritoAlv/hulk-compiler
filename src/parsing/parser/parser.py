@@ -1,7 +1,6 @@
 from ast import While
 import common
 from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, ForNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, SetNode, VectorGetNode, VectorSetNode, WhileNode
-from common.ast_nodes.regular_expressions import BinaryExpr, Literal
 from common.ast_nodes.statements import AttributeNode, MethodNode, ProgramNode, ProtocolNode, SignatureNode, TypeNode
 from common.parse_nodes.parse_node import ParseNode
 from common.parse_nodes.parse_tree import ParseTree
@@ -10,16 +9,6 @@ from common.token_class import Token
 from parsing.parser_generator.grammar import EOF, EPSILON, Grammar
 
 
-"""
-
-E -> T X
-X -> + T X | epsilon
-T -> F Y
-Y -> * F Y | epsilon
-F -> l | (E)
-
-
-"""
 
 def destruct_Expr(s):
     if isinstance(s[1], LiteralNode) and s[1].id.type == "id":
@@ -33,19 +22,6 @@ def destruct_Expr(s):
 class Parser:
     def __init__(self):
         self.current = 0
-        self.grammar = Grammar(
-            ["E", "X", "Y", "T", "F"],
-            ["+", "*", "(", ")", "l", EPSILON],
-            "E",
-            {
-                "E": [["T", "X"]],
-                "X": [["+", "T", "X"], [EPSILON]],
-                "T": [["F", "Y"]],
-                "Y": [["*", "F", "Y"], [EPSILON]],
-                "F": [["l"], ["(", "E", ")"]],
-            },
-        )
-
         self.attributed_productions = {
             "Program": [lambda s: ProgramNode(s[1], s[2])],
             "Decls": [
@@ -292,20 +268,3 @@ class Parser:
 
     def parse(self, tokens: list[Token]) -> ParseTree:
         return self.grammar.parse(tokens)
-
-
-parser = Parser()
-
-tree = parser.parse(
-    [
-        Token("l", "2", 0, 0),
-        Token("+", "+", 0, 0),
-        Token("l", "2", 0, 0),
-        Token(EOF, "", 0, 0),
-    ]
-)
-
-ast_tree = parser.convertAst(tree.root)
-
-printer = AstPrinter.TreePrinter()
-print(ast_tree.accept(printer))
