@@ -17,7 +17,7 @@ class DFA:
         alphabet: list[str],
         accepting_states: list[int],
         table: list[list[list[int]]],
-        additional_info=None,
+        additional_info=[],
         reduce: bool = True,
     ):
         self.start_state = start_state
@@ -49,7 +49,7 @@ class DFA:
                     assert 0 <= table[i][j][m] < self.total_states
 
         self.additional_info = additional_info
-        if self.additional_info == None:
+        if len(self.additional_info) == 0:
             self.additional_info = [[] for _ in range(0, self.total_states)]
         else:
             assert(self.total_states == len(self.additional_info))
@@ -84,7 +84,7 @@ class NFA:
         alphabet: list[str],
         accepting_states: list[int],
         table: list[list[list[int]]],
-        additional_info = None,
+        additional_info,
         reduce: bool = True,
     ):
 
@@ -118,7 +118,7 @@ class NFA:
                     assert 0 <= st < self.total_states
 
         self.additional_info = additional_info
-        if self.additional_info == None:
+        if len(self.additional_info) == 0:
             self.additional_info = [[] for _ in range(0, self.total_states)]
         else:
             assert(self.total_states == len(self.additional_info))

@@ -282,8 +282,3 @@ class Parser:
 
     def toAst(self, tree: ParseTree):
         return self.parsing_table.convertAst(tree.root)
-
-
-ps = Parser()
-
-print(ps.grammar.terminals)
