@@ -1,5 +1,5 @@
 import common
-from common.ast_nodes.expressions import BinaryExpr, Literal
+from common.ast_nodes.statements import BinaryExpr, Literal
 from common.parse_nodes.parse_node import ParseNode
 from common.parse_nodes.parse_tree import ParseTree
 from common.visitors.Printer import AstPrinter
