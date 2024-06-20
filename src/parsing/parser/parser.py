@@ -1,6 +1,6 @@
 from ast import While
 import common
-from common.ast_nodes.expressions import BinaryNode, BlockNode, DestructorNode, ExplicitVectorNode, ForNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, SetNode, VectorGetNode, VectorSetNode, WhileNode
+from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, ForNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, SetNode, VectorGetNode, VectorSetNode, WhileNode
 from common.ast_nodes.regular_expressions import BinaryExpr, Literal
 from common.ast_nodes.statements import AttributeNode, MethodNode, ProgramNode, ProtocolNode, SignatureNode, TypeNode
 from common.parse_nodes.parse_node import ParseNode
@@ -238,6 +238,23 @@ class Parser:
                 lambda s: LiteralNode(s[1]),
                 lambda s: LiteralNode(s[1]),
                 lambda s: LiteralNode(s[1]),
+                lambda s: LiteralNode(s[1]),
+            ],
+            'CallList': [
+                lambda s: GetNode(s[1], s[3]),
+                lambda s: CallNode(s[1], s[3]),
+                lambda s: VectorGetNode(s[1], s[3]),
+                lambda s: LiteralNode(s[1]),
+                lambda s: LiteralNode(s[1]),
+                lambda s: s[2],
+            ],
+            'ArgList': [
+                lambda s: [s[1]] + s[2],
+                lambda s: []
+            ],
+            'ArgTail':[
+                lambda s: [s[2]] + s[3],
+                lambda s: []
             ]
         }
 
