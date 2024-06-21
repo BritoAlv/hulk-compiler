@@ -63,9 +63,8 @@ class GrammarLR1:
 
     def build_parsing_table(self) -> ParsingTable:
         pt = ParsingTable(
-            self.automatonLR1.total_states, self.terminals, self.non_terminals
+            self.automatonLR1.total_states, self.terminals, self.non_terminals, self.productions
         )
-        pt.productions = self.productions
         for ch in self.automatonLR1.alphabet:
             for st in range(0, self.automatonLR1.total_states):
                 index_ch = self.automatonLR1.alphabet.index(ch)

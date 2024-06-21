@@ -14,8 +14,8 @@ class ParsingTable:
         total_states: int,
         terminals: list[str],
         non_terminals: list[str],
-        productions: dict[str, list[list[str]]] | None = None,
-        attributed_productions=None,
+        productions: dict[str, list[list[str]]],
+        attributed_productions= None,
     ):
         self.table_input: list[dict] = [{} for i in range(0, total_states)]
         self.table_nonterminals = [{} for i in range(0, total_states)]
@@ -24,6 +24,11 @@ class ParsingTable:
         self.productions = productions
         self.attributed_productions = attributed_productions
         
+    
+    
+
+
+
     def add_reduce_transition(self, st: int, terminal: str, key: str, len: int):
         if terminal in self.table_input[st]:
             if self.table_input[st][terminal][0] == "s":
