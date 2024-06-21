@@ -1,11 +1,9 @@
-from contextvars import Context
-from code_gen.environment import Environment
-
+from code_gen.environment import Context, Environment, VarData
 
 class Resolver:
     def __init__(self, environment : Environment) -> None:
         self._environment = environment
-        self._params : dict[str, int] = None
+        self._params : dict[str, VarData] = None
         self._context : Context = None
         self._child_index : int = 0
         self.var_count = 0
@@ -32,7 +30,7 @@ class Resolver:
         self._child_index = 0
 
 
-    def resolve(self, var_name : str) -> int:
+    def resolve(self, var_name : str) -> VarData:
         if var_name in self._params:
             return self._params[var_name]
         
@@ -47,5 +45,9 @@ class Resolver:
             temp_context = temp_context.parent
 
         raise Exception("Variable was not declared")
-        
-        
+    
+    def get_func_type(self, func_name : str) -> str:
+        return self._environment.get_type(func_name)
+    
+    def set_func_type(self, func_name : str, type : str) -> None:
+        self._environment.add_type(func_name, type)

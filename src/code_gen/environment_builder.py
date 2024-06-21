@@ -1,6 +1,5 @@
 
-from hmac import new
-from code_gen.environment import Context, Environment
+from code_gen.environment import Context, Environment, VarData
 from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, ForNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, NewNode, SetNode, VectorGetNode, VectorSetNode, WhileNode
 from common.ast_nodes.statements import AttributeNode, MethodNode, ProgramNode, ProtocolNode, SignatureNode, Statement, TypeNode
 from common.visitor import Visitor
@@ -10,7 +9,7 @@ class EnvironmentBuilder(Visitor):
     def __init__(self) -> None:
         self._environment : Environment = None
         self._context : Context = None
-        self._params : dict[str, str] = None
+        self._params : dict[str, VarData] = None
         self._var_index : int = 0
         self._func_name : str
 
@@ -25,10 +24,12 @@ class EnvironmentBuilder(Visitor):
     
     def visit_method_node(self, method_node: MethodNode):
         func_name = method_node.id.lexeme
+        func_type = method_node.type.lexeme
 
         # Create function context
         self._var_index = 0 # Reset var_index
-        self._environment.add(func_name)
+        self._environment.add_function(func_name)
+        self._environment.add_type(func_name, func_type)
         self._context = self._environment.get_context(func_name)
         self._params = self._environment.get_params(func_name)
         self._func_name = func_name
@@ -41,7 +42,7 @@ class EnvironmentBuilder(Visitor):
             if param_name in self._params:
                     raise Exception("Params must be named differently")
             
-            self._params[param_name] = self._var_index
+            self._params[param_name] = VarData(self._var_index)
             self._var_index += 1
 
             i += 1
@@ -60,21 +61,17 @@ class EnvironmentBuilder(Visitor):
             elif var_name in self._params:
                 raise Exception("Variable is already used as a parameter name")
             
-            self._context.variables[var_name] = self._var_index
+            self._context.variables[var_name] = VarData(self._var_index)
             self._var_index += 1
             self._build(value)
 
         self._build(let_node.body)
-        
+
         self._context = old_context
 
     def visit_block_node(self, block_node: BlockNode):
-        old_context = self._create_context()
-
         for expr in block_node.exprs:
-            self._build(expr)
-
-        self._context = old_context     
+            self._build(expr)  
 
     def visit_destructor_node(self, destructor_node: DestructorNode):
         self._build(destructor_node.expr)
