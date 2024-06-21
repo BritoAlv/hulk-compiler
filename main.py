@@ -1,45 +1,13 @@
-import argparse
-from pathlib import Path
+from lexer.main import *
+from parsing.parser.parser import Parser
 
-from parser.parser import *
-from visitors.Evaluator.AstEvaluator import AstEvaluator
-from visitors.Evaluator.AstResolver import AstResolver
-from visitors.Printer.AstPrinter import TreePrinter
 
-def solve(inputStr):
-    l = Lexer(inputStr)
-    l.scan_tokens()
-    parser = Parser(l.tokens)
-    program = parser.parseProgram()
-    resolver = AstResolver()
-    result = resolver.resolveProgram(program)
-    evaluator = AstEvaluator(result)
-    for statement in program:
-        printer = TreePrinter()
-        print(statement.accept(printer))
-        statement.accept(evaluator)
+inputStr = "print(42);"
 
-def main():
-    # Create the parser
-    parser = argparse.ArgumentParser(description='Process a file path.')
-    
-    # Add the arguments
-    parser.add_argument('file_path', type=Path, help='Path to the file')
-    
-    # Parse the arguments
-    args = parser.parse_args()
-    print()
-    for file in args.file_path.iterdir():
-            try:
-                with open(file, "r") as f:
-                    cont = f.read()
-                    print("Behaviors for script:")
-                    print(cont.split("\n")[0])
-                    solve(cont)
-                    f.close()
-            except Exception as e:
-                print(e)
-            print("---------------------")    
+tokens = hulk_lexer.scanTokens(inputStr)
 
-if __name__ == '__main__':
-    main()
+parser = Parser()
+
+derivation_tree = parser.parse(tokens)
+
+ast = parser.toAst(derivation_tree)
