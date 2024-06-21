@@ -10,9 +10,8 @@ class Statement(ABC):
         pass
 
 class ProgramNode(Statement):
-    def __init__(self, decls : list[Statement], expr : Expr):
+    def __init__(self, decls : list[Statement]):
         self.decls = decls
-        self.expr = expr
 
     def accept(self, visitor):
         return visitor.visit_program_node(self)

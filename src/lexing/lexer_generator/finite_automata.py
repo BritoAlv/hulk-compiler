@@ -1,15 +1,8 @@
-from os import listxattr
-# from tkinter import NO
-from lexing.lexer_generator.const import EPSILON, UnionSets
+from abc import ABC, abstractmethod
+from common.constants import EPSILON
+from lexing.lexer_generator.utils import *
 
-def remove_repeated( listt : list):
-    result = []
-    for x in listt:
-        if x not in result:
-            result.append(x)
-    return result
-
-class DFA:
+class FA(ABC):
     def __init__(
         self,
         start_state: int,
@@ -20,6 +13,7 @@ class DFA:
         additional_info=[],
         reduce: bool = True,
     ):
+
         self.start_state = start_state
         self.total_states = total_states
         self.reduce = reduce
@@ -44,7 +38,6 @@ class DFA:
             assert len(table[i]) == total_states
         for i in range(0, len(table)):
             for j in range(0, total_states):
-                assert 0 <= len(table[i][j]) <= 1
                 for m in range(0, len(table[i][j])):
                     assert 0 <= table[i][j][m] < self.total_states
 
@@ -55,9 +48,159 @@ class DFA:
             assert(self.total_states == len(self.additional_info))
         assert len(self.additional_info) == total_states
         if reduce:
-            self = Remove_Equal(self)
-            self = Remove_Disconnected(self)
+            self = FA.Remove_Equal(self)
+            self = FA.Remove_Disconnected(self)
 
+    @abstractmethod
+    def next_state(self, char: str, actual: int):
+        pass
+    
+    @abstractmethod
+    def simulate(self, input: str):
+        pass
+
+    @staticmethod
+    def dfs(state: int, visited: list[bool], choices: list[str], FAut: "FA"):
+        cr = [state]
+        visited[state] = True
+        for choice in choices:
+            assert choice in FAut.alphabet
+            for st in FAut.table[FAut.reverse[choice]][state]:
+                if not visited[st]:
+                    more = FA.dfs(st, visited, choices, FAut)
+                    for rs in more:
+                        if rs not in cr:
+                            cr.append(rs)
+        return cr
+
+    @staticmethod
+    def Remove_Disconnected(FAut: "FA"):
+        # print("STARTS WITH " + str(FA.total_states))
+        reachable = FAut.dfs(
+            FAut.start_state, [False for _ in range(0, FAut.total_states)], FAut.alphabet, FAut
+        )
+        # print(reachable)
+        # print(FA.start_state)
+        remove = []
+        for i in range(FAut.total_states - 1, -1, -1):
+            if i not in reachable:
+                remove.append(i)
+        for x in remove:
+            FA.remove_state(FAut, x)
+        # print("ENDS WITH " + str(FA.total_states))
+        return FA
+
+    @staticmethod
+    def remove_state(FAut: "FA", st: int):
+        if FAut.start_state > st:
+            FAut.start_state -= 1
+        if st in FAut.accepting_states:
+            FAut.accepting_states.remove(st)
+        for z in range(0, len(FAut.accepting_states)):
+            if FAut.accepting_states[z] > st:
+                FAut.accepting_states[z] -= 1
+        for z in range(0, len(FAut.alphabet)):
+            for q in range(0, FAut.total_states):
+                if st in FAut.table[z][q]:
+                    FAut.table[z][q].remove(st)
+                for d in range(0, len(FAut.table[z][q])):
+                    if FAut.table[z][q][d] > st:
+                        FAut.table[z][q][d] -= 1
+        for z in range(0, len(FAut.alphabet)):
+            del FAut.table[z][st]
+        FAut.additional_info.pop(st)
+        FAut.total_states -= 1
+        assert(len(FAut.additional_info) == FAut.total_states) # type: ignore
+        return FAut
+
+    @staticmethod
+    def Remove_Equal(FAut: "FA"):
+        assert(FAut.total_states == len(FAut.additional_info)) # type: ignore
+        # print("STARTS WITH " + str(FA.total_states))
+        dict = {}
+        hashes = [FA.compute_hash(i, FAut) for i in range(0, FAut.total_states)]
+        for i in range(0, FAut.total_states):
+            hash = hashes[i]
+            flag = i in FAut.accepting_states
+            if (hash, flag) not in dict:
+                dict[(hash, flag)] = []
+            dict[(hash, flag)].append(i)
+
+        keys = list(dict.keys())
+        map_keys = {}
+        for i in range(0, len(keys)):
+            map_keys[keys[i]] = i
+        start_state = map_keys[
+            (hashes[FAut.start_state], FAut.start_state in FAut.accepting_states)
+        ]
+        total_states = len(keys)
+        additional_info = [[] for i in range(0, total_states)]
+        for i in range(0, FAut.total_states):
+            additional_info[
+                map_keys[(hashes[i], i in FAut.accepting_states)]
+            ] += FAut.additional_info[i]
+            additional_info[map_keys[(hashes[i], i in FAut.accepting_states)]] = list(
+                set(additional_info[map_keys[(hashes[i], i in FAut.accepting_states)]])
+            )
+        alphabet = FAut.alphabet
+        accepting_states = [
+            map_keys[(hashes[x], x in FAut.accepting_states)] for x in FAut.accepting_states
+        ]
+        accepting_states = list(set(accepting_states))
+        table = [[] for _ in range(0, len(FAut.alphabet))]
+        for z in range(0, len(FAut.alphabet)):
+            for j in range(0, total_states):
+                table[z].append([])
+        for z in range(0, len(FAut.alphabet)):
+            for i in range(0, FAut.total_states):
+                mapped_i = map_keys[(hashes[i], i in FAut.accepting_states)]
+                for j in range(0, len(FAut.table[z][i])):
+                    mapped_j = map_keys[
+                        (
+                            hashes[FAut.table[z][i][j]],
+                            FAut.table[z][i][j] in FAut.accepting_states,
+                        )
+                    ]
+                    if mapped_j not in table[z][mapped_i]:
+                        table[z][mapped_i].append(mapped_j)
+        FAut.table = table
+        FAut.accepting_states = accepting_states
+        FAut.total_states = total_states
+        FAut.alphabet = alphabet
+        FAut.start_state = start_state
+        FAut.additional_info = additional_info
+        return FAut
+
+    @staticmethod
+    def compute_hash(st: int, FAut: "FA"):
+        MOD = 1000000007
+        rs = 0
+        for i in range(0, len(FAut.alphabet)):
+            FAut.table[i][st].sort()
+            M = ord(FAut.alphabet[i])
+            M %= MOD
+            M *= hash(tuple(FAut.table[i][st])) % MOD
+            M %= MOD
+            rs += M
+            rs %= MOD
+        return rs
+
+class DFA(FA):
+    def __init__(
+        self,
+        start_state: int,
+        total_states: int,
+        alphabet: list[str],
+        accepting_states: list[int],
+        table: list[list[list[int]]],
+        additional_info=[],
+        reduce: bool = True,
+    ):
+        super().__init__(start_state, total_states, alphabet, accepting_states, table, additional_info, reduce)
+        for i in range(0, len(table)):
+            for j in range(0, total_states):
+                assert 0 <= len(table[i][j]) <= 1
+                
     def next_state(self, char: str, actual: int) -> int:
         assert 0 <= actual < self.total_states
         if (
@@ -76,7 +219,7 @@ class DFA:
         return actual_state in self.accepting_states
 
 
-class NFA:
+class NFA(FA):
     def __init__(
         self,
         start_state: int,
@@ -87,63 +230,30 @@ class NFA:
         additional_info,
         reduce: bool = True,
     ):
+        super().__init__(start_state, total_states, alphabet, accepting_states, table, additional_info, reduce)
 
-        self.start_state = start_state
-        self.total_states = total_states
-        self.reduce = reduce
-        assert 0 <= self.start_state < self.total_states
 
-        self.alphabet = alphabet
-        for i in range(0, len(alphabet)):
-            for j in range(0, len(alphabet)):
-                assert i == j or alphabet[i] != alphabet[j]
-
-        self.reverse = {}
-        for i in range(0, len(alphabet)):
-            self.reverse[alphabet[i]] = i
-
-        self.accepting_states = accepting_states
-
-        for i in range(0, len(self.accepting_states)):
-            assert 0 <= self.accepting_states[i] < self.total_states
-
-        self.table = table
-        assert len(table) == len(alphabet)
-        for i in range(0, len(table)):
-            assert len(table[i]) == total_states
-        for i in range(0, len(alphabet)):
-            for j in range(0, total_states):
-                assert 0 <= len(table[i][j]) <= self.total_states
-                for st in table[i][j]:
-                    assert 0 <= st < self.total_states
-
-        self.additional_info = additional_info
-        if len(self.additional_info) == 0:
-            self.additional_info = [[] for _ in range(0, self.total_states)]
-        else:
-            assert(self.total_states == len(self.additional_info))
-        if self.reduce:
-            self = Remove_Equal(self)
-            self = Remove_Disconnected(self)
-
-    def next_stateS(self, char: str, actual: int):
+    def next_state(self, char: str, actual: int):
         assert char in self.alphabet
         assert 0 <= actual < self.total_states
         return self.table[self.reverse[char]][actual]
+
+    def simulate(self, input: str):
+        return super().simulate(input)
 
     def EpsilonClosure(self, state: int):
         assert 0 <= state < self.total_states
         if EPSILON not in self.alphabet:
             return [state]
         visited = [False for _ in range(0, self.total_states)]
-        return dfs(state, visited, [EPSILON], self)
+        return FA.dfs(state, visited, [EPSILON], self)
 
     def reachable(self, char: str, states: list[int]):
         assert char in self.alphabet
         rs = []
         for st in states:
             assert 0 <= st < self.total_states
-            nextStates = self.next_stateS(char, st)
+            nextStates = self.next_state(char, st)
             for rst in nextStates:
                 if rst not in rs:
                     rs.append(rst)
@@ -165,7 +275,7 @@ class NFA:
                 rs.append(i)
         return rs
 
-    def ConvertNFA_DFA(self):
+    def ConvertNFA_DFA(self) -> DFA:
 
         pending = []
         mapped = {}
@@ -235,129 +345,3 @@ class NFA:
             self.reduce,
         )
         return dfa
-
-
-def dfs(state: int, visited: list[bool], choices: list[str], FA: NFA | DFA):
-    cr = [state]
-    visited[state] = True
-    for choice in choices:
-        assert choice in FA.alphabet
-        for st in FA.table[FA.reverse[choice]][state]:
-            if not visited[st]:
-                more = dfs(st, visited, choices, FA)
-                for rs in more:
-                    if rs not in cr:
-                        cr.append(rs)
-    return cr
-
-
-def Remove_Disconnected(FA: NFA | DFA):
-    # print("STARTS WITH " + str(FA.total_states))
-    reachable = dfs(
-        FA.start_state, [False for _ in range(0, FA.total_states)], FA.alphabet, FA
-    )
-    # print(reachable)
-    # print(FA.start_state)
-    remove = []
-    for i in range(FA.total_states - 1, -1, -1):
-        if i not in reachable:
-            remove.append(i)
-    for x in remove:
-        remove_state(FA, x)
-    # print("ENDS WITH " + str(FA.total_states))
-    return FA
-
-
-def remove_state(FA: NFA | DFA, st: int):
-    if FA.start_state > st:
-        FA.start_state -= 1
-    if st in FA.accepting_states:
-        FA.accepting_states.remove(st)
-    for z in range(0, len(FA.accepting_states)):
-        if FA.accepting_states[z] > st:
-            FA.accepting_states[z] -= 1
-    for z in range(0, len(FA.alphabet)):
-        for q in range(0, FA.total_states):
-            if st in FA.table[z][q]:
-                FA.table[z][q].remove(st)
-            for d in range(0, len(FA.table[z][q])):
-                if FA.table[z][q][d] > st:
-                    FA.table[z][q][d] -= 1
-    for z in range(0, len(FA.alphabet)):
-        del FA.table[z][st]
-    FA.additional_info.pop(st)
-    FA.total_states -= 1
-    assert(len(FA.additional_info) == FA.total_states) # type: ignore
-    return FA
-
-
-def Remove_Equal(FA: NFA | DFA):
-    assert(FA.total_states == len(FA.additional_info)) # type: ignore
-    # print("STARTS WITH " + str(FA.total_states))
-    dict = {}
-    hashes = [compute_hash(i, FA) for i in range(0, FA.total_states)]
-    for i in range(0, FA.total_states):
-        hash = hashes[i]
-        flag = i in FA.accepting_states
-        if (hash, flag) not in dict:
-            dict[(hash, flag)] = []
-        dict[(hash, flag)].append(i)
-
-    keys = list(dict.keys())
-    map_keys = {}
-    for i in range(0, len(keys)):
-        map_keys[keys[i]] = i
-    start_state = map_keys[
-        (hashes[FA.start_state], FA.start_state in FA.accepting_states)
-    ]
-    total_states = len(keys)
-    additional_info = [[] for i in range(0, total_states)]
-    for i in range(0, FA.total_states):
-        additional_info[
-            map_keys[(hashes[i], i in FA.accepting_states)]
-        ] += FA.additional_info[i]
-        additional_info[map_keys[(hashes[i], i in FA.accepting_states)]] = list(
-            set(additional_info[map_keys[(hashes[i], i in FA.accepting_states)]])
-        )
-    alphabet = FA.alphabet
-    accepting_states = [
-        map_keys[(hashes[x], x in FA.accepting_states)] for x in FA.accepting_states
-    ]
-    accepting_states = list(set(accepting_states))
-    table = [[] for _ in range(0, len(FA.alphabet))]
-    for z in range(0, len(FA.alphabet)):
-        for j in range(0, total_states):
-            table[z].append([])
-    for z in range(0, len(FA.alphabet)):
-        for i in range(0, FA.total_states):
-            mapped_i = map_keys[(hashes[i], i in FA.accepting_states)]
-            for j in range(0, len(FA.table[z][i])):
-                mapped_j = map_keys[
-                    (
-                        hashes[FA.table[z][i][j]],
-                        FA.table[z][i][j] in FA.accepting_states,
-                    )
-                ]
-                if mapped_j not in table[z][mapped_i]:
-                    table[z][mapped_i].append(mapped_j)
-    FA.table = table
-    FA.accepting_states = accepting_states
-    FA.total_states = total_states
-    FA.alphabet = alphabet
-    FA.start_state = start_state
-    FA.additional_info = additional_info
-    return FA
-
-
-def compute_hash(st: int, FA: NFA | DFA):
-    MOD = 1000000007
-    rs = 0
-    for i in range(0, len(FA.alphabet)):
-        FA.table[i][st].sort()
-        M = ord(FA.alphabet[i])
-        M %= MOD
-        M *= hash(tuple(FA.table[i][st])) % MOD
-        M %= MOD
-        rs += M
-        rs %= MOD
-    return rs

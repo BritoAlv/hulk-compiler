@@ -3,6 +3,7 @@
     "python.analysis.typeCheckingMode": "basic",
     "python.analysis.extraPaths": [
         "./src/lexing/lexer_generator",
-        "./src/lexing"
+        "./src/lexing",
+        "./src/parsing/parser_generator_lr"
     ]
 }

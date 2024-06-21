@@ -1,3 +1,4 @@
+import os
 from lexing.lexer_generator.finite_automata import *
 from common.token_class import *
 from common.parse_nodes.parse_tree import *
@@ -5,8 +6,8 @@ from common.parse_nodes.parse_node import *
 
 EOF = "$"
 
+import pickle
 
-        
 
 class ParsingTable:
     def __init__(
@@ -15,7 +16,7 @@ class ParsingTable:
         terminals: list[str],
         non_terminals: list[str],
         productions: dict[str, list[list[str]]],
-        attributed_productions= None,
+        attributed_productions=None,
     ):
         self.table_input: list[dict] = [{} for i in range(0, total_states)]
         self.table_nonterminals = [{} for i in range(0, total_states)]
@@ -23,11 +24,27 @@ class ParsingTable:
         self.non_terminals = non_terminals
         self.productions = productions
         self.attributed_productions = attributed_productions
-        
-    
-    
 
+    def save_parsing_table(self, filename):
+        # Get the directory of the current file
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        # Construct the path to the file within common/grammartable
+        # Adjust dir_path to go up to the src/ directory
+        dir_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+        filepath = os.path.join(dir_path, "common", "grammarTables", filename)
+        with open(filepath, "wb") as file:
+            pickle.dump(self, file)
 
+    @staticmethod
+    def load_parsing_table(filename):
+        # Get the directory of the current file
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        # Construct the path to the file within common/grammartable
+        # Adjust dir_path to go up to the src/ directory
+        dir_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+        filepath = os.path.join(dir_path, "common", "grammarTables", filename)
+        with open(filepath, "rb") as file:
+            return pickle.load(file)
 
     def add_reduce_transition(self, st: int, terminal: str, key: str, len: int):
         if terminal in self.table_input[st]:
@@ -172,10 +189,10 @@ class ParsingTable:
     def get_index(self, tree: ParseNode):
         value = tree.value
         for i in range(0, len(self.productions[value])):  # type: ignore
-            if len(self.productions[value][i]) == len(tree.children): # type: ignore
+            if len(self.productions[value][i]) == len(tree.children):  # type: ignore
                 flag = True
                 for j in range(0, len(tree.children)):
-                    if (tree.children[j].value != self.productions[value][i][j]):
+                    if tree.children[j].value != self.productions[value][i][j]:
                         flag = False
                 if flag:
                     return i

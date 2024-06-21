@@ -1,3 +1,5 @@
+import os
+from parsing.parser_generator_lr.grammar import Grammar
 from lexing.lexer_generator.finite_automata import *
 from common.token_class import *
 from common.parse_nodes.parse_tree import *
@@ -20,71 +22,26 @@ class LR1Item:
             return False
         return self.production == value.production and self.dot_index == value.dot_index and self.prod_key == value.prod_key and self.lookahead == value.lookahead
 
-class GrammarLR1:
+class GrammarLR1(Grammar):
     # Parameters
     def __init__(
         self,
+        name : str,
         non_terminals: list[str],
         terminals: list[str],
         start_symbol: str,
         productions: dict[str, list[list[str]]],
     ) -> None:
-        # Body
-        self.EOF = "$"
-        self.non_terminals = non_terminals
-        self.terminals = terminals + [self.EOF]
-        self.start_symbol = start_symbol
-        self.productions = productions
-        self.First_Set_Calculator = First_Set_Calculator(self.non_terminals, self.terminals, self.start_symbol, self.productions)
-        self.automatonLR1 = self.build_lr1_automaton()
-
+        self.First_Set_Calculator = First_Set_Calculator(non_terminals, terminals + ["$"], start_symbol, productions)
+        super().__init__(name, non_terminals, terminals, start_symbol, productions)
         
-    def is_production(self, prod : list[str]) -> bool:
-        for key in self.productions:
-            for pr in self.productions[key]:
-                if pr == prod:
-                    return True
-        return False
     
-    def find_key_given_prod(self, prod : list[str]) -> str:
-        for key in self.productions:
-            for pr in self.productions[key]:
-                if pr == prod:
-                    return key
-        return ""
+    def buildAutomaton(self) -> DFA:
+        return self.build_lr1_automaton()
 
-    def find_st_given_item(self, itemToFound : LR1Item) -> list[int]:
-        result = []
-        for st in range(0, self.automatonLR1.total_states):
-            for item in self.automatonLR1.additional_info[st]:
-                if itemToFound == item:
-                    result.append(st)
-        return result
-
-    def build_parsing_table(self) -> ParsingTable:
-        pt = ParsingTable(
-            self.automatonLR1.total_states, self.terminals, self.non_terminals, self.productions
-        )
-        for ch in self.automatonLR1.alphabet:
-            for st in range(0, self.automatonLR1.total_states):
-                index_ch = self.automatonLR1.alphabet.index(ch)
-                if len(self.automatonLR1.table[index_ch][st]) > 0:
-                    to = self.automatonLR1.table[index_ch][st][0]
-                    if ch in self.terminals:
-                        pt.add_shift_transition(st, ch, to)
-                    else:
-                        pt.add_nonterminal_transition(st, ch, to)
-
-        for st in self.find_st_given_item(LR1Item([self.start_symbol], 1, self.start_symbol, self.EOF)):
-            pt.add_accept_transition(st, self.EOF)
-
-        for st in range(0, self.automatonLR1.total_states):
-            for item in self.automatonLR1.additional_info[st]:
-                if item.dot_index == len(item.production) and self.is_production(item.production):
-                    key = item.prod_key
-                    pt.add_reduce_transition(st, item.lookahead, key, len(item.production))
-        return pt
-                    
+    def acceptItem(self):
+        return LR1Item([self.start_symbol], 1, self.start_symbol, self.EOF)
+                        
     def build_lr1_automaton(self):
         transitions = []
         mapped: list[LR1Item] = []
@@ -152,3 +109,27 @@ class GrammarLR1:
         )
         dfa = nfa.ConvertNFA_DFA()
         return dfa
+
+    def bpt(self) -> ParsingTable:
+        pt = ParsingTable(
+            self.automaton.total_states, self.terminals, self.non_terminals, self.productions
+        )
+        for ch in self.automaton.alphabet:
+            for st in range(0, self.automaton.total_states):
+                index_ch = self.automaton.alphabet.index(ch)
+                if len(self.automaton.table[index_ch][st]) > 0:
+                    to = self.automaton.table[index_ch][st][0]
+                    if ch in self.terminals:
+                        pt.add_shift_transition(st, ch, to)
+                    else:
+                        pt.add_nonterminal_transition(st, ch, to)
+
+        for st in self.find_st_given_item(LR1Item([self.start_symbol], 1, self.start_symbol, self.EOF)):
+            pt.add_accept_transition(st, self.EOF)
+
+        for st in range(0, self.automaton.total_states):
+            for item in self.automaton.additional_info[st]:
+                if item.dot_index == len(item.production) and self.is_production(item.production):
+                    key = item.prod_key
+                    pt.add_reduce_transition(st, item.lookahead, key, len(item.production))
+        return pt

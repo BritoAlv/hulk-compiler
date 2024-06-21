@@ -30,124 +30,22 @@ from common.visitors.Printer import AstPrinter
 from common.token_class import Token
 from parsing.parser_generator_ll.grammar import EOF, EPSILON, Grammar
 from parsing.parser_generator_lr.grammarLR1 import GrammarLR1
+from parsing.parser_generator_lr.utils import gramophoneSyntaxParser
 
 
-def gramophoneSyntaxParser(inputTokens: str) -> GrammarLR1:
-    non_terminals = []
-    terminals = []
-    start_symbol = ""
-    productions = {}
+with open('documentation.txt', 'r') as file:
+    inputHulkGrammar = file.read()
 
-    def add_symbol(symbol: str):
-        symbol = symbol.strip()
-        if len(symbol) == 0:
-            pass
-        elif symbol[0].islower():
-            if symbol not in terminals:
-                terminals.append(symbol)
-        else:
-            if symbol not in non_terminals:
-                non_terminals.append(symbol)
-                productions[symbol] = []
-        return symbol
-
-    lines = inputTokens.split("\n")
-    for line in lines:
-        if len(line) > 0:
-            line = line.strip()
-            line = line[:-1]
-            parts = line.split("->")
-            non_terminal = add_symbol(parts[0])
-            if start_symbol == "":
-                start_symbol = non_terminal
-            productionsLine = parts[1].split("|")
-            for prod in productionsLine:
-                prod = prod.strip().split(" ")
-                prod_to_add = []
-                for symbol in prod:
-                    symbol = add_symbol(symbol)
-                    if len(symbol) > 0:
-                        prod_to_add.append(symbol)
-                productions[non_terminal].append(prod_to_add)
-    print(terminals)
-    return GrammarLR1(non_terminals, terminals, start_symbol, productions)
-
-
-grammar = """
-Program -> Decls Expr semicolon.
-Decls -> FuncDecl Decls | TypeDecl Decls | ProtocolDecl Decls | .
-
-ProtocolDecl -> protocol id OptExtension lbrace ProtocolElems rbrace.
-OptExtension -> extends id | .
-ProtocolElems -> MethodSignature ProtocolElems | .
-MethodSignature -> id lparen TypedParamList rparen colon id semicolon.
-TypedParamList -> id colon id TypedParamTail | .
-TypedParamTail -> comma id colon id TypedParamTail | .
-
-TypeDecl -> type id OptParams OptInheritance lbrace TypeElems rbrace .
-
-OptParams -> lparen ParamList rparen | .
-OptInheritance -> inherits id OptArgs | .
-OptArgs -> lparen ArgList rparen | .
-
-TypeElems -> AttributeDecl TypeElems | MethodDecl TypeElems | .
-AttributeDecl -> Assignment  semicolon .
-MethodDecl -> id lparen ParamList rparen OptType FuncBody .
-ParamList -> id OptType ParamTail | .
-ParamTail -> comma id OptType ParamTail | .
-FuncBody -> arrow Expr semicolon | BlockExpr semicolon .
-
-Assignment -> id OptType equal Expr .
-OptType -> colon id | .
-
-FuncDecl -> function MethodDecl .
-
-Expr -> BlockExpr | IfExpr | WhileExpr | ForExpr | LetExpr | DestrucExpr | VectorExpr | LogicOr.
-
-LetExpr -> let Assignment AssignmentList in Expr .
-AssignmentList -> comma Assignment AssignmentList | .
-
-BlockExpr -> lbrace ExprList rbrace .
-ExprList -> Expr semicolon ExprTail .
-ExprTail -> Expr semicolon ExprTail | .
-
-IfExpr -> if lparen Expr rparen Expr OptElif else Expr .
-OptElif -> elif lparen Expr rparen Expr | .
-
-WhileExpr -> while lparen Expr rparen Expr .
-ForExpr -> for lparen id in Expr rparen Expr .
-
-DestrucExpr -> Primary destrucOp Expr .
-
-VectorExpr -> lbracket VectorElems rbracket | lbracket Expr doubleOr id in Expr rbracket .
-VectorElems -> Expr VectorTail | .
-VectorTail -> comma Expr VectorTail | .
-
-LogicOr -> LogicOr or LogicAnd | LogicAnd .
-LogicAnd -> LogicAnd and Equality | Equality .
-Equality -> Equality doubleEqual Comparison | Equality notEqual Comparison | Comparison .
-Comparison -> Comparison greater Str | Comparison greaterEq Str | Comparison less Str | Comparison lessEq Str | Str .
-Str -> Str strOp Term | Term .
-Term -> Term plus Factor | Term minus Factor | Factor .
-Factor -> Factor star Mod | Factor div Mod | Mod .
-Mod -> Mod modOp Power | Power .
-Power -> Primary powerOp number | Primary .
-
-Primary -> false | true | number | string | self CallList | id CallList | lparen Expr rparen CallList .
-
-CallList -> dot id CallList | lparen ArgList rparen CallList | lbracket Expr rbracket CallList | .
-ArgList -> Expr ArgTail | .
-ArgTail -> comma Expr ArgTail | .
-
-"""
 
 
 class Parser:
     def __init__(self):
-        self.grammar = gramophoneSyntaxParser(grammar)
-        self.parsing_table = self.grammar.build_parsing_table()
+        self.grammar = gramophoneSyntaxParser(inputHulkGrammar, "hulk_grammar")
+        self.parsing_table = self.grammar.BuildParsingTable()
         self.parsing_table.attributed_productions = {
-            "Program": [lambda s: ProgramNode(s[1], s[2])],
+            "Program": [
+                lambda s: ProgramNode(
+                        s[1] + [MethodNode(Token('id', 'main'), [], s[2])])],
             "Decls": [
                 lambda s: [s[1]] + s[2],
                 lambda s: [s[1]] + s[2],
