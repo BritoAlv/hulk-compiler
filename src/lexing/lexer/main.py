@@ -1,6 +1,7 @@
 import string
 
-from lexing.lexer_generator import const
+from common import constants as const
+
 letter = ""
 
 for let in string.ascii_letters:
@@ -33,9 +34,7 @@ stringg = "\"" + const.opar + digits + const.plus + letter + const.cpar + "\""
 
 from lexing.lexer.lexer import Lexer
 
-
-
-lexer1 = Lexer(
+hulk_lexer = Lexer(
     [
         ("powerOp", "^"),
         ("modOp", "%"),
@@ -74,22 +73,3 @@ lexer1 = Lexer(
         ("string", stringg)
     ]
 )
-
-print("Lexer automatas were built")
-print("Now I can start testing the lexer")
-
-testCases = [
-    "print(42);",
-    """let x=1 in
-            let y = 2 in""",
-    ]
-
-for i in range(0, len(testCases)):
-    print("-------------------")
-    print(testCases[i])
-    for tok in lexer1.scanTokens(testCases[i]):
-        print(tok)
-    print("-------------------")
-
-for tok in lexer1.scanTokens(""):
-    print(tok)

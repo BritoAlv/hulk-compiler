@@ -1,6 +1,5 @@
 from common.token_class import Token
 from lexing.lexer_generator  import lexer_generator
-from lexing.lexer_generator import const
 
 class Lexer:
     def __init__(self, specs: list[tuple[str, str]]):
@@ -20,6 +19,13 @@ class Lexer:
                 if inputStr[cr] == "\n":
                     self.currentLine += 1
                     self.positionInLine = 0
+                cr += 1
+                continue
+            elif inputStr[cr] == "#":
+                while cr < len(inputStr) and inputStr[cr] != "\n":
+                    cr += 1
+                self.currentLine += 1
+                self.positionInLine = 0
                 cr += 1
                 continue
             tok = self.scanToken(inputStr, cr)
