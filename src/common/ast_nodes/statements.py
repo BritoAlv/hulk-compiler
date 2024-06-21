@@ -2,9 +2,8 @@ from common.token_class import Token
 from common.ast_nodes.base import * 
 
 class ProgramNode(Statement):
-    def __init__(self, decls : list[Statement], expr : Expr):
+    def __init__(self, decls : list[Statement]):
         self.decls = decls
-        self.expr = expr
 
     def accept(self, visitor):
         return visitor.visit_program_node(self)

@@ -36,7 +36,9 @@ class Parser:
         """
         self.parsing_table = ParsingTable.load_parsing_table("hulk_grammar")
         self.parsing_table.attributed_productions = {
-            "Program": [lambda s: ProgramNode(s[1], s[2])],
+            "Program": [
+                lambda s: ProgramNode(
+                        s[1] + [MethodNode(Token('id', 'main'), [], s[2])])],
             "Decls": [
                 lambda s: [s[1]] + s[2],
                 lambda s: [s[1]] + s[2],
