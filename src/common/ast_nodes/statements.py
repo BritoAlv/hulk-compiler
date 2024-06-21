@@ -1,13 +1,5 @@
-from abc import ABC, abstractmethod
-
-from common.ast_nodes.expressions import Expr
 from common.token_class import Token
-
-
-class Statement(ABC):
-    @abstractmethod
-    def accept(self, visitor):
-        pass
+from common.ast_nodes.base import * 
 
 class ProgramNode(Statement):
     def __init__(self, decls : list[Statement], expr : Expr):
@@ -77,27 +69,3 @@ class ProtocolNode(Statement):
 
     def accept(self, visitor):
         return visitor.visit_protocol_node(self)
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

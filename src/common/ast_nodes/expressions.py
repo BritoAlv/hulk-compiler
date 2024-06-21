@@ -1,10 +1,7 @@
 from abc import ABC
-from common.ast_nodes.statements import Statement
 from common.token_class import Token
+from common.ast_nodes.base import * 
 
-
-class Expr(Statement, ABC):
-    pass
 
 class LetNode(Expr):
     def __init__(self, assignments : list[tuple[Token, Expr]], body : Expr):
