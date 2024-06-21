@@ -1,5 +1,3 @@
-from operator import le
-from turtle import right
 from code_gen.resolver import Resolver
 from common.ast_nodes.base import Statement
 from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, ForNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, NewNode, SetNode, VectorGetNode, VectorSetNode, WhileNode
@@ -100,7 +98,9 @@ class Generator(Visitor):
     jal stack_pop
     sw $v0 {offset}($sp)
 '''
-        type = self._generate(let_node.body).type
+        result = self._generate(let_node.body)
+        code += result.code
+        type = result.type
 
         return GenerationResult(code, type)
 
@@ -193,12 +193,14 @@ class Generator(Visitor):
     move $a0 $s0
     jal stack_push
             '''
+            return GenerationResult(code, 'number')
         elif binary_node.op.type == 'minus':
             code += '''
     sub $s0 $s0 $s1
     move $a0 $s0
     jal stack_push
             '''
+            return GenerationResult(code, 'number')
         elif binary_node.op.type == 'star':
             code +='''
     mult $s0 $s1
@@ -206,6 +208,7 @@ class Generator(Visitor):
     move $a0 $s0
     jal stack_push
             '''
+            return GenerationResult(code, 'number')
         elif binary_node.op.type == 'div':
             code +='''
     div $s0 $s1
@@ -213,10 +216,9 @@ class Generator(Visitor):
     move $a0 $s0
     jal stack_push
             '''
+            return GenerationResult(code, 'number')
         else:
             raise Exception("Invalid operation")
-
-        return code
 
     def visit_type_node(self, type_node: TypeNode):
         pass
@@ -258,9 +260,6 @@ class Generator(Visitor):
         pass
 
     def visit_vector_set_node(self, vector_set_node: VectorSetNode):
-        pass
-
-    def visit_literal_node(self, literal_node: LiteralNode):
         pass
     
     def _generate(self, stmt : Statement) -> GenerationResult:
