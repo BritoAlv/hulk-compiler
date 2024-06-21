@@ -43,7 +43,9 @@ class Parser:
         self.grammar = gramophoneSyntaxParser(inputHulkGrammar, "hulk_grammar")
         self.parsing_table = self.grammar.BuildParsingTable()
         self.parsing_table.attributed_productions = {
-            "Program": [lambda s: ProgramNode(s[1], s[2])],
+            "Program": [
+                lambda s: ProgramNode(
+                        s[1] + [MethodNode(Token('id', 'main'), [], s[2])])],
             "Decls": [
                 lambda s: [s[1]] + s[2],
                 lambda s: [s[1]] + s[2],
