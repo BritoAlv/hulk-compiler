@@ -26,22 +26,15 @@ from common.ast_nodes.statements import (
 )
 from common.parse_nodes.parse_node import ParseNode
 from common.parse_nodes.parse_tree import ParseTree
-from common.visitors.Printer import AstPrinter
 from common.token_class import Token
-from parsing.parser_generator_ll.grammar import EOF, EPSILON, Grammar
-from parsing.parser_generator_lr.grammarLR1 import GrammarLR1
-from parsing.parser_generator_lr.utils import gramophoneSyntaxParser
-
-
-with open('documentation.txt', 'r') as file:
-    inputHulkGrammar = file.read()
-
-
+from parsing.parser_generator_lr.parsing_table import ParsingTable
 
 class Parser:
     def __init__(self):
-        self.grammar = gramophoneSyntaxParser(inputHulkGrammar, "hulk_grammar")
-        self.parsing_table = self.grammar.BuildParsingTable()
+        """
+        Use the Notebook to build the grammar if is modified (by now).
+        """
+        self.parsing_table = ParsingTable.load_parsing_table("hulk_grammar")
         self.parsing_table.attributed_productions = {
             "Program": [lambda s: ProgramNode(s[1], s[2])],
             "Decls": [

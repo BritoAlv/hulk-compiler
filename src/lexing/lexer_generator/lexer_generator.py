@@ -30,7 +30,7 @@ class LexerGenerator:
             }
         )
 
-        self.table = self.grammar.build_parsing_table()
+        self.table = self.grammar.BuildParsingTable()
 
         self.table.attributed_productions = {
             "A" : [lambda s: BinaryExpression(s[1], UNION, s[3]), 

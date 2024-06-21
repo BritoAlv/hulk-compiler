@@ -1,13 +1,24 @@
+import os
+import pickle
 from common.token_class import Token
 from lexing.lexer_generator  import lexer_generator
-
+from lexing.lexer_generator.finite_automata import DFA 
 class Lexer:
     def __init__(self, specs: list[tuple[str, str]]):
         self.specs = specs
         lexGen = lexer_generator.LexerGenerator()
-        self.automatas = [lexGen.Compile(x[1]) for x in specs]
+        self.automatas = []
+        for x in specs:
+            if self.exist_dfa(x[0]):
+                self.automatas.append(self.load_automata(x[0]))
+            else:
+                automata = lexGen.Compile(x[1])
+                self.save_automata(x[0], automata)
+                self.automatas.append(automata)
         self.currentLine = 0
         self.positionInLine = 0
+
+       
 
     def scanTokens(self, inputStr: str) -> list[Token]:
         self.currentLine = 0
@@ -69,3 +80,30 @@ class Lexer:
             self.currentLine,
             self.positionInLine,
         )
+    
+    def save_automata(self, name: str, automata : DFA):
+        # Get the directory of the current file
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        # Construct the path to the file within common/grammartable
+        # Adjust dir_path to go up to the src/ directory
+        dir_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+        filepath = os.path.join(dir_path, "common", "automatas", name)
+        with open(filepath, "wb") as file:
+            pickle.dump(automata, file)
+
+    def load_automata(self, name: str):
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        # Construct the path to the file within common/grammartable
+        # Adjust dir_path to go up to the src/ directory
+        dir_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+        filepath = os.path.join(dir_path, "common", "automatas", name)
+        with open(filepath, "rb") as file:
+            return pickle.load(file)
+
+    def exist_dfa(self, name : str):
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        # Construct the path to the file within common/grammartable
+        # Adjust dir_path to go up to the src/ directory
+        dir_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+        filepath = os.path.join(dir_path, "common", "automatas", name)
+        return os.path.exists(filepath)

@@ -1,5 +1,6 @@
 import string
 
+from lexing.lexer.lexer import Lexer
 from common import constants as const
 
 letter = ""
@@ -32,7 +33,6 @@ number = const.opar + number1 + const.plus + number2 + const.plus + number3 +  c
 
 stringg = "\"" + const.opar + digits + const.plus + letter + const.cpar + "\""
 
-from lexing.lexer.lexer import Lexer
 
 hulk_lexer = Lexer(
     [
