@@ -10,6 +10,7 @@ from common.ast_nodes.expressions import (
     ImplicitVectorNode,
     LetNode,
     LiteralNode,
+    NewNode,
     SetNode,
     VectorGetNode,
     VectorSetNode,
@@ -219,6 +220,7 @@ class Parser:
             ],
             "VectorElems": [lambda s: [s[1]] + s[2], lambda s: []],
             "VectorTail": [lambda s: [s[2]] + s[3], lambda s: []],
+            'NewExpr': [self.new_expr],
             "As": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
             "LogicOr": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
             "LogicAnd": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
@@ -243,8 +245,8 @@ class Parser:
                 lambda s: s[1],
             ],
             "Factor": [
-                lambda s: BinaryNode(s[1], s[2], s[3]),
-                lambda s: BinaryNode(s[1], s[2], s[3]),
+                lambda s: BinaryNode(s[1], s[2].token, s[3]),
+                lambda s: BinaryNode(s[1], s[2].token, s[3]),
                 lambda s: s[1],
             ],
             "Mod": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
@@ -276,6 +278,12 @@ class Parser:
         if isinstance(s[1], VectorGetNode):
             return VectorSetNode(s[1].left, s[1].index, s[3])
         raise Exception("no pincha")
+    
+    def new_expr(self, s):
+        call_node = s[2]
+        if isinstance(call_node, CallNode) and isinstance(call_node.callee, LiteralNode) and call_node.callee.id.lexeme != 'self':
+            return NewNode(s.callee.id, s.args)
+        raise Exception("New-Expression must be a constructor call")
 
     def parse(self, tokens: list[Token]) -> ParseTree:
         return self.parsing_table.parse(tokens)

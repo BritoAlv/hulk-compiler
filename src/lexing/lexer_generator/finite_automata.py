@@ -1,5 +1,5 @@
 from os import listxattr
-from tkinter import NO
+# from tkinter import NO
 from lexing.lexer_generator.const import EPSILON, UnionSets
 
 def remove_repeated( listt : list):

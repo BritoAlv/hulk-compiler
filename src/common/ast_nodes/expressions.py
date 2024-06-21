@@ -112,6 +112,14 @@ class VectorGetNode(Expr):
 
     def accept(self, visitor):
         return visitor.visit_vector_get_node(self)
+    
+class NewNode(Expr):
+    def __init__(self, id : Token, args : list[Expr]) -> None:
+        self.id = id
+        self.args = args
+
+    def accept(self, visitor):
+        return visitor.visit_new_node(self)
 
 class BinaryNode(Expr, ABC):
     def __init__(self, left : Expr, op : Token , right : Expr):
@@ -128,93 +136,3 @@ class LiteralNode(Expr):
 
     def accept(self, visitor):
         return visitor.visit_literal_node(self)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
