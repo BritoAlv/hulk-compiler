@@ -1,6 +1,6 @@
 from common.parse_nodes.parse_node import ParseNode
 from common.token_class import Token
-from lexing.lexer_generator.const import CONCATENATE, UNION
+from common.constants import CONCATENATE, UNION
 from lexing.lexer_generator.evaluator import Evaluator
 from lexing.lexer_generator.finite_automata import DFA
 from lexing.lexer_generator.operations import Star
@@ -11,12 +11,13 @@ from lexing.lexer_generator.regular_expressions import (
     RegularExpression,
     UnaryExpression,
 )
-from lexing.lexer_generator import const
 from parsing.parser_generator_lr.grammarLR1 import GrammarLR1
+from parsing.parser_generator_lr.parsing_table import ParsingTable
 
 class LexerGenerator:
     def __init__(self):
         self.grammar = GrammarLR1(
+            "RegularExpressionsGrammar",
             ["A", "B", "C", "D", "Z"],
             ["+", "c", "(", ")", "*", "?"],
             "A",
@@ -28,7 +29,9 @@ class LexerGenerator:
                 "Z": [["*"], ["?"]]
             }
         )
+
         self.table = self.grammar.build_parsing_table()
+
         self.table.attributed_productions = {
             "A" : [lambda s: BinaryExpression(s[1], UNION, s[3]), 
                    lambda s: s[1]],

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from lexing.lexer_generator.const import *
+from common.constants import *
 from lexing.lexer_generator.operations import ConcatenateNFA, NFAfor_char, Question, Star, UnionNFA
 from lexing.lexer_generator.regular_expressions import *
 from lexing.lexer_generator.finite_automata import *
