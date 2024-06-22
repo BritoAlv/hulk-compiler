@@ -204,8 +204,10 @@ class ParsingTable:
         for i in range(0, len(body) + 1):
             s.append(None)
 
+        b = []
         for i, node in enumerate(body, 1):
             if node != None:
+                b.append(node.value)
                 if node.value in self.terminals:
                     s[i] = node
                 else:
@@ -213,6 +215,7 @@ class ParsingTable:
 
         lambda_list = self.attributed_productions[tree.value]
         lambda_index = self.get_index(tree)
+        print(tree.token.lexeme, b, lambda_index)
         return lambda_list[lambda_index](s)  # type: ignore
 
     def __str__(self):

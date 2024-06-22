@@ -1,3 +1,5 @@
+from ast import Return
+from requests import ReadTimeout
 from common.ast_nodes.expressions import (
     BinaryNode,
     BlockNode,
@@ -29,6 +31,7 @@ from common.parse_nodes.parse_tree import ParseTree
 from common.token_class import Token
 from parsing.parser_generator_lr.parsing_table import ParsingTable
 
+
 class Parser:
     def __init__(self):
         """
@@ -45,14 +48,14 @@ class Parser:
                 lambda s: [s[1]] + s[2],
                 lambda s: [],
             ],
-            "ProtocolDecls": [lambda s: ProtocolNode(s[2].token, s[5], s[3].token if s[3] != None else s[3])],
+            "ProtocolDecl": [lambda s: ProtocolNode(s[2].token, s[5], s[3].token if s[3] != None else s[3])],
             "OptExtension": [lambda s: s[2], lambda s: None],
             "ProtocolElems": [lambda s: [s[1]] + s[2], lambda s: []],
             "MethodSignature": [lambda s: SignatureNode(s[1], [(x.token, y.token) for (x, y) in s[3]], s[6])],
             "TypedParamList": [lambda s: [(s[1], s[3])] + s[4], lambda s: []],
             "TypedParamTail": [lambda s: [(s[2], s[4])] + s[5], lambda s: []],
             "TypeDecl": [
-                lambda s: TypeNode(s[2].token, [(x.token, y.token) for (x, y) in s[3]], s[6][0], s[6][1], s[4][0], s[4][1])
+                lambda s: TypeNode(s[2].token, [(x.token, y.token if y != None else y) for (x, y) in s[3]], s[6][0], s[6][1], s[4][0], s[4][1])
             ],
             "OptParams": [lambda s: s[2], lambda s: []],
             "OptInheritance": [lambda s: (s[2], s[3]), lambda s: (None, None)],
@@ -66,7 +69,7 @@ class Parser:
             "MethodDecl": [
                 lambda s: MethodNode(
                     s[1].token,
-                    [(x.token, y.token) for (x, y) in s[3]],
+                    [(x.token, y.token if y != None else y) for (x, y) in s[3]],
                     s[6],
                     s[5].token if s[5] != None else s[5],
                 )
@@ -90,9 +93,10 @@ class Parser:
                 lambda s: s[1],
                 lambda s: s[1],
                 lambda s: s[1],
+                lambda s: s[1],
             ],
             "LetExpr": [
-                lambda s: LetNode([(x.token, y) for (x, y) in [s[2]] + s[3]], s[5])
+                lambda s: LetNode([s[2]] + s[3], s[5])
             ],
             "AssignmentList": [lambda s: [s[2]] + s[3], lambda s: []],
             "BlockExpr": [lambda s: BlockNode(s[2])],
@@ -147,7 +151,7 @@ class Parser:
                 lambda s: LiteralNode(s[1].token),
                 lambda s: LiteralNode(s[1].token),
                 lambda s: LiteralNode(s[1].token),
-                lambda s: LiteralNode(s[1].token),
+                lambda s: s[1],
             ],
             "CallList": [
                 lambda s: GetNode(s[1], s[3].token),
@@ -162,10 +166,11 @@ class Parser:
         }
 
     def destruct_Expr(self, s):
+
         if isinstance(s[1], LiteralNode) and s[1].id.type == "id":
-            return DestructorNode(s[1], s[3])
+                return DestructorNode(s[1], s[3])
         if isinstance(s[1], GetNode):
-            return SetNode(s[1].left, s[1].token, s[3])
+            return SetNode(s[1].left, s[1].id, s[3])
         if isinstance(s[1], VectorGetNode):
             return VectorSetNode(s[1].left, s[1].index, s[3])
         raise Exception("no pincha")
@@ -173,7 +178,7 @@ class Parser:
     def new_expr(self, s):
         call_node = s[2]
         if isinstance(call_node, CallNode) and isinstance(call_node.callee, LiteralNode) and call_node.callee.id.lexeme != 'self':
-            return NewNode(s.callee.id, s.args)
+            return NewNode(call_node.callee.id, call_node.args)
         raise Exception("New-Expression must be a constructor call")
 
     def parse(self, tokens: list[Token]) -> ParseTree:
@@ -181,3 +186,56 @@ class Parser:
 
     def toAst(self, tree: ParseTree):
         return self.parsing_table.convertAst(tree.root)
+    
+
+
+from parsing.parser_generator_lr.parsing_table import ParsingTable
+
+tableHulk = ParsingTable.load_parsing_table("hulk_grammar")
+# print(tableHulk)
+
+node = tableHulk.parse(
+    [Token(x, x, 0, 0) for x in [
+        'type', 'id', 'lparen', 'id', 'colon', 'id', 'comma', 'id', 'colon', 'id', 'rparen',
+        'lbrace',
+            'id', 'equal', 'id', 'semicolon',
+            'id', 'equal', 'id', 'semicolon',
+            'id', 'equal', 'id', 'minus', 'number','semicolon',
+
+            'id', 'lparen', 'rparen', 'colon', 'id', 'arrow', 'lparen', 'self', 'dot', 'id', 'destrucOp', 'self', 'dot', 'id', 'plus', 'number', 'rparen', 'less', 'id', 'semicolon',
+        'rbrace',
+
+        'protocol', 'id',
+        'lbrace',
+            'id', 'lparen', 'id', 'colon', 'id', 'rparen', 'colon', 'id', 'semicolon',
+            'id', 'lparen', 'rparen', 'colon', 'id', 'semicolon',
+        'rbrace',
+        
+        'protocol', 'id', 'extends', 'id',
+        'lbrace',
+            'id', 'lparen', 'id', 'colon', 'id', 'rparen', 'colon', 'id', 'semicolon',
+            'id', 'lparen', 'rparen', 'colon', 'id', 'semicolon',
+        'rbrace',
+
+        'lbrace',
+
+        'let', 'id', 'equal', 'lbracket', 'id', 'doubleOr', 'id', 'in', 'id', 'lparen', 'id', 'comma', 'id', 'rparen', 'rbracket', 'in', 'id', 'lparen', 'id', 'rparen', 'semicolon',
+
+        'let', 'id', 'equal', 'lbracket', 'number', 'comma', 'number', 'comma', 'number', 'comma', 'number', 'comma', 'number', 'rbracket', 'in',
+        'for', 'lparen', 'id', 'in', 'id', 'rparen',
+            'id', 'lparen', 'id', 'rparen', 'semicolon',
+
+        'lparen', 'id', 'rparen', 'dot', 'id', 'semicolon',
+
+        'let', 'id', 'equal', 'new', 'id', 'lparen', 'number', 'comma', 'id', 'rparen', 'in', 'id', 'lparen', 'id', 'rparen', 'semicolon',
+        'rbrace', 'semicolon',
+        '$']]
+)
+
+
+node.root.print([0], 0, True)
+
+
+
+p = Parser()
+p.toAst(node)
