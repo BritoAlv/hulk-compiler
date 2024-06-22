@@ -19,6 +19,7 @@ class Generator(Visitor):
         self._func_name : str = None
         self._literal_strings : list[str] = []
         self._if_index = 0
+        self._while_index = 0
 
     def generate(self, program : ProgramNode) -> str:
         result = self._generate(program)
@@ -345,7 +346,31 @@ class Generator(Visitor):
 
 
     def visit_while_node(self, while_node: WhileNode):
-        pass
+        code = ''
+        condition_result = self._generate(while_node.condition)
+        code += condition_result.code
+        code += f'''
+    jal stack_pop
+    bne $v0 1 while_end_{self._while_index}
+    j while_body_{self._while_index}
+    while_start_{self._while_index}:
+'''
+        code += condition_result.code
+        code += f'''
+    jal stack_pop
+    bne $v0 1 while_end_{self._while_index}
+    jal stack_pop
+    while_body_{self._while_index}:
+'''
+        body_result = self._generate(while_node.body)
+        code += body_result.code
+        code += f'''
+    j while_start_{self._while_index}
+    while_end_{self._while_index}:
+'''
+        self._while_index += 1
+
+        return GenerationResult(code, body_result.type)
 
     def visit_for_node(self, for_node: ForNode):
         pass
