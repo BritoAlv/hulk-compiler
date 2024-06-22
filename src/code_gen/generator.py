@@ -15,9 +15,12 @@ class GenerationResult:
 class Generator(Visitor):
     def __init__(self, resolver : Resolver) -> None:
         self._resolver = resolver
+        
         self._on_function_block = False
         self._func_name : str = None
+
         self._literal_strings : list[str] = []
+        self._literal_numbers : list[str] = []
         self._if_index = 0
         self._while_index = 0
 
@@ -32,8 +35,23 @@ class Generator(Visitor):
 '''
         for decl in program_node.decls:
             code += self._generate(decl).code
-        
-        return GenerationResult(code)
+
+        static_data_code = '''
+.data
+'''
+        # Add static data
+        i = 0
+        for str_literal in self._literal_strings:
+            static_data_code += f'str{i}: .asciiz "\\n{str_literal}\\n" \n' 
+            i += 1
+
+        i = 0
+        for number_literal in self._literal_numbers:
+            static_data_code += f'number{i}: .float {number_literal} \n' 
+            i += 1
+        static_data_code += '\n'
+
+        return GenerationResult(static_data_code + code)
     
     def visit_method_node(self, method_node: MethodNode) -> GenerationResult:
         func_name = method_node.id.lexeme
@@ -86,19 +104,27 @@ class Generator(Visitor):
         self._next_context() # Move to next context, since it's a let-node
 
         code = ''
-        for var, value in let_node.assignments:
-            var_name = var.lexeme
+        for assignment in let_node.assignments:
+            var_name = assignment.id.lexeme
+            value = assignment.body
             offset = self._get_offset(var_name)
 
             result = self._generate(value)
             code += result.code
 
             # Update variable's type (Assuming type-checking has been correctly done previously)
+            # It would be better if type were resolved previously (during type-checking)
             self._resolver.resolve(var_name).type = result.type
 
-            code += f'''
+            if result.type != 'number':
+                code += f'''
     jal stack_pop
     sw $v0 {offset}($sp)
+'''
+            else:
+                code += f'''
+    jal stack_pop
+    swc1 $f0 {offset}($sp)
 '''
         result = self._generate(let_node.body)
         code += result.code
@@ -113,13 +139,22 @@ class Generator(Visitor):
         # We won't update type since we're assuming type-checking was already performed
         result = self._generate(destructor_node.expr)
         code = result.code
-
-        code += f'''
+        
+        if result.type != 'number':
+            code += f'''
     jal stack_pop
     sw $v0 {offset}($sp)
     move $a0 $v0
     jal stack_push
 '''
+        else:
+            code += f'''
+    jal stack_pop
+    swc1 $f0 {offset}($sp)
+    mov.s $f12 $f0
+    jal stack_push_number
+'''
+
         return GenerationResult(code, result.type)
 
     def visit_call_node(self, call_node: CallNode):
@@ -131,42 +166,65 @@ class Generator(Visitor):
             result = self._generate(arg)
             code += result.code
             offset = -(i * WORD_SIZE)
-            code += f'''
+            if result.type != 'number':
+                code += f'''
     jal stack_pop
     sw $v0 {offset}($sp)
+'''         
+            else:
+                code += f'''
+    jal stack_pop
+    swc1 $f0 {offset}($sp)
 '''
             i += 1
 
         if isinstance(call_node.callee, LiteralNode):
             func_name = call_node.callee.id.lexeme
+            func_type = self._resolver.get_func_type(self._func_name)
             code += f'''
     jal {func_name}
+'''
+            if func_type != 'number':
+                code += '''
     move $a0 $v0
     jal stack_push
 '''
-            
-        type = self._resolver.get_func_type(self._func_name)
-        return GenerationResult(code, type)
+            else:
+                code += '''
+    mov.s $f12 $f0
+    jal stack_push_number
+'''
+            return GenerationResult(code, func_type)
     
     def visit_literal_node(self, literal_node: LiteralNode):
-        # TODO Put string into static data (.data)
 
         if literal_node.id.type == 'number':
-            value = literal_node.id.lexeme
+            index = len(self._literal_numbers)
+            number_literal = literal_node.id.lexeme
+            self._literal_numbers.append(number_literal)
             code = f'''
-    li $a0 {value}
-    jal stack_push
+    lwc1 $f12 number{index}
+    jal stack_push_number
 '''         
             return GenerationResult(code, 'number')
+        
         elif literal_node.id.type == 'id':
             var_name = literal_node.id.lexeme
             offset = self._get_offset(var_name)
-            code = f'''
+            type = self._resolver.resolve(var_name).type
+
+            if type != 'number':
+                code = f'''
     lw $a0 {offset}($sp)
     jal stack_push
 '''
-            type = self._resolver.resolve(var_name).type
+            else:
+                code = f'''
+    lwc1 $f12 {offset}($sp)
+    jal stack_push_number
+'''
             return GenerationResult(code, type)
+        
         elif literal_node.id.type == 'string':
             index = len(self._literal_strings)
             str_literal = literal_node.id.lexeme
@@ -176,6 +234,7 @@ class Generator(Visitor):
     jal stack_push            
 '''
             return GenerationResult(code, 'string')
+        
         elif literal_node.id.type == 'true':
             code = '''
     li $a0 1
@@ -192,89 +251,123 @@ class Generator(Visitor):
     def visit_binary_node(self, binary_node: BinaryNode):
         left_result = self._generate(binary_node.left)
         right_result = self._generate(binary_node.right)
+        left_type = left_result.type
+        right_type = right_result.type
+
         code = left_result.code
         code += right_result.code
         code += '''
     jal stack_pop
     move $s0 $v0
+    mov.s $f20 $f0
     jal stack_pop
     move $s1 $v0
+    mov.s $f22 $f0
         '''
 
+        # Addition
         if binary_node.op.type == 'plus':
             code += '''
-    add $s0 $s0 $s1
-    move $a0 $s0
-    jal stack_push
+    add.s $f20 $f20 $f22
+    mov.s $f12 $f20
+    jal stack_push_number
             '''
             return GenerationResult(code, 'number')
+        # Subtraction
         elif binary_node.op.type == 'minus':
             code += '''
-    sub $s0 $s1 $s0
-    move $a0 $s0
-    jal stack_push
+    sub.s $f20 $f22 $f20
+    mov.s $f12 $f20
+    jal stack_push_number
             '''
             return GenerationResult(code, 'number')
+        # Multiplication
         elif binary_node.op.type == 'star':
             code +='''
-    mult $s0 $s1
-    mflo $s0
-    move $a0 $s0
-    jal stack_push
+    mul.s $f20 $f20 $f22
+    mov.s $f12 $f20
+    jal stack_push_number
             '''
             return GenerationResult(code, 'number')
+        # Division
         elif binary_node.op.type == 'div':
             code +='''
-    div $s1 $s0
-    mflo $s0
-    move $a0 $s0
-    jal stack_push
+    div.s $f20 $f22 $f20
+    mov.s $f12 $f20
+    jal stack_push_number
             '''
             return GenerationResult(code, 'number')
+        # GreaterThan
         elif binary_node.op.type == 'greater':
             code +='''
-    sgt $s0 $s1 $s0
-    move $a0 $s0
+    li $a0 1
+    c.le.s $f22 $f20
+    movt $a0 $zero
     jal stack_push
             '''
             return GenerationResult(code, 'bool')
+        # LessThan
         elif binary_node.op.type == 'less':
             code +='''
-    slt $s0 $s1 $s0
-    move $a0 $s0
+    li $a0 0
+    li $t0 1
+    c.lt.s $f22 $f20
+    movt $a0 $t0
     jal stack_push
             '''
             return GenerationResult(code, 'bool')
+        # GreaterThanOrEqual
         elif binary_node.op.type == 'greaterEq':
             code +='''
-    sgt $t0 $s1 $s0
-    seq $t1 $s0 $s1
-    or $a0 $t0 $t1
+    li $a0 1
+    c.lt.s $f22 $f20
+    movt $a0 $zero
     jal stack_push
             '''
             return GenerationResult(code, 'bool')
+        # LessThanOrEqual
         elif binary_node.op.type == 'lessEq':
             code +='''
-    slt $t0 $s1 $s0
-    seq $t1 $s0 $s1
-    or $a0 $t0 $t1
+    li $a0 0
+    li $t0 1
+    c.le.s $f22 $f20
+    movt $a0 $t0
     jal stack_push
             '''
             return GenerationResult(code, 'bool')
+        # DoubleEqual
         elif binary_node.op.type == 'doubleEqual':
-            code +='''
+            if left_type == 'number':
+                code +='''
+    li $a0 0
+    li $t0 1
+    c.eq.s $f22 $f20
+    movt $a0 $t0
+    jal stack_push
+                '''
+            else:
+                code += '''
     seq $s0 $s0 $s1
     move $a0 $s0
     jal stack_push
-            '''
+'''
             return GenerationResult(code, 'bool')
+        # NotEqual
         elif binary_node.op.type == 'notEqual':
-            code +='''
+            if left_type == 'number':
+                code +='''
+    li $a0 1
+    c.eq.s $f22 $f20
+    movt $a0 $zero
+    jal stack_push
+            '''
+            else:
+                code +='''
     seq $s0 $s0 $s1
     seq $s0 $s0 0
     move $a0 $s0
     jal stack_push
-            '''
+'''
             return GenerationResult(code, 'bool')
         else:
             raise Exception("Invalid operation")

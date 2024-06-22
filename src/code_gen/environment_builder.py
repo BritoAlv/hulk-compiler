@@ -38,11 +38,12 @@ class EnvironmentBuilder(Visitor):
         i = 0
         for param in method_node.params:
             param_name = param[0].lexeme
+            param_type = param[1].lexeme
 
             if param_name in self._params:
                     raise Exception("Params must be named differently")
             
-            self._params[param_name] = VarData(self._var_index)
+            self._params[param_name] = VarData(self._var_index, param_type)
             self._var_index += 1
 
             i += 1

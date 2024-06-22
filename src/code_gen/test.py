@@ -2,12 +2,12 @@ from code_gen.environment_builder import EnvironmentBuilder
 from code_gen.generator import Generator
 from code_gen.resolver import Resolver
 from common.ast_nodes.expressions import BinaryNode, CallNode, DestructorNode, IfNode, LetNode, LiteralNode, WhileNode
-from common.ast_nodes.statements import MethodNode, ProgramNode
+from common.ast_nodes.statements import AttributeNode, MethodNode, ProgramNode
 from common.token_class import Token
 
 ast = ProgramNode(
     [MethodNode(Token('id', 'factorial'), 
-                [(Token('id', 'n'), None)], 
+                [(Token('id', 'n'), Token('id', 'number'))], 
                 IfNode([
                     (BinaryNode(
                         LiteralNode(Token('id', 'n')),
@@ -41,7 +41,7 @@ ast = ProgramNode(
 
 ast = ProgramNode(
     [MethodNode(Token('id', 'fibonacci'), 
-                [(Token('id', 'n'), None)], 
+                [(Token('id', 'n'), Token('id', 'n'))], 
                 IfNode([
                     (BinaryNode(
                         LiteralNode(Token('id', 'n')),
@@ -83,7 +83,7 @@ ast = ProgramNode(
 
 ast = ProgramNode(
     [MethodNode(Token('id', 'loop'), [
-        (Token('id', 'n'), None)
+        (Token('id', 'n'), Token('id', 'number'))
     ],
         WhileNode(
                    BinaryNode(LiteralNode(Token('id', 'n')), 
@@ -103,11 +103,20 @@ ast = ProgramNode(
                Token('id', 'number'))]
 )
 
+ast1 = ProgramNode([
+    MethodNode(Token('id', 'main'), [], 
+               LetNode([
+                   AttributeNode(Token('id', 'a'), 
+                                 LiteralNode(Token('string', 'Nature')))
+               ], LiteralNode(Token('string', 'Viva Cuba Libre!'))),
+               Token('id', 'number'))
+])
+
 environment_builder = EnvironmentBuilder()
-environment = environment_builder.build(ast)
+environment = environment_builder.build(ast1)
 resolver = Resolver(environment)
 generator = Generator(resolver)
 
-print(generator.generate(ast))
+print(generator.generate(ast1))
 
 
