@@ -2,23 +2,40 @@ from typing import Literal
 from code_gen.environment_builder import EnvironmentBuilder
 from code_gen.generator import Generator
 from code_gen.resolver import Resolver
-from common.ast_nodes.expressions import BinaryNode, CallNode, LetNode, LiteralNode
+from common.ast_nodes.expressions import BinaryNode, CallNode, IfNode, LetNode, LiteralNode
 from common.ast_nodes.statements import MethodNode, ProgramNode
 from common.token_class import Token
 
 ast = ProgramNode(
-    [MethodNode(Token('id', 'sum'), 
-                [(Token('id', 'a'), None), (Token('id', 'b'), None)], 
+    [MethodNode(Token('id', 'factorial'), 
+                [(Token('id', 'n'), None)], 
+                IfNode([
+                    (BinaryNode(
+                        LiteralNode(Token('id', 'n')),
+                        Token('less', '<'),
+                        LiteralNode(Token('number', '1'))
+                    ), 
+                    LiteralNode(Token('number', '1')))
+                ], 
                 BinaryNode(
-                   LiteralNode(Token('id', 'a')),
-                   Token('plus', '+'),
-                   LiteralNode(Token('id', 'b'))
-               ),
+                    LiteralNode(Token('id', 'n')),
+                    Token('star', '*'),
+                    CallNode(
+                        LiteralNode(Token('id', 'factorial')),
+                        [
+                            BinaryNode(
+                                LiteralNode(Token('id', 'n')),
+                                Token('minus', '-'),
+                                LiteralNode(Token('number', '1'))
+                            )
+                        ]
+                    )
+                )),
                Token('id', 'number')), 
     MethodNode(Token('id', 'main'), [], 
-               LetNode([
-                   (Token('id', 'a'), LiteralNode(Token('number', '500')))
-               ], CallNode(LiteralNode(Token('id', 'sum')), [LiteralNode(Token('id', 'a')), LiteralNode(Token('number', '100'))])), 
+               CallNode(LiteralNode(Token('id', 'factorial')), [
+                   LiteralNode(Token('number', '7'))
+               ]), 
                Token('id', 'number'))]
 )
 
