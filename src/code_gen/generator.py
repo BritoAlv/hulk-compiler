@@ -18,6 +18,7 @@ class Generator(Visitor):
         self._on_function_block = False
         self._func_name : str = None
         self._literal_strings : list[str] = []
+        self._if_index = 0
 
     def generate(self, program : ProgramNode) -> str:
         result = self._generate(program)
@@ -174,6 +175,18 @@ class Generator(Visitor):
     jal stack_push            
 '''
             return GenerationResult(code, 'string')
+        elif literal_node.id.type == 'true':
+            code = '''
+    li $a0 1
+    jal stack_push
+'''
+            return GenerationResult(code, 'bool')
+        elif literal_node.id.type == 'false':
+            code = '''
+    li $a0 0
+    jal stack_push
+'''
+            return GenerationResult(code, 'bool')
         
     def visit_binary_node(self, binary_node: BinaryNode):
         left_result = self._generate(binary_node.left)
@@ -196,7 +209,7 @@ class Generator(Visitor):
             return GenerationResult(code, 'number')
         elif binary_node.op.type == 'minus':
             code += '''
-    sub $s0 $s0 $s1
+    sub $s0 $s1 $s0
     move $a0 $s0
     jal stack_push
             '''
@@ -211,12 +224,57 @@ class Generator(Visitor):
             return GenerationResult(code, 'number')
         elif binary_node.op.type == 'div':
             code +='''
-    div $s0 $s1
+    div $s1 $s0
     mflo $s0
     move $a0 $s0
     jal stack_push
             '''
             return GenerationResult(code, 'number')
+        elif binary_node.op.type == 'greater':
+            code +='''
+    sgt $s0 $s1 $s0
+    move $a0 $s0
+    jal stack_push
+            '''
+            return GenerationResult(code, 'bool')
+        elif binary_node.op.type == 'less':
+            code +='''
+    slt $s0 $s1 $s0
+    move $a0 $s0
+    jal stack_push
+            '''
+            return GenerationResult(code, 'bool')
+        elif binary_node.op.type == 'greaterEq':
+            code +='''
+    sgt $t0 $s1 $s0
+    seq $t1 $s0 $s1
+    or $a0 $t0 $t1
+    jal stack_push
+            '''
+            return GenerationResult(code, 'bool')
+        elif binary_node.op.type == 'lessEq':
+            code +='''
+    slt $t0 $s1 $s0
+    seq $t1 $s0 $s1
+    or $a0 $t0 $t1
+    jal stack_push
+            '''
+            return GenerationResult(code, 'bool')
+        elif binary_node.op.type == 'doubleEqual':
+            code +='''
+    seq $s0 $s0 $s1
+    move $a0 $s0
+    jal stack_push
+            '''
+            return GenerationResult(code, 'bool')
+        elif binary_node.op.type == 'notEqual':
+            code +='''
+    seq $s0 $s0 $s1
+    seq $s0 $s0 0
+    move $a0 $s0
+    jal stack_push
+            '''
+            return GenerationResult(code, 'bool')
         else:
             raise Exception("Invalid operation")
 
@@ -233,7 +291,58 @@ class Generator(Visitor):
         pass
     
     def visit_if_node(self, if_node: IfNode):
-        pass
+        types : list[str] = []
+        code = ''
+        i = 0
+        for condition, expr in if_node.body:
+            condition_result = self._generate(condition)
+
+            if i > 0:
+                code += f'''
+    conditional_{self._if_index}_{i - 1}_{self._func_name}:
+'''
+            code += condition_result.code
+            code += f'''
+    jal stack_pop
+'''
+            if i < len(if_node.body) - 1:
+                code += f'''
+    bne $v0 1 conditional_{self._if_index}_{i}_{self._func_name}
+'''
+            else:
+                code += f'''
+    bne $v0 1 conditional_else_{self._if_index}_{self._func_name}
+'''
+            
+            expr_result = self._generate(expr)
+            code += expr_result.code
+            types.append(expr_result.type)
+            code += f'''
+    j conditional_end_{self._if_index}_{self._func_name}
+'''
+            i += 1
+
+        code += f'''
+    conditional_else_{self._if_index}_{self._func_name}:
+'''
+        else_result = self._generate(if_node.elsebody)
+        code += else_result.code
+        types.append(else_result.type)
+
+        code += f'''
+    conditional_end_{self._if_index}_{self._func_name}:
+'''
+
+        self._if_index += 1
+
+        # Check return type
+        base_type = types[0]
+        for type in types:
+            if type != base_type:
+                return GenerationResult(code, 'object')
+        
+        return GenerationResult(code, base_type)
+
 
     def visit_while_node(self, while_node: WhileNode):
         pass
