@@ -1,10 +1,11 @@
 from abc import ABC
+from common.ast_nodes.statements import AttributeNode
 from common.token_class import Token
 from common.ast_nodes.base import * 
 
 
 class LetNode(Expr):
-    def __init__(self, assignments : list[tuple[Token, Expr]], body : Expr):
+    def __init__(self, assignments : list[AttributeNode], body : Expr):
         self.assignments = assignments
         self.body = body
 
