@@ -39,6 +39,49 @@ ast = ProgramNode(
                Token('id', 'number'))]
 )
 
+
+ast = ProgramNode(
+    [MethodNode(Token('id', 'fibonacci'), 
+                [(Token('id', 'n'), None)], 
+                IfNode([
+                    (BinaryNode(
+                        LiteralNode(Token('id', 'n')),
+                        Token('less', '<'),
+                        LiteralNode(Token('number', '2'))
+                    ), 
+                    LiteralNode(Token('number', '1')))
+                ], 
+                BinaryNode(
+                    CallNode(
+                        LiteralNode(Token('id', 'fibonacci')),
+                        [
+                            BinaryNode(
+                                LiteralNode(Token('id', 'n')),
+                                Token('minus', '-'),
+                                LiteralNode(Token('number', '1'))
+                            )
+                        ]
+                    ),
+                    Token('plus', '+'),
+                    CallNode(
+                        LiteralNode(Token('id', 'fibonacci')),
+                        [
+                            BinaryNode(
+                                LiteralNode(Token('id', 'n')),
+                                Token('minus', '-'),
+                                LiteralNode(Token('number', '2'))
+                            )
+                        ]
+                    )
+                )),
+               Token('id', 'number')), 
+    MethodNode(Token('id', 'main'), [], 
+               CallNode(LiteralNode(Token('id', 'fibonacci')), [
+                   LiteralNode(Token('number', '6'))
+               ]), 
+               Token('id', 'number'))]
+)
+
 environment_builder = EnvironmentBuilder()
 environment = environment_builder.build(ast)
 resolver = Resolver(environment)
