@@ -168,7 +168,7 @@ class Parser:
     def destruct_Expr(self, s):
 
         if isinstance(s[1], LiteralNode) and s[1].id.type == "id":
-                return DestructorNode(s[1], s[3])
+            return DestructorNode(s[1].id, s[3])
         if isinstance(s[1], GetNode):
             return SetNode(s[1].left, s[1].id, s[3])
         if isinstance(s[1], VectorGetNode):

@@ -54,7 +54,7 @@ class ImplicitVectorNode(Expr):
         return visitor.visit_implicit_vector_node(self)
 
 class DestructorNode(Expr):
-    def __init__(self, id : Expr, expr : Expr):
+    def __init__(self, id : Token, expr : Expr):
         self.id = id
         self.expr = expr
 
