@@ -50,12 +50,13 @@ class EnvironmentBuilder(Visitor):
         self._build(method_node.body)
         self._environment.add_variables(func_name, self._var_index)
 
-    # TODO: Fix this
     def visit_let_node(self, let_node: LetNode):
         old_context = self._create_context()
 
-        for var, value in let_node.assignments:
-            var_name = var.lexeme
+        for assignment in let_node.assignments:
+            var_name = assignment.id.lexeme
+            value = assignment.body
+            
             if var_name in self._context.variables:
                 raise Exception("Cannot declare the same variable twice in the same scope")
             elif var_name in self._params:
