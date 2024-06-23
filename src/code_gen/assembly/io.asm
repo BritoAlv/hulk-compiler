@@ -10,6 +10,8 @@ false: .asciiz "false"
 .globl str_concat
 .globl str_space_concat
 .globl bool_to_str
+.globl pointer_to_str
+.globl print_pointer
 # .globl done # Simulation code
 
 #** Printing code
@@ -59,6 +61,16 @@ print_bool:
 	jal print_str
 	lw $ra 4($sp)
 	addi $sp $sp 4
+	jr $ra
+
+print_pointer:
+	li $v0 1
+	syscall 
+
+	la $a0 nl
+	li $v0 4
+	syscall
+
 	jr $ra
 
 #** String manipulation code
@@ -295,6 +307,15 @@ bool_to_str:
 	jr $ra
 	bool_to_str_false:
 	la $v0 false
+	jr $ra
+
+pointer_to_str:
+	addi $sp $sp -4
+	sw $ra 4($sp)
+	jal int_to_str
+
+	lw $ra 4($sp)
+	addi $sp $sp 4
 	jr $ra
 
 # done: # Simulation code
