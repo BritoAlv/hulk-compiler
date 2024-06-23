@@ -64,7 +64,7 @@ class LexerGenerator:
         # pass tokens to the parser to generate derivation tree.
         derivation_tree = self.table.parse(tokens)
 
-        derivation_tree.root.print([0], 0, True)
+        # derivation_tree.root.print([0], 0, True)
 
         # convert tree to abstract syntax tree.
         ast = self.ConvertToAST(derivation_tree.root)
