@@ -52,7 +52,7 @@ hulk_lexer = Lexer(
         ("colon", ":"),
         ("comma", ","),
         ("type", "type"),
-        ("arrow", "->"),
+        ("arrow", "=>"),
         ("equal", "="),
         *[(x, x) for x in ["if", "else", "elif", "protocol", "in", "let", "function", "inherits", "extends", "while", "for", "true", "false", "self", "new"]],
         ("destrucOp", ":="),
