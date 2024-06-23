@@ -20,9 +20,8 @@ one: .float 1.0
 #** Printing code
 
 print_number:
-	# la $a0 nl
-	# li $v0 4
-	# syscall 
+	addi $sp $sp -8
+	lwc1 $f12 4($sp)
 	
 	li $v0 2
 	syscall
@@ -30,15 +29,16 @@ print_number:
 	la $a0 nl
 	li $v0 4
 	syscall
+
+	mov.s $f0 $f12
 	
+	addi $sp $sp 8
 	jr $ra
 	
 print_str:
-	# move $t0 $a0
-	# la $a0 nl
-	# li $v0 4
-	# syscall 
-	#move $a0 $t0
+	addi $sp $sp -8
+	lw $a0 4($sp)
+	move $t0 $a0
 	
 	li $v0 4
 	syscall
@@ -47,26 +47,46 @@ print_str:
 	li $v0 4
 	syscall
 	
+	move $v0 $t0
+	addi $sp $sp 8
 	jr $ra
 
 print_bool:
-	addi $sp $sp -4
+	addi $sp $sp -16
 	sw $ra 4($sp)
+	sw $s0 8($sp)
+	lw $a0 12($sp)
+	move $s0 $a0
+
 	bne $a0 1 print_bool_false
 	la $a0 true
+	sw $a0 -4($sp)
 	jal print_str
+
+	# Return code
+	move $v0 $s0
 	lw $ra 4($sp)
-	addi $sp $sp 4
+	lw $s0 8($sp)
+	addi $sp $sp 16
 	jr $ra
 
 	print_bool_false:
 	la $a0 false
+	sw $a0 -4($sp)
 	jal print_str
+
+	# Return code
+	move $v0 $s0
 	lw $ra 4($sp)
-	addi $sp $sp 4
+	lw $s0 8($sp)
+	addi $sp $sp 16
 	jr $ra
 
 print_pointer:
+	addi $sp $sp -8
+	lw $a0 4($sp)
+	move $t0 $a0
+
 	li $v0 1
 	syscall 
 
@@ -74,6 +94,8 @@ print_pointer:
 	li $v0 4
 	syscall
 
+	move $v0 $t0
+	addi $sp $sp 8
 	jr $ra
 
 #** String manipulation code
