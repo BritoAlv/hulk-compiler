@@ -3,17 +3,20 @@ nl: .asciiz "\n"
 
 .text
 .globl print_number
-.globl print_string
+.globl print_str
+.globl number_to_str
+.globl str_concat
+.globl str_space_concat
 # .globl done # Simulation code
 
+#** Printing code
+
 print_number:
-	move $t0 $a0
-	la $a0 nl
-	li $v0 4
-	syscall 
+	# la $a0 nl
+	# li $v0 4
+	# syscall 
 	
-	move $a0 $t0
-	li $v0 1
+	li $v0 2
 	syscall
 	
 	la $a0 nl
@@ -22,11 +25,11 @@ print_number:
 	
 	jr $ra
 	
-print_string:
+print_str:
 	move $t0 $a0
-	la $a0 nl
-	li $v0 4
-	syscall 
+	# la $a0 nl
+	# li $v0 4
+	# syscall 
 	
 	move $a0 $t0
 	li $v0 4
@@ -37,6 +40,8 @@ print_string:
 	syscall
 	
 	jr $ra
+
+#** String manipulation code
 
 str_len: 
 	li $t0 0 # Counter
@@ -71,17 +76,6 @@ str_concat:
 	
 	add $s2 $s2 $t0 # len(str1) + len(str2) + 1
 	addi $s2 $s2 1
-	
-	li $t0 4
-	div $s2 $t0
-	mflo $s2 # Quotient
-	mfhi $t0 # Remainder 
-	
-	bne $t0 $zero increase_quotient
-	j size_ready
-	increase_quotient:
-	addi $s2 $s2 1
-	size_ready:
 	
 	li $v0 9
 	move $a0 $s2
@@ -141,17 +135,6 @@ str_space_concat:
 	add $s2 $s2 $t0 # len(str1) + len(str2) + 2
 	addi $s2 $s2 2
 	
-	li $t0 4
-	div $s2 $t0
-	mflo $s2 # Quotient
-	mfhi $t0 # Remainder 
-	
-	bne $t0 $zero increase_quotient_space
-	j size_ready_space
-	increase_quotient_space:
-	addi $s2 $s2 1
-	size_ready_space:
-	
 	li $v0 9
 	move $a0 $s2
 	syscall
@@ -190,6 +173,100 @@ str_space_concat:
 	lw $s3 16($sp)
 	lw $ra 20($sp)
 	addi $sp $sp 20
-	jr $ra	
+	jr $ra
+
+
+#** Conversions code
+
+number_to_str:
+	addi $sp $sp -8
+	sw $ra 4($sp)
+	sw $s0 8($sp)
+	
+	cvt.w.s $f12 $f12
+	swc1 $f12 8($sp)
+	lw $a0 8($sp)
+	move $s0 $a0
+	abs $a0 $a0
+	
+	jal int_to_str
+	move $t0 $v0
+
+	slt $s0 $s0 $zero
+	beq $s0 1 number_to_str_negative
+	lw $ra 4($sp)
+	lw $s0 8($sp)
+	addi $sp $sp 8
+	jr $ra
+
+	number_to_str_negative:
+	li $t1 45
+	li $v0 9
+	li $a0 2
+	syscall
+	sb $t1 ($v0)
+	li $t1 0
+	sb $t1 1($v0)
+
+	move $a0 $v0
+	move $a1 $t0
+	jal str_concat
+	
+	lw $ra 4($sp)
+	lw $s0 8($sp)
+	addi $sp $sp 8
+	jr $ra
+	
+int_to_str:
+	addi $sp $sp -12
+	sw $ra 4($sp)
+	sw $s0 8($sp)
+	sw $s1 12($sp)
+	
+	move $s0 $a0 # Save n
+	
+	# Base case (n < 10)
+	li $t1 10 
+	slt $t0 $s0 $t1
+	beq $t0 $zero int_to_str_recursive_case
+	jal digit_to_str
+	lw $ra 4($sp)
+	lw $s0 8($sp)
+	lw $s1 12($sp)
+	addi $sp $sp 12
+	jr $ra
+	
+	int_to_str_recursive_case:
+	li $t1 10
+	div $s0 $t1
+	mflo $s0
+	mfhi $s1
+	
+	move $a0 $s0
+	jal int_to_str
+	move $s0 $v0
+	
+	move $a0 $s1
+	jal digit_to_str
+	move $s1 $v0
+	
+	move $a0 $s0
+	move $a1 $s1
+	jal str_concat 
+	
+	lw $ra 4($sp)
+	lw $s0 8($sp)
+	lw $s1 12($sp)
+	addi $sp $sp 12
+	jr $ra
+	
+digit_to_str:
+	addi $t0 $a0 48
+	li $a0 2
+	li $v0 9
+	syscall
+	sb $t0 0($v0)
+	sb $zero 1($v0)
+	jr $ra
 
 # done: # Simulation code

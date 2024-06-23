@@ -1,6 +1,6 @@
 .data
 p_stack: .word 0 # Pointer to stack
-stack_size: .word 1000 # First word of stack holds stack's size
+stack_size: .word 10000 # First word of stack holds stack's size
 stack_empty_msg: .asciiz "\nError, stack is empty\n"
 
 .text
@@ -115,7 +115,7 @@ stack_pop:
 	
 	stack_empty_error: # TODO: Must be implemented (throw a real MIPS exception)
 	la $a0 stack_empty_msg
-	jal print_string # Display error message
+	jal print_str # Display error message
 	li $v0 10
 	syscall # Exit program
 	
