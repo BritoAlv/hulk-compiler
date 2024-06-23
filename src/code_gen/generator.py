@@ -369,6 +369,61 @@ class Generator(Visitor):
     jal stack_push
 '''
             return GenerationResult(code, 'bool')
+        # String concatenation
+        elif binary_node.op.type == 'at' or binary_node.op.type == 'doubleAt':
+            if left_type == 'number':
+                code +='''
+    mov.s $f12 $f20
+    jal number_to_str
+    move $s0 $v0 
+            '''
+            elif left_type == 'bool':
+                code +='''
+    move $a0 $s0
+    jal bool_to_str
+    move $s0 $v0
+'''
+            elif left_type != 'string':
+                code +='''
+    move $a0 $s0
+    jal pointer_to_str
+    move $s0 $v0
+'''
+            if right_type == 'number':
+                code +='''
+    mov.s $f12 $f22
+    jal number_to_str
+    move $s1 $v0 
+            '''
+            elif right_type == 'bool':
+                code +='''
+    move $a0 $s1
+    jal bool_to_str
+    move $s1 $v0
+'''
+            elif right_type != 'string':
+                code +='''
+    move $a0 $s1
+    jal pointer_to_str
+    move $s1 $v0
+'''
+            if binary_node.op.type == 'at':
+                code += '''
+    move $a0 $s0
+    move $a1 $s1
+    jal str_concat
+    move $a0 $v0
+    jal stack_push
+'''
+            else:
+                code += '''
+    move $a0 $s0
+    move $a1 $s1
+    jal str_space_concat
+    move $a0 $v0
+    jal stack_push
+'''
+            return GenerationResult(code, 'string')
         else:
             raise Exception("Invalid operation")
 
