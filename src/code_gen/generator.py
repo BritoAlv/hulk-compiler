@@ -428,6 +428,25 @@ class Generator(Visitor):
     jal stack_push
 '''
             return GenerationResult(code, 'string')
+        # Power
+        elif binary_node.op.type == 'powerOp' or binary_node.op.type == 'modOp':
+            if binary_node.op.type == 'powerOp':
+                code +='''
+    mov.s $f12 $f22
+    mov.s $f14 $f20
+    jal power
+    mov.s $f12 $f0
+    jal stack_push_number
+'''
+            else:
+                code +='''
+    mov.s $f12 $f22
+    mov.s $f14 $f20
+    jal mod
+    mov.s $f12 $f0
+    jal stack_push_number
+'''
+            return GenerationResult(code, 'number')
         else:
             raise Exception("Invalid operation")
 
