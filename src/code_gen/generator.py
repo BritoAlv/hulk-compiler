@@ -159,11 +159,12 @@ class Generator(Visitor):
 
     def visit_call_node(self, call_node: CallNode):
         code = ''
-
+        arg_types = []
         # We won't verify that length of args match length of params, previous semantic analysis assumed
         i = 1
         for arg in call_node.args:
             result = self._generate(arg)
+            arg_types.append(result.type)
             code += result.code
             offset = -(i * WORD_SIZE)
             if result.type != 'number':
@@ -180,7 +181,22 @@ class Generator(Visitor):
 
         if isinstance(call_node.callee, LiteralNode):
             func_name = call_node.callee.id.lexeme
-            func_type = self._resolver.get_func_type(self._func_name)
+
+            # Handle print particular case
+            if func_name == 'print':
+                arg_type = arg_types[0]
+                if arg_type == 'number':
+                    func_name = 'print_number'
+                elif arg_type == 'bool':
+                    func_name = 'print_bool'
+                elif arg_type == 'string':
+                    func_name = 'print_str'
+                else:
+                    func_name = 'print_pointer'
+                func_type = arg_type
+            else:
+                func_type = self._resolver.get_func_type(self._func_name)
+            
             code += f'''
     jal {func_name}
 '''
