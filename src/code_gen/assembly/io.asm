@@ -9,6 +9,7 @@ false: .asciiz "false"
 .globl number_to_str
 .globl str_concat
 .globl str_space_concat
+.globl bool_to_str
 # .globl done # Simulation code
 
 #** Printing code
@@ -286,6 +287,14 @@ digit_to_str:
 	syscall
 	sb $t0 0($v0)
 	sb $zero 1($v0)
+	jr $ra
+
+bool_to_str:
+	bne $a0 1 bool_to_str_false
+	la $v0 true
+	jr $ra
+	bool_to_str_false:
+	la $v0 false
 	jr $ra
 
 # done: # Simulation code
