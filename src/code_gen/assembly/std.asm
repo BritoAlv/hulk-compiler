@@ -2,6 +2,7 @@
 nl: .asciiz "\n"
 true: .asciiz "true"
 false: .asciiz "false"
+one: .float 1.0
 
 .text
 .globl print_number
@@ -12,6 +13,7 @@ false: .asciiz "false"
 .globl bool_to_str
 .globl pointer_to_str
 .globl print_pointer
+.globl power
 # .globl done # Simulation code
 
 #** Printing code
@@ -315,6 +317,26 @@ pointer_to_str:
 	jal int_to_str
 
 	lw $ra 4($sp)
+	addi $sp $sp 4
+	jr $ra
+
+#** Math operations
+power:
+	addi $sp $sp -4
+	
+	# Convert exponent to integer
+	cvt.w.s $f14 $f14
+	swc1 $f14 4($sp)
+	lw $t1 4($sp)
+	
+	lwc1 $f20 one
+	power_loop:
+	beq $t1 $zero power_end
+	mul.s $f20 $f20 $f12
+	addi $t1 $t1 -1
+	j power_loop
+	power_end:
+	mov.s $f0 $f20
 	addi $sp $sp 4
 	jr $ra
 
