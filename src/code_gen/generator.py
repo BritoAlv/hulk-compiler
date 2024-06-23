@@ -201,6 +201,10 @@ class Generator(Visitor):
         if literal_node.id.type == 'number':
             index = len(self._literal_numbers)
             number_literal = literal_node.id.lexeme
+
+            if '.' not in number_literal:
+                number_literal += '.0'
+
             self._literal_numbers.append(number_literal)
             code = f'''
     lwc1 $f12 number{index}
