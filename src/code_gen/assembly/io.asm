@@ -1,5 +1,7 @@
 .data
 nl: .asciiz "\n"
+true: .asciiz "true"
+false: .asciiz "false"
 
 .text
 .globl print_number
@@ -26,12 +28,12 @@ print_number:
 	jr $ra
 	
 print_str:
-	move $t0 $a0
+	# move $t0 $a0
 	# la $a0 nl
 	# li $v0 4
 	# syscall 
+	#move $a0 $t0
 	
-	move $a0 $t0
 	li $v0 4
 	syscall
 	
@@ -39,6 +41,23 @@ print_str:
 	li $v0 4
 	syscall
 	
+	jr $ra
+
+print_bool:
+	addi $sp $sp -4
+	sw $ra 4($sp)
+	bne $a0 1 print_bool_false
+	la $a0 true
+	jal print_str
+	lw $ra 4($sp)
+	addi $sp $sp 4
+	jr $ra
+
+	print_bool_false:
+	la $a0 false
+	jal print_str
+	lw $ra 4($sp)
+	addi $sp $sp 4
 	jr $ra
 
 #** String manipulation code
