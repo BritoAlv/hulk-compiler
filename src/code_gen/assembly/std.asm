@@ -14,6 +14,7 @@ one: .float 1.0
 .globl pointer_to_str
 .globl print_pointer
 .globl power
+.globl mod
 # .globl done # Simulation code
 
 #** Printing code
@@ -338,6 +339,29 @@ power:
 	power_end:
 	mov.s $f0 $f20
 	addi $sp $sp 4
+	jr $ra
+
+mod:
+	addi $sp $sp -8
+	
+	# Convert to integer
+	cvt.w.s $f12 $f12
+	swc1 $f12 4($sp)
+	lw $t0 4($sp)
+
+	cvt.w.s $f14 $f14
+	swc1 $f14 8($sp)
+	lw $t1 8($sp)
+
+	div $t0 $t1
+	mfhi $t0
+
+	# Convert back to float
+	sw $t0 4($sp)
+	lwc1 $f0 4($sp)
+	cvt.s.w $f0 $f0
+
+	addi $sp $sp 8
 	jr $ra
 
 # done: # Simulation code
