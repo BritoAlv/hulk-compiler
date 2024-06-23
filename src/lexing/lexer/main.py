@@ -65,7 +65,7 @@ hulk_lexer = Lexer(
         ("lessEq", "<="),
         ("plus", "+"),
         ("minus", "-"),
-        ("start", "*"),
+        ("star", "*"),
         ("div", "/"),
         ("dot", "."),
         ("id", identifier),
