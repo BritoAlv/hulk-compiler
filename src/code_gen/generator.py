@@ -326,6 +326,34 @@ class Generator(Visitor):
     jal stack_push
             '''
             return GenerationResult(code, 'bool')
+        # Logical And and Or
+        elif binary_node.op.type == 'and' or binary_node.op.type == 'or':
+            if binary_node.op.type == 'and':
+                code +='''
+    add $s0 $s0 $s1
+    beq $s0 2 and_true
+    li $a0 0
+    jal stack_push
+    j and_end
+    and_true:
+    li $a0 1
+    jal stack_push
+    and_end:
+            '''
+            else:    
+                code += '''
+    add $s0 $s0 $s1
+    sgt $s0 $s0 $zero
+    beq $s0 1 or_true
+    li $a0 0
+    jal stack_push
+    j or_end
+    or_true:
+    li $a0 1
+    jal stack_push
+    or_end:
+'''
+            return GenerationResult(code, 'bool')
         # LessThan
         elif binary_node.op.type == 'less':
             code +='''
