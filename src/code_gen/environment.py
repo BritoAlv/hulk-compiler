@@ -16,9 +16,16 @@ class FunctionData:
         self.params : dict[str, VarData] = {}
         self.var_count = 0
 
+class TypeData:
+    def __init__(self) -> None:
+        self.attributes : dict[str, VarData] = {}
+        self.methods : dict[str, str] = {} # Method name and it's associated assembly name
+        self.ancestor : str = None
+
 class Environment:
     def __init__(self) -> None:
         self._functions : dict[str, FunctionData] = {}
+        self._types : dict[str, TypeData] = {}
 
     def add_function(self, func_name : str) -> None:
         if func_name in self._functions:
@@ -67,3 +74,9 @@ class Environment:
             raise Exception(f"Function {func_name} is not declared")
         
         return self._functions[func_name].type
+
+    def add_type_data(self, type_name : str, type_data : TypeData) -> None:
+        if type_name in self._types:
+            raise Exception(f"Type {type_name} is already declared")
+        
+        self._types[type_name] = type_data
