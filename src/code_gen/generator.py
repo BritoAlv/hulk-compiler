@@ -195,7 +195,7 @@ class Generator(Visitor):
                     func_name = 'print_pointer'
                 func_type = arg_type
             else:
-                func_type = self._resolver.get_func_type(self._func_name)
+                func_type = self._resolver.get_func_type(func_name)
             
             code += f'''
     jal {func_name}
@@ -322,7 +322,7 @@ class Generator(Visitor):
             code +='''
     li $a0 1
     c.le.s $f22 $f20
-    movt $a0 $zero
+    movt $a0 $zero 0
     jal stack_push
             '''
             return GenerationResult(code, 'bool')
@@ -332,7 +332,7 @@ class Generator(Visitor):
     li $a0 0
     li $t0 1
     c.lt.s $f22 $f20
-    movt $a0 $t0
+    movt $a0 $t0 0
     jal stack_push
             '''
             return GenerationResult(code, 'bool')
@@ -341,7 +341,7 @@ class Generator(Visitor):
             code +='''
     li $a0 1
     c.lt.s $f22 $f20
-    movt $a0 $zero
+    movt $a0 $zero 0
     jal stack_push
             '''
             return GenerationResult(code, 'bool')
@@ -351,7 +351,7 @@ class Generator(Visitor):
     li $a0 0
     li $t0 1
     c.le.s $f22 $f20
-    movt $a0 $t0
+    movt $a0 $t0 0
     jal stack_push
             '''
             return GenerationResult(code, 'bool')
@@ -362,7 +362,7 @@ class Generator(Visitor):
     li $a0 0
     li $t0 1
     c.eq.s $f22 $f20
-    movt $a0 $t0
+    movt $a0 $t0 0
     jal stack_push
                 '''
             else:
@@ -378,7 +378,7 @@ class Generator(Visitor):
                 code +='''
     li $a0 1
     c.eq.s $f22 $f20
-    movt $a0 $zero
+    movt $a0 $zero 0
     jal stack_push
             '''
             else:
