@@ -20,7 +20,6 @@ class TypeData:
     def __init__(self) -> None:
         self.attributes : dict[str, VarData] = {}
         self.methods : dict[str, str] = {} # Method name and it's associated assembly name
-        self.ancestor : str = None
 
 class Environment:
     def __init__(self) -> None:
@@ -77,6 +76,26 @@ class Environment:
 
     def add_type_data(self, type_name : str, type_data : TypeData) -> None:
         if type_name in self._types:
-            raise Exception(f"Type {type_name} is already declared")
+            raise Exception(f"Type {type_name} was already declared")
         
         self._types[type_name] = type_data
+
+    def update_type_method(self, type_name : str, method_pair : tuple[str, str]):
+        if type_name not in self._types:
+            raise Exception(f"Type {type_name} is not declared")
+        
+        method_name = method_pair[0]
+        method_assembly_name = method_pair[1]
+
+        if method_name not in self._types[type_name].methods:
+            self._types[type_name].methods[method_name] = method_assembly_name
+
+    def get_type_methods(self, type_name : str) -> list[tuple[str, str]]:
+        if type_name not in self._types:
+            raise Exception(f"Type {type_name} is not declared")
+        
+        result : list[tuple[str, str]] = []
+        for method_name in self._types[type_name].methods:
+            result.append((method_name, self._types[type_name].methods[method_name]))
+
+        return result

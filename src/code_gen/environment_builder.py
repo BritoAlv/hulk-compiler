@@ -1,5 +1,7 @@
 
+from copy import copy
 from code_gen.environment import Context, Environment, TypeData, VarData
+from common.graph import Graph
 from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, ForNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, NewNode, SetNode, VectorGetNode, VectorSetNode, WhileNode
 from common.ast_nodes.statements import AttributeNode, MethodNode, ProgramNode, ProtocolNode, SignatureNode, Statement, TypeNode
 from common.visitor import Visitor
@@ -12,10 +14,15 @@ class EnvironmentBuilder(Visitor):
         self._params : dict[str, VarData] = None
         self._var_index : int = 0
         self._func_name : str
+        self._type_graph = Graph()
+        self._root_types : list[str] = []
 
     def build(self, program: ProgramNode) -> Environment:
         self._environment = Environment()
         self._build(program)
+
+        self._handle_inheritance()
+
         return self._environment
 
     def visit_program_node(self, program_node: ProgramNode):
@@ -110,8 +117,11 @@ class EnvironmentBuilder(Visitor):
             type_data.methods[method_name] = f'{method_name}_{type_name}'
 
         if type_node.ancestor_id != None:
-            type_data.ancestor = type_node.ancestor_id.lexeme
-        type_data.ancestor = type_node.ancestor_id
+            ancestor = type_node.ancestor_id.lexeme
+            self._type_graph.add((ancestor, type_name))
+        else:
+            self._root_types.append(type_name)
+            
 
         self._environment.add_type_data(type_name, type_data)
             
@@ -174,3 +184,20 @@ class EnvironmentBuilder(Visitor):
             self._context = new_context
 
         return old_context
+    
+    def _handle_inheritance(self):
+        if self._type_graph.is_cyclic():
+            raise Exception("Cannot have cyclic inheritance")
+        
+        stack : list[str] = [] + self._root_types
+        graph = self._type_graph
+        
+        while(len(stack) > 0):
+            vertex = stack.pop()
+            neighbors = graph.neighbors(vertex)
+
+            for neighbor in neighbors:
+                method_name_pairs = self._environment.get_type_methods(vertex)
+                for pair in method_name_pairs:
+                    self._environment.update_type_method(neighbor, pair)
+                stack.append(neighbor)
