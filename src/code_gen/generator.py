@@ -538,7 +538,10 @@ class Generator(Visitor):
         code += condition_result.code
         code += f'''
     jal stack_pop
-    bne $v0 1 while_end_{self._while_index}
+    move $t0 $v0
+    move $v0 $zero
+     
+    bne $t0 1 while_end_{self._while_index}
     j while_body_{self._while_index}
     while_start_{self._while_index}:
 '''
