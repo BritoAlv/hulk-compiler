@@ -1,5 +1,5 @@
 
-from code_gen.environment import Context, Environment, VarData
+from code_gen.environment import Context, Environment, TypeData, VarData
 from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, ForNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, NewNode, SetNode, VectorGetNode, VectorSetNode, WhileNode
 from common.ast_nodes.statements import AttributeNode, MethodNode, ProgramNode, ProtocolNode, SignatureNode, Statement, TypeNode
 from common.visitor import Visitor
@@ -92,7 +92,29 @@ class EnvironmentBuilder(Visitor):
             self._build(expr)
 
     def visit_type_node(self, type_node: TypeNode):
-        pass
+        type_name = type_node.id.lexeme
+        type_data = TypeData()
+
+        i = 0
+        for attribute in type_node.attributes:
+            attribute_name = attribute.id.lexeme
+            if attribute_name in type_data.attributes:
+                raise Exception(f"Cannot declare attribute '{attribute_name}' twice")
+            type_data.attributes[attribute_name] = VarData(i)
+            i += 1
+        
+        for method in type_node.methods:
+            method_name = method.id.lexeme
+            if method_name in type_data.methods:
+                raise Exception(f"Cannot declare method '{method_name}' twice")
+            type_data.methods[method_name] = f'{method_name}_{type_name}'
+
+        if type_node.ancestor_id != None:
+            type_data.ancestor = type_node.ancestor_id.lexeme
+        type_data.ancestor = type_node.ancestor_id
+
+        self._environment.add_type_data(type_name, type_data)
+            
 
     def visit_protocol_node(self, protocol_node: ProtocolNode):
         pass
