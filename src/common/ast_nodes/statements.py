@@ -37,9 +37,9 @@ class TypeNode(Statement):
                  ancestor_args : list[Expr] | None = None):
         self.id = id
         self.params = params
-        self.attributes : list[AttributeNode] = attributes,
-        self.methods : list[MethodNode] = methods,
-        self.ancestor_id : Token | None = ancestor_id,
+        self.attributes = attributes
+        self.methods = methods
+        self.ancestor_id = ancestor_id
         self.ancestor_args = ancestor_args
 
     def accept(self, visitor):
