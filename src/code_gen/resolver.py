@@ -51,3 +51,23 @@ class Resolver:
 
     def resolve_type_data(self, type_name : str) -> TypeData:
         return self._environment.get_type_data(type_name)
+    
+    def resolve_lowest_common_ancestor(self, type_1 : str, type_2 : str) -> str:
+        BASIC_TYPES = ['number', 'string', 'bool', 'object']
+        
+        if type_1 == type_2:
+            return type_1
+        
+        if type_1 in BASIC_TYPES or type_2 in BASIC_TYPES:
+            return 'object'
+
+        type_data_1 = self._environment.get_type_data(type_1)
+        type_data_2 = self._environment.get_type_data(type_2)
+
+        if type_1 == type_data_2.ancestor:
+            return type_1
+        
+        if type_data_1.ancestor == None:
+            return 'object'
+        
+        return self.resolve_lowest_common_ancestor(type_data_1.ancestor, type_2)
