@@ -79,7 +79,10 @@ class TreePrinter(Visitor):
             self.add_word("Attributes")
             with IndentManager(self):
                 for attr in type_node.attributes:
-                    attr.accept(self) # type: ignore
+                    opt_type = ""
+                    if attr[1] != None:
+                        opt_type = " of type " + attr[1].lexeme
+                    self.add_word(attr[0].lexeme+ opt_type)
             self.add_word("Methods")
             with IndentManager(self):
                 for method in type_node.methods:

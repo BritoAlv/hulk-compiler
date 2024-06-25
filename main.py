@@ -17,7 +17,13 @@ parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
-        function p(x) => print(x); 42;
+        type Perro(color : string, edad: number)
+        {
+            color = color;
+            edad = edad;
+            Ladrar() : string => print("Wolf" @ "Wolf");
+        }
+        new Perro("Negro", 7);
         """
 
 inputStr = defaultHulkProgram
@@ -67,7 +73,9 @@ def run(inputStr : str):
     pass
 
 if len(sys.argv) == 1:
+    print(inputStr)
     ast(inputStr)
+    sys.exit(0)
     
 # Parse arguments
 args = parser.parse_args()
