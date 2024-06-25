@@ -6,6 +6,11 @@ class Graph:
         if vertex not in self.vertices:
             raise Exception("Vertex is not in graph")
         return self.vertices[vertex]
+    
+    def add_vertex(self, vertex : str) -> None:
+        if vertex in self.vertices:
+            raise Exception("Vertex is already in graph")
+        self.vertices[vertex] = []
 
     def contains_edge(self, pair: tuple[str, str]) -> bool:
         return pair[0] in self.vertices and pair[1] in self.vertices[pair[0]]

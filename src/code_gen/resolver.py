@@ -1,4 +1,4 @@
-from code_gen.environment import Context, Environment, VarData
+from code_gen.environment import Context, Environment, TypeData, VarData
 
 class Resolver:
     def __init__(self, environment : Environment) -> None:
@@ -51,3 +51,6 @@ class Resolver:
     
     def set_func_type(self, func_name : str, type : str) -> None:
         self._environment.add_type(func_name, type)
+
+    def resolve_type_data(self, type_name : str) -> TypeData:
+        return self._environment.get_type_data(type_name)
