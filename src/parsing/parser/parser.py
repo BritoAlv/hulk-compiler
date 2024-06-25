@@ -1,5 +1,3 @@
-from ast import Return
-from requests import ReadTimeout
 from common.ast_nodes.expressions import (
     BinaryNode,
     BlockNode,
