@@ -7,15 +7,56 @@ one: .float 1.0
 .text
 .globl print_number
 .globl print_str
+.globl print_bool
+.globl print_pointer
 .globl number_to_str
-.globl str_concat
-.globl str_space_concat
 .globl bool_to_str
 .globl pointer_to_str
-.globl print_pointer
+.globl str_concat
+.globl str_space_concat
 .globl power
 .globl mod
+.globl build_bool
+.globl build_number
+.globl build_str
 # .globl done # Simulation code
+
+#** Constructors
+
+build_bool:
+	move $t0 $a0
+	# Allocate two words in the heap (8 * 2)
+	li $v0 9
+	li $a0 8
+	syscall
+
+	li $t1 0 # Type-id is 0 for bool data type
+	sw $t1 ($v0)
+	sw $t0 4($v0)
+	jr $ra
+
+build_number:
+	# Allocate two words in the heap (8 * 2)
+	li $v0 9
+	li $a0 8
+	syscall
+
+	li $t0 1 # Type-id is 1 for number data type
+	sw $t0 ($v0)
+	swc1 $f12 4($v0)
+	jr $ra
+
+build_str:
+	move $t0 $a0
+	# Allocate two words in the heap (8 * 2)
+	li $v0 9
+	li $a0 8
+	syscall
+
+	li $t1 2 # Type-id is 0 for bool data type
+	sw $t1 ($v0)
+	sw $t0 4($v0)
+	jr $ra
 
 #** Printing code
 
