@@ -116,16 +116,37 @@ class Generator(Visitor):
             # It would be better if type were resolved previously (during type-checking)
             self._resolver.resolve(var_name).type = result.type
 
-            if result.type != 'number':
+            if result.type == 'bool':
                 code += f'''
-    jal stack_pop
-    sw $v0 {offset}($sp)
-'''
+        jal stack_pop
+        lw $a0 4($v0)
+        jal build_bool
+        move $a0 $v0
+        sw $a0 {offset}($sp)
+        '''
+            elif result.type == 'str':
+                code += f'''
+        jal stack_pop
+        lw $a0 4($v0)
+        jal build_str
+        move $a0 $v0
+        sw $a0 {offset}($sp)
+        '''
+            elif result.type == 'number':
+                code += f'''
+        jal stack_pop
+        lwc1 $f12 4($v0)
+        jal build_number
+        move $a0 $v0
+        sw $a0 {offset}($sp)
+        '''
             else:
                 code += f'''
-    jal stack_pop
-    swc1 $f0 {offset}($sp)
-'''
+        jal stack_pop
+        move $a0 $v0
+        sw $a0 {offset}($sp)
+        '''
+
         result = self._generate(let_node.body)
         code += result.code
         type = result.type
@@ -140,20 +161,39 @@ class Generator(Visitor):
         result = self._generate(destructor_node.expr)
         code = result.code
         
-        if result.type != 'number':
+        if result.type == 'bool':
             code += f'''
     jal stack_pop
-    sw $v0 {offset}($sp)
+    lw $a0 4($v0)
+    jal build_bool
     move $a0 $v0
+    sw $a0 {offset}($sp)
     jal stack_push
-'''
+    '''
+        elif result.type == 'str':
+            code += f'''
+    jal stack_pop
+    lw $a0 4($v0)
+    jal build_str
+    move $a0 $v0
+    sw $a0 {offset}($sp)
+    jal stack_push
+    '''
+        elif result.type == 'number':
+            code += f'''
+    jal stack_pop
+    lwc1 $f12 4($v0)
+    jal build_number
+    move $a0 $v0
+    sw $a0 {offset}($sp)
+    jal stack_push
+    '''
         else:
             code += f'''
     jal stack_pop
-    swc1 $f0 {offset}($sp)
-    mov.s $f12 $f0
-    jal stack_push_number
-'''
+    move $a0 $v0
+    jal stack_push
+    '''
 
         return GenerationResult(code, result.type)
 
@@ -167,16 +207,11 @@ class Generator(Visitor):
             arg_types.append(result.type)
             code += result.code
             offset = -(i * WORD_SIZE)
-            if result.type != 'number':
-                code += f'''
+            code += f'''
     jal stack_pop
     sw $v0 {offset}($sp)
 '''         
-            else:
-                code += f'''
-    jal stack_pop
-    swc1 $f0 {offset}($sp)
-'''
+
             i += 1
 
         if isinstance(call_node.callee, LiteralNode):
@@ -200,16 +235,11 @@ class Generator(Visitor):
             code += f'''
     jal {func_name}
 '''
-            if func_type != 'number':
-                code += '''
+            code += '''
     move $a0 $v0
     jal stack_push
 '''
-            else:
-                code += '''
-    mov.s $f12 $f0
-    jal stack_push_number
-'''
+
             return GenerationResult(code, func_type)
     
     def visit_literal_node(self, literal_node: LiteralNode):
@@ -224,7 +254,9 @@ class Generator(Visitor):
             self._literal_numbers.append(number_literal)
             code = f'''
     lwc1 $f12 number{index}
-    jal stack_push_number
+    jal build_number
+    move $a0 $v0
+    jal stack_push
 '''         
             return GenerationResult(code, 'number')
         
@@ -233,15 +265,9 @@ class Generator(Visitor):
             offset = self._get_offset(var_name)
             type = self._resolver.resolve(var_name).type
 
-            if type != 'number':
-                code = f'''
+            code = f'''
     lw $a0 {offset}($sp)
     jal stack_push
-'''
-            else:
-                code = f'''
-    lwc1 $f12 {offset}($sp)
-    jal stack_push_number
 '''
             return GenerationResult(code, type)
         
@@ -251,6 +277,8 @@ class Generator(Visitor):
             self._literal_strings.append(str_literal)
             code = f'''
     la $a0 str{index}
+    jal build_str
+    move $a0 $v0
     jal stack_push            
 '''
             return GenerationResult(code, 'string')
@@ -258,12 +286,16 @@ class Generator(Visitor):
         elif literal_node.id.type == 'true':
             code = '''
     li $a0 1
+    jal build_bool
+    move $a0 $v0
     jal stack_push
 '''
             return GenerationResult(code, 'bool')
         elif literal_node.id.type == 'false':
             code = '''
     li $a0 0
+    jal build_bool
+    move $a0 $v0
     jal stack_push
 '''
             return GenerationResult(code, 'bool')
@@ -278,11 +310,14 @@ class Generator(Visitor):
         code += right_result.code
         code += '''
     jal stack_pop
-    move $s0 $v0
-    mov.s $f20 $f0
+    move $s2 $v0 
+    lw $s0 4($s2)
+    lwc1 $f20 4($s2)
+
     jal stack_pop
-    move $s1 $v0
-    mov.s $f22 $f0
+    move $s3 $v0
+    lw $s1 4($s3)
+    lwc1 $f22 4($s3)
         '''
 
         # Addition
@@ -290,7 +325,9 @@ class Generator(Visitor):
             code += '''
     add.s $f20 $f20 $f22
     mov.s $f12 $f20
-    jal stack_push_number
+    jal build_number
+    move $a0 $v0
+    jal stack_push
             '''
             return GenerationResult(code, 'number')
         # Subtraction
@@ -298,7 +335,9 @@ class Generator(Visitor):
             code += '''
     sub.s $f20 $f22 $f20
     mov.s $f12 $f20
-    jal stack_push_number
+    jal build_number
+    move $a0 $v0
+    jal stack_push
             '''
             return GenerationResult(code, 'number')
         # Multiplication
@@ -306,7 +345,9 @@ class Generator(Visitor):
             code +='''
     mul.s $f20 $f20 $f22
     mov.s $f12 $f20
-    jal stack_push_number
+    jal build_number
+    move $a0 $v0
+    jal stack_push
             '''
             return GenerationResult(code, 'number')
         # Division
@@ -314,18 +355,11 @@ class Generator(Visitor):
             code +='''
     div.s $f20 $f22 $f20
     mov.s $f12 $f20
-    jal stack_push_number
-            '''
-            return GenerationResult(code, 'number')
-        # GreaterThan
-        elif binary_node.op.type == 'greater':
-            code +='''
-    li $a0 1
-    c.le.s $f22 $f20
-    movt $a0 $zero 0
+    jal build_number
+    move $a0 $v0
     jal stack_push
             '''
-            return GenerationResult(code, 'bool')
+            return GenerationResult(code, 'number')
         # Logical And and Or
         elif binary_node.op.type == 'and' or binary_node.op.type == 'or':
             if binary_node.op.type == 'and':
@@ -333,10 +367,14 @@ class Generator(Visitor):
     add $s0 $s0 $s1
     beq $s0 2 and_true
     li $a0 0
+    jal build_bool
+    move $a0 $v0
     jal stack_push
     j and_end
     and_true:
     li $a0 1
+    jal build_bool
+    move $a0 $v0
     jal stack_push
     and_end:
             '''
@@ -346,13 +384,28 @@ class Generator(Visitor):
     sgt $s0 $s0 $zero
     beq $s0 1 or_true
     li $a0 0
+    jal build_bool
+    move $a0 $v0
     jal stack_push
     j or_end
     or_true:
     li $a0 1
+    jal build_bool
+    move $a0 $v0
     jal stack_push
     or_end:
 '''
+            return GenerationResult(code, 'bool')
+        # GreaterThan
+        elif binary_node.op.type == 'greater':
+            code +='''
+    li $a0 1
+    c.le.s $f22 $f20
+    movt $a0 $zero 0
+    jal build_bool
+    move $a0 $v0
+    jal stack_push
+            '''
             return GenerationResult(code, 'bool')
         # LessThan
         elif binary_node.op.type == 'less':
@@ -361,6 +414,8 @@ class Generator(Visitor):
     li $t0 1
     c.lt.s $f22 $f20
     movt $a0 $t0 0
+    jal build_bool
+    move $a0 $v0
     jal stack_push
             '''
             return GenerationResult(code, 'bool')
@@ -370,6 +425,8 @@ class Generator(Visitor):
     li $a0 1
     c.lt.s $f22 $f20
     movt $a0 $zero 0
+    jal build_bool
+    move $a0 $v0
     jal stack_push
             '''
             return GenerationResult(code, 'bool')
@@ -380,6 +437,8 @@ class Generator(Visitor):
     li $t0 1
     c.le.s $f22 $f20
     movt $a0 $t0 0
+    jal build_bool
+    move $a0 $v0
     jal stack_push
             '''
             return GenerationResult(code, 'bool')
@@ -391,12 +450,16 @@ class Generator(Visitor):
     li $t0 1
     c.eq.s $f22 $f20
     movt $a0 $t0 0
+    jal build_bool
+    move $a0 $v0
     jal stack_push
                 '''
             else:
                 code += '''
     seq $s0 $s0 $s1
     move $a0 $s0
+    jal build_bool
+    move $a0 $v0
     jal stack_push
 '''
             return GenerationResult(code, 'bool')
@@ -407,6 +470,8 @@ class Generator(Visitor):
     li $a0 1
     c.eq.s $f22 $f20
     movt $a0 $zero 0
+    jal build_bool
+    move $a0 $v0
     jal stack_push
             '''
             else:
@@ -414,6 +479,8 @@ class Generator(Visitor):
     seq $s0 $s0 $s1
     seq $s0 $s0 0
     move $a0 $s0
+    jal build_bool
+    move $a0 $v0
     jal stack_push
 '''
             return GenerationResult(code, 'bool')
@@ -461,6 +528,8 @@ class Generator(Visitor):
     move $a1 $s1
     jal str_concat
     move $a0 $v0
+    jal build_str
+    move $a0 $v0
     jal stack_push
 '''
             else:
@@ -468,6 +537,8 @@ class Generator(Visitor):
     move $a0 $s0
     move $a1 $s1
     jal str_space_concat
+    move $a0 $v0
+    jal build_str
     move $a0 $v0
     jal stack_push
 '''
@@ -480,7 +551,9 @@ class Generator(Visitor):
     mov.s $f14 $f20
     jal power
     mov.s $f12 $f0
-    jal stack_push_number
+    jal build_number
+    move $a0 $v0
+    jal stack_push
 '''
             else:
                 code +='''
@@ -488,7 +561,9 @@ class Generator(Visitor):
     mov.s $f14 $f20
     jal mod
     mov.s $f12 $f0
-    jal stack_push_number
+    jal build_number
+    move $a0 $v0
+    jal stack_push
 '''
             return GenerationResult(code, 'number')
         else:
@@ -520,14 +595,15 @@ class Generator(Visitor):
             code += condition_result.code
             code += f'''
     jal stack_pop
+    lw $t0 4($v0)
 '''
             if i < len(if_node.body) - 1:
                 code += f'''
-    bne $v0 1 conditional_{self._if_index}_{i}_{self._func_name}
+    bne $t0 1 conditional_{self._if_index}_{i}_{self._func_name}
 '''
             else:
                 code += f'''
-    bne $v0 1 conditional_else_{self._if_index}_{self._func_name}
+    bne $t0 1 conditional_else_{self._if_index}_{self._func_name}
 '''
             
             expr_result = self._generate(expr)
@@ -566,8 +642,8 @@ class Generator(Visitor):
         code += condition_result.code
         code += f'''
     jal stack_pop
-    move $t0 $v0
-    move $v0 $zero
+    lw $t0 4($v0)
+    move $v0 $zero # Set default while-value to zero
      
     bne $t0 1 while_end_{self._while_index}
     j while_body_{self._while_index}
@@ -576,7 +652,8 @@ class Generator(Visitor):
         code += condition_result.code
         code += f'''
     jal stack_pop
-    bne $v0 1 while_end_{self._while_index}
+    lw $t0 4($v0)
+    bne $t0 1 while_end_{self._while_index}
     jal stack_pop
     while_body_{self._while_index}:
 '''

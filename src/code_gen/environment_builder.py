@@ -1,5 +1,6 @@
 
-from code_gen.environment import Context, Environment, VarData
+from code_gen.environment import Context, Environment, TypeData, VarData
+from common.graph import Graph
 from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, ForNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, NewNode, SetNode, VectorGetNode, VectorSetNode, WhileNode
 from common.ast_nodes.statements import AttributeNode, MethodNode, ProgramNode, ProtocolNode, SignatureNode, Statement, TypeNode
 from common.visitor import Visitor
@@ -12,10 +13,15 @@ class EnvironmentBuilder(Visitor):
         self._params : dict[str, VarData] = None
         self._var_index : int = 0
         self._func_name : str
+        self._type_graph = Graph()
+        self._root_types : list[str] = []
 
     def build(self, program: ProgramNode) -> Environment:
         self._environment = Environment()
         self._build(program)
+
+        self._handle_inheritance()
+
         return self._environment
 
     def visit_program_node(self, program_node: ProgramNode):
@@ -92,7 +98,32 @@ class EnvironmentBuilder(Visitor):
             self._build(expr)
 
     def visit_type_node(self, type_node: TypeNode):
-        pass
+        type_name = type_node.id.lexeme
+        type_data = TypeData()
+
+        i = 0
+        for attribute in type_node.attributes:
+            attribute_name = attribute.id.lexeme
+            if attribute_name in type_data.attributes:
+                raise Exception(f"Cannot declare attribute '{attribute_name}' twice")
+            type_data.attributes[attribute_name] = VarData(i)
+            i += 1
+        
+        for method in type_node.methods:
+            method_name = method.id.lexeme
+            if method_name in type_data.methods:
+                raise Exception(f"Cannot declare method '{method_name}' twice")
+            type_data.methods[method_name] = f'{method_name}_{type_name}'
+
+        if type_node.ancestor_id != None:
+            ancestor = type_node.ancestor_id.lexeme
+            self._type_graph.add((ancestor, type_name))
+        else:
+            self._root_types.append(type_name)
+            
+
+        self._environment.add_type_data(type_name, type_data)
+            
 
     def visit_protocol_node(self, protocol_node: ProtocolNode):
         pass
@@ -152,3 +183,22 @@ class EnvironmentBuilder(Visitor):
             self._context = new_context
 
         return old_context
+    
+    def _handle_inheritance(self):
+        if self._type_graph.is_cyclic():
+            raise Exception("Cannot have cyclic inheritance")
+        
+        stack : list[str] = [] + self._root_types
+        graph = self._type_graph
+        
+        while(len(stack) > 0):
+            vertex = stack.pop()
+            neighbors = graph.neighbors(vertex)
+
+            for neighbor in neighbors:
+                self._environment._inherit_offset(neighbor, vertex)
+                
+                method_name_pairs = self._environment.get_type_methods(vertex)
+                for pair in method_name_pairs:
+                    self._environment.update_type_method(neighbor, pair)
+                stack.append(neighbor)

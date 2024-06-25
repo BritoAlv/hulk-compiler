@@ -7,21 +7,64 @@ one: .float 1.0
 .text
 .globl print_number
 .globl print_str
+.globl print_bool
+.globl print_pointer
 .globl number_to_str
-.globl str_concat
-.globl str_space_concat
 .globl bool_to_str
 .globl pointer_to_str
-.globl print_pointer
+.globl str_concat
+.globl str_space_concat
 .globl power
 .globl mod
+.globl build_bool
+.globl build_number
+.globl build_str
 # .globl done # Simulation code
+
+#** Constructors
+
+build_bool:
+	move $t0 $a0
+	# Allocate two words in the heap (8 * 2)
+	li $v0 9
+	li $a0 8
+	syscall
+
+	li $t1 0 # Type-id is 0 for bool data type
+	sw $t1 ($v0)
+	sw $t0 4($v0)
+	jr $ra
+
+build_number:
+	# Allocate two words in the heap (8 * 2)
+	li $v0 9
+	li $a0 8
+	syscall
+
+	li $t0 1 # Type-id is 1 for number data type
+	sw $t0 ($v0)
+	swc1 $f12 4($v0)
+	jr $ra
+
+build_str:
+	move $t0 $a0
+	# Allocate two words in the heap (8 * 2)
+	li $v0 9
+	li $a0 8
+	syscall
+
+	li $t1 2 # Type-id is 0 for bool data type
+	sw $t1 ($v0)
+	sw $t0 4($v0)
+	jr $ra
 
 #** Printing code
 
 print_number:
-	addi $sp $sp -8
-	lwc1 $f12 4($sp)
+	addi $sp $sp -12
+	lw $t0 8($sp)
+	lwc1 $f12 4($t0)
+	sw $ra 4($sp)
 	
 	li $v0 2
 	syscall
@@ -30,15 +73,17 @@ print_number:
 	li $v0 4
 	syscall
 
-	mov.s $f0 $f12
+	jal build_number	
 	
-	addi $sp $sp 8
+	lw $ra 4($sp)
+	addi $sp $sp 12
 	jr $ra
 	
 print_str:
-	addi $sp $sp -8
-	lw $a0 4($sp)
-	move $t0 $a0
+	addi $sp $sp -12
+	lw $t0 8($sp)
+	lw $a0 4($t0)
+	sw $ra 4($sp)
 	
 	li $v0 4
 	syscall
@@ -47,20 +92,25 @@ print_str:
 	li $v0 4
 	syscall
 	
-	move $v0 $t0
-	addi $sp $sp 8
+	lw $a0 4($t0)
+	jal build_str
+	
+	lw $ra 4($sp)
+	addi $sp $sp 12
 	jr $ra
 
 print_bool:
 	addi $sp $sp -16
 	sw $ra 4($sp)
 	sw $s0 8($sp)
-	lw $a0 12($sp)
-	move $s0 $a0
+
+	lw $t0 12($sp)
+	lw $a0 4($t0)
 
 	bne $a0 1 print_bool_false
 	la $a0 true
-	sw $a0 -4($sp)
+	jal build_str
+	sw $v0 -4($sp)
 	jal print_str
 
 	# Return code
@@ -72,7 +122,8 @@ print_bool:
 
 	print_bool_false:
 	la $a0 false
-	sw $a0 -4($sp)
+	jal build_str
+	sw $v0 -4($sp)
 	jal print_str
 
 	# Return code

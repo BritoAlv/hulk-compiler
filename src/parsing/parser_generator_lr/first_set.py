@@ -1,4 +1,4 @@
-from parsing.parser_generator_lr.graph import Graph
+from common.graph import Graph
 from common.token_class import Token
 from common.parse_nodes.parse_tree import ParseTree
 from common.parse_nodes.parse_node import ParseNode
