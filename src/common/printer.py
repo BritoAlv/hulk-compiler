@@ -49,10 +49,9 @@ class TreePrinter(Visitor):
         self.add_word("Method : " + method_node.id.lexeme)
         with IndentManager(self):
             self.add_word("params :")
-
-        with IndentManager(self):
-            for param in method_node.params:
-                self.add_word(param[0].lexeme + (" of type :" + param[1].lexeme) if param[1] != None else "")
+            with IndentManager(self):
+                for param in method_node.params:
+                    self.add_word(param[0].lexeme + (" of type :" + param[1].lexeme if param[1] != None else ""))
 
         with IndentManager(self):
             self.add_word("body : ")

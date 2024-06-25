@@ -1,1 +1,2 @@
+function p(x) => print(x);
 42;

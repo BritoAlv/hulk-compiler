@@ -15,50 +15,13 @@ parser.add_argument('-a', '--ast', action='store_true', help='Generate AST')
 parser.add_argument("-sa", "--semantic_analysis", action="store_true", help="Perform semantic analysis")
 parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code')
 
-# Parse arguments
-args = parser.parse_args()
-
-if len(sys.argv) == 1:
-    parser.print_help(sys.stderr)
-    sys.exit(1)
-
-# Use the input argument
-inputStr = sys.stdin.read().strip()
-
-if inputStr == None or inputStr == "":
-    inputStr = """
-        function fib(n : number) : number => if (n == 0 | n == 1) 1 else fib(n-1) + fib(n-2);
-        print(fib(6));
+defaultHulkProgram = """
+        function p(x) => print(x); 42;
         """
 
-if args.lex:
-    tokens = hulk_lexer.scanTokens(inputStr)
-    print("Tokens:")
-    for token in tokens:
-        print(token)
-    print("\n")
+inputStr = defaultHulkProgram
 
-if args.parse:
-    tokens = hulk_lexer.scanTokens(inputStr)
-    parser = Parser()
-    parse_tree = parser.parse(tokens)
-    print("Parse Tree:")
-    parse_tree.root.print([0], 0, True)
-    print("\n")
-
-if args.ast:
-    tokens = hulk_lexer.scanTokens(inputStr)
-    parser = Parser()
-    parse_tree = parser.parse(tokens)
-    ast = parser.toAst(parse_tree)
-    print("AST:")
-    print(ast.accept(TreePrinter()))
-    print("\n")
-
-if args.semantic_analysis:
-    print("Not Implemented")
-
-if args.codegen:
+def codeGen():
     tokens = hulk_lexer.scanTokens(inputStr)
     parser = Parser()
     parse_tree = parser.parse(tokens)
@@ -70,3 +33,55 @@ if args.codegen:
     print("Generated Code:")
     print(generator.generate(ast))
     print("\n")
+
+def lex():
+    tokens = hulk_lexer.scanTokens(inputStr)
+    print("Tokens:")
+    for token in tokens:
+        print(token)
+    print("\n")
+
+def parse():
+    tokens = hulk_lexer.scanTokens(inputStr)
+    parser = Parser()
+    parse_tree = parser.parse(tokens)
+    print("Parse Tree:")
+    parse_tree.root.print([0], 0, True)
+    print("\n")
+
+def ast():
+    tokens = hulk_lexer.scanTokens(inputStr)
+    parser = Parser()
+    parse_tree = parser.parse(tokens)
+    ast = parser.toAst(parse_tree)
+    print("AST:")
+    print(ast.accept(TreePrinter()))
+    print("\n")
+
+
+if len(sys.argv) == 1:
+    ast()
+    
+# Parse arguments
+args = parser.parse_args()
+
+# Use the input argument
+inputStr = sys.stdin.read().strip()
+
+if inputStr == None or inputStr == "":
+    inputStr = defaultHulkProgram
+
+if args.lex:
+    lex()
+
+if args.parse:
+    parse()
+
+if args.ast:
+    ast()
+
+if args.semantic_analysis:
+    print("Not Implemented")
+
+if args.codegen:
+    codeGen()
