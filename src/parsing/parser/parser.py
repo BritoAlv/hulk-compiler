@@ -196,39 +196,7 @@ tableHulk = ParsingTable.load_parsing_table("hulk_grammar")
 
 node = tableHulk.parse(
     [Token(x, x, 0, 0) for x in [
-        'type', 'id', 'lparen', 'id', 'colon', 'id', 'comma', 'id', 'colon', 'id', 'rparen',
-        'lbrace',
-            'id', 'equal', 'id', 'semicolon',
-            'id', 'equal', 'id', 'semicolon',
-            'id', 'equal', 'id', 'minus', 'number','semicolon',
-
-            'id', 'lparen', 'rparen', 'colon', 'id', 'arrow', 'lparen', 'self', 'dot', 'id', 'destrucOp', 'self', 'dot', 'id', 'plus', 'number', 'rparen', 'less', 'id', 'semicolon',
-        'rbrace',
-
-        'protocol', 'id',
-        'lbrace',
-            'id', 'lparen', 'id', 'colon', 'id', 'rparen', 'colon', 'id', 'semicolon',
-            'id', 'lparen', 'rparen', 'colon', 'id', 'semicolon',
-        'rbrace',
-        
-        'protocol', 'id', 'extends', 'id',
-        'lbrace',
-            'id', 'lparen', 'id', 'colon', 'id', 'rparen', 'colon', 'id', 'semicolon',
-            'id', 'lparen', 'rparen', 'colon', 'id', 'semicolon',
-        'rbrace',
-
-        'lbrace',
-
-        'let', 'id', 'equal', 'lbracket', 'id', 'doubleOr', 'id', 'in', 'id', 'lparen', 'id', 'comma', 'id', 'rparen', 'rbracket', 'in', 'id', 'lparen', 'id', 'rparen', 'semicolon',
-
-        'let', 'id', 'equal', 'lbracket', 'number', 'comma', 'number', 'comma', 'number', 'comma', 'number', 'comma', 'number', 'rbracket', 'in',
-        'for', 'lparen', 'id', 'in', 'id', 'rparen',
-            'id', 'lparen', 'id', 'rparen', 'semicolon',
-
-        'lparen', 'id', 'rparen', 'dot', 'id', 'semicolon',
-
-        'let', 'id', 'equal', 'new', 'id', 'lparen', 'number', 'comma', 'id', 'rparen', 'in', 'id', 'lparen', 'id', 'rparen', 'semicolon',
-        'rbrace', 'semicolon',
+            'minus','number', "semicolon",
         '$']]
 )
 
