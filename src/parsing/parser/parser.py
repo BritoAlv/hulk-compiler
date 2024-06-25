@@ -59,7 +59,7 @@ class Parser:
                 # [(x.token, y.token if y != None else y) for (x, y) in s[3]], s[6][0], s[6][1], s[4][0].token if s[4][0] != None else s[4][0],  s[4][1]),
                 lambda s: TypeNode(s[2].token, 
                                    [(node.id, node.type) for node in s[6][0]],
-                                   [MethodNode(Token('id', f'build_{s[2].token.lexeme}'), 
+                                   [MethodNode(Token('id', f'build'), 
                                               [(x.token, y.token if y != None else y) for (x, y) in s[3]],
                                               BlockNode(
                                                 ([CallNode(
@@ -68,7 +68,7 @@ class Parser:
                                                          s[4][1]
                                                          )] 
                                                     if s[4][0] != None else []) 
-                                                + s[6][0]), 
+                                                + s[6][0] + [LiteralNode(Token('id', 'self'))]), 
                                                     Token('id', s[2].token.lexeme))] 
                                     + s[6][1],
                                     s[4][0].token if s[4][0] != None else s[4][0])
