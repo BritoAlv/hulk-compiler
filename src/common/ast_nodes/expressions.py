@@ -128,6 +128,14 @@ class BinaryNode(Expr, ABC):
     def accept(self, visitor):
         return visitor.visit_binary_node(self)
 
+class UnaryNode(Expr, ABC):
+    def __init__(self, op : Token, expr : Expr):
+        self.op = op
+        self.expr = expr
+
+    def accept(self, visitor):
+        return visitor.visit_unary_node(self)
+
 class LiteralNode(Expr):
     def __init__(self, id : Token):
         self.id = id

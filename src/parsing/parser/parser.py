@@ -1,31 +1,5 @@
-from ast import Return
-from requests import ReadTimeout
-from common.ast_nodes.expressions import (
-    BinaryNode,
-    BlockNode,
-    CallNode,
-    DestructorNode,
-    ExplicitVectorNode,
-    ForNode,
-    GetNode,
-    IfNode,
-    ImplicitVectorNode,
-    LetNode,
-    LiteralNode,
-    NewNode,
-    SetNode,
-    VectorGetNode,
-    VectorSetNode,
-    WhileNode,
-)
-from common.ast_nodes.statements import (
-    AttributeNode,
-    MethodNode,
-    ProgramNode,
-    ProtocolNode,
-    SignatureNode,
-    TypeNode,
-)
+from common.ast_nodes.expressions import *
+from common.ast_nodes.statements import *
 from common.parse_nodes.parse_node import ParseNode
 from common.parse_nodes.parse_tree import ParseTree
 from common.token_class import Token
@@ -162,6 +136,9 @@ class Parser:
             ],
             "Mod": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
             "Power": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
+            "Unary": [lambda s: UnaryNode(s[1].token, s[2]), 
+                      lambda s: UnaryNode(s[1].token, s[2]), 
+                      lambda s: s[1]],
             "Primary": [
                 lambda s: LiteralNode(s[1].token),
                 lambda s: LiteralNode(s[1].token),
