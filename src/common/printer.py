@@ -224,8 +224,10 @@ class TreePrinter(Visitor):
             self.add_word("At Position: ")
             vector_set_node.left.accept(self)
             self.add_word("With Index: ")
-            vector_set_node.index.accept(self)
-            self.add_word("Assigning Value: ")
+            with IndentManager(self):
+                vector_set_node.index.accept(self)
+            with IndentManager(self):
+                self.add_word("Assigning Value: ")
             vector_set_node.value.accept(self)
         return self.current    
 
