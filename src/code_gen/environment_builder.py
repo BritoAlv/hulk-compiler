@@ -233,7 +233,7 @@ class EnvironmentBuilder(Visitor):
                     if method not in neighbor_type_data.methods:
                         neighbor_type_data.methods[method] = [vertex_type_data.methods[method]]
                     else:
-                        neighbor_type_data.methods[method].insert(1, method)
+                        neighbor_type_data.methods[method].insert(1, f'{method}_{vertex}')
                 
                 # Push onto stack
                 stack.append(neighbor)
