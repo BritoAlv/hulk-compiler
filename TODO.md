@@ -6,3 +6,6 @@
 ## CodeGen Requirements
 - Print floats as floats
 - Compare strings (equality) char by char
+
+## Parsing Requirements
+- semicolon consistency .

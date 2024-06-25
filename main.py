@@ -14,6 +14,7 @@ parser.add_argument('-p', '--parse', action='store_true', help='Perform parsing'
 parser.add_argument('-a', '--ast', action='store_true', help='Generate AST')
 parser.add_argument("-sa", "--semantic_analysis", action="store_true", help="Perform semantic analysis")
 parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code')
+parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
         function p(x) => print(x); 42;
@@ -21,7 +22,7 @@ defaultHulkProgram = """
 
 inputStr = defaultHulkProgram
 
-def codeGen():
+def codeGen(inputStr : str):
     tokens = hulk_lexer.scanTokens(inputStr)
     parser = Parser()
     parse_tree = parser.parse(tokens)
@@ -34,14 +35,14 @@ def codeGen():
     print(generator.generate(ast))
     print("\n")
 
-def lex():
+def lex(inputStr : str):
     tokens = hulk_lexer.scanTokens(inputStr)
     print("Tokens:")
     for token in tokens:
         print(token)
     print("\n")
 
-def parse():
+def parse(inputStr : str):
     tokens = hulk_lexer.scanTokens(inputStr)
     parser = Parser()
     parse_tree = parser.parse(tokens)
@@ -49,7 +50,7 @@ def parse():
     parse_tree.root.print([0], 0, True)
     print("\n")
 
-def ast():
+def ast(inputStr : str):
     tokens = hulk_lexer.scanTokens(inputStr)
     parser = Parser()
     parse_tree = parser.parse(tokens)
@@ -58,9 +59,15 @@ def ast():
     print(ast.accept(TreePrinter()))
     print("\n")
 
+def semanticAnalysis(inputStr : str):
+    pass
+
+def run(inputStr : str):
+    # run the assembly code somehow
+    pass
 
 if len(sys.argv) == 1:
-    ast()
+    ast(inputStr)
     
 # Parse arguments
 args = parser.parse_args()
@@ -72,16 +79,19 @@ if inputStr == None or inputStr == "":
     inputStr = defaultHulkProgram
 
 if args.lex:
-    lex()
+    lex(inputStr)
 
 if args.parse:
-    parse()
+    parse(inputStr)
 
 if args.ast:
-    ast()
+    ast(inputStr)
 
 if args.semantic_analysis:
-    print("Not Implemented")
+    semanticAnalysis(inputStr)
 
 if args.codegen:
-    codeGen()
+    codeGen(inputStr)
+
+if args.run:
+    pass
