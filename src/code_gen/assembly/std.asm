@@ -61,8 +61,10 @@ build_str:
 #** Printing code
 
 print_number:
-	addi $sp $sp -8
-	lwc1 $f12 4($sp)
+	addi $sp $sp -12
+	lw $t0 8($sp)
+	lwc1 $f12 4($t0)
+	sw $ra 4($sp)
 	
 	li $v0 2
 	syscall
@@ -71,15 +73,17 @@ print_number:
 	li $v0 4
 	syscall
 
-	mov.s $f0 $f12
+	jal build_number	
 	
-	addi $sp $sp 8
+	lw $ra 4($sp)
+	addi $sp $sp 12
 	jr $ra
 	
 print_str:
-	addi $sp $sp -8
-	lw $a0 4($sp)
-	move $t0 $a0
+	addi $sp $sp -12
+	lw $t0 8($sp)
+	lw $a0 4($t0)
+	sw $ra 4($sp)
 	
 	li $v0 4
 	syscall
@@ -88,20 +92,25 @@ print_str:
 	li $v0 4
 	syscall
 	
-	move $v0 $t0
-	addi $sp $sp 8
+	lw $a0 4($t0)
+	jal build_str
+	
+	lw $ra 4($sp)
+	addi $sp $sp 12
 	jr $ra
 
 print_bool:
 	addi $sp $sp -16
 	sw $ra 4($sp)
 	sw $s0 8($sp)
-	lw $a0 12($sp)
-	move $s0 $a0
+
+	lw $t0 12($sp)
+	lw $a0 4($t0)
 
 	bne $a0 1 print_bool_false
 	la $a0 true
-	sw $a0 -4($sp)
+	jal build_str
+	sw $v0 -4($sp)
 	jal print_str
 
 	# Return code
@@ -113,7 +122,8 @@ print_bool:
 
 	print_bool_false:
 	la $a0 false
-	sw $a0 -4($sp)
+	jal build_str
+	sw $v0 -4($sp)
 	jal print_str
 
 	# Return code
