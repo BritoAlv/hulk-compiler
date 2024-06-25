@@ -29,18 +29,14 @@ class MethodNode(Statement):
 
 class TypeNode(Statement):
     def __init__(self, 
-                 id : Token, 
-                 params : list[tuple[Token, Token]],
-                 attributes : list[AttributeNode],
+                 id : Token,
+                 attributes : list[tuple[Token, Token | None]],
                  methods : list[MethodNode], 
-                 ancestor_id : Token | None, 
-                 ancestor_args : list[Expr] | None = None):
+                 ancestor_id : Token | None):
         self.id = id
-        self.params = params
         self.attributes = attributes
         self.methods = methods
         self.ancestor_id = ancestor_id
-        self.ancestor_args = ancestor_args
 
     def accept(self, visitor):
         return visitor.visit_type_node(self)

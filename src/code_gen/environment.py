@@ -1,3 +1,7 @@
+BOOL_TYPE_ID = 0
+NUMBER_TYPE_ID = 1
+STR_TYPE_ID = 2
+
 class VarData:
     def __init__(self, index : int, type : str = None) -> None:
         self.index = index
@@ -17,10 +21,11 @@ class FunctionData:
         self.var_count = 0
 
 class TypeData:
-    def __init__(self) -> None:
+    def __init__(self, id : int) -> None:
         self.attributes : dict[str, VarData] = {}
         self.methods : dict[str, str] = {} # Method name and it's associated assembly name
-        self.inherited_offset = 0
+        self.inherited_offset = 1 # One word is reserved for object metadata (type in this case)
+        self.id : int = id
 
 class Environment:
     def __init__(self) -> None:
@@ -80,6 +85,13 @@ class Environment:
             raise Exception(f"Type {type_name} was already declared")
         
         self._types[type_name] = type_data
+
+    def get_type_data(self, type_name : str) -> TypeData:
+        if type_name not in self._types:
+            raise Exception(f"Type {type_name} is not declared")
+        
+        return self._types[type_name]
+
 
     def update_type_method(self, type_name : str, method_pair : tuple[str, str]):
         if type_name not in self._types:

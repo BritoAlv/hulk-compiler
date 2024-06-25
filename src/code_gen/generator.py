@@ -17,7 +17,9 @@ class Generator(Visitor):
         self._resolver = resolver
         
         self._on_function_block = False
+        self._in_type = False
         self._func_name : str = None
+        self._type_name : str = None
 
         self._literal_strings : list[str] = []
         self._literal_numbers : list[str] = []
@@ -55,6 +57,8 @@ class Generator(Visitor):
     
     def visit_method_node(self, method_node: MethodNode) -> GenerationResult:
         func_name = method_node.id.lexeme
+        if self._in_type:
+            func_name = f'{func_name}_{self._type_name}'
 
         self._func_name = func_name
         self._resolver.start(func_name)
@@ -299,6 +303,13 @@ class Generator(Visitor):
     jal stack_push
 '''
             return GenerationResult(code, 'bool')
+        elif literal_node.id.type == 'self':
+            offset = self._get_offset(var_name)
+            code = f'''
+    sw $a0 {offset}($sp)
+    jal stack_push
+'''
+            return GenerationResult(code, self._type_name)
         
     def visit_binary_node(self, binary_node: BinaryNode):
         left_result = self._generate(binary_node.left)
@@ -570,13 +581,61 @@ class Generator(Visitor):
             raise Exception("Invalid operation")
 
     def visit_type_node(self, type_node: TypeNode):
-        pass
+        self._type_name = type_node.id.lexeme
+        self._in_type = True
+
+        code = ''
+        for method in type_node.methods:
+            code += self._generate(method).code
+
+        self._type_name = None
+        self._in_type = False
+        return GenerationResult(code)
 
     def visit_protocol_node(self, protocol_node: ProtocolNode):
         pass
 
     def visit_attribute_node(self, attribute_node: AttributeNode):
-        pass
+        attribute_name = attribute_node.id.lexeme
+        result = self._generate(attribute_node.body)
+        code = result.code
+
+        type_data = self._resolver.resolve_type_data(self._type_name)
+        type_data.attributes[attribute_name].type = result.type # TODO: Remove when types are correctly inferred during semantic analysis
+
+        self_offset = self._get_offset('self')
+        attribute_offset = (type_data.attributes[attribute_name].index + type_data.inherited_offset) * 4
+
+        if result.type == 'bool':
+                code += f'''
+    jal stack_pop
+    lw $a0 4($v0)
+    jal build_bool
+        
+        '''
+        elif result.type == 'str':
+            code += f'''
+    jal stack_pop
+    lw $a0 4($v0)
+    jal build_str
+        '''
+        elif result.type == 'number':
+            code += f'''
+    jal stack_pop
+    lwc1 $f12 4($v0)
+    jal build_number
+        '''
+        else:
+            code += f'''
+    jal stack_pop
+        '''
+            
+        code += f'''
+    lw $t0 {self_offset}($sp)
+    sw $v0 {attribute_offset}($t0)
+'''
+
+        return GenerationResult(code)
 
     def visit_signature_node(self, signature_node: SignatureNode):
         pass
@@ -671,7 +730,35 @@ class Generator(Visitor):
         pass
 
     def visit_new_node(self, new_node: NewNode):
-        pass
+        type_name = new_node.id.lexeme
+        type_data = self._resolver.resolve_type_data(type_name)
+        type_size = type_data.inherited_offset + len(type_data.attributes)
+        type_id = type_data.id
+
+        code = f'''
+    li $a0 {type_size * WORD_SIZE}
+    li $v0 9
+    syscall
+    sw $v0 {-WORD_SIZE}($sp)
+    li $t0 {type_id}
+    sw $t0 ($v0)
+'''
+        
+        i = 2
+        for arg in new_node.args:
+            result = self._generate(arg)
+            code += result.code
+            offset = -(i * WORD_SIZE)
+            code += f'''
+    jal stack_pop
+    sw $v0 {offset}($sp)
+'''
+        code += f'''
+    jal build_{type_name}
+    move $a0 $v0
+    jal stack_push
+'''
+        return GenerationResult(code, type_name)
     
     def visit_get_node(self, get_node: GetNode):
         pass

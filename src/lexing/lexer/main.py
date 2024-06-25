@@ -31,14 +31,15 @@ number3 = const.opar + "0" + const.cpar
 
 number = const.opar + number1 + const.plus + number2 + const.plus + number3 +  const.cpar
 
-stringg = "\"" + const.opar + digits + const.plus + letter + const.cpar + "\""
+stringg = "\"" + const.opar + const.opar + digits + const.plus + letter + const.cpar + const.star + const.cpar + "\""
 
 
 hulk_lexer = Lexer(
     [
         ("powerOp", "^"),
         ("modOp", "%"),
-        ("strOp", "@"),
+        ("at", "@"),
+        ("doubleAt", "@@"),
         ("extends", "extends"),
         ("lbracket", "["),
         ("rbracket", "]"),

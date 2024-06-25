@@ -1,5 +1,7 @@
 
-from code_gen.environment import Context, Environment, TypeData, VarData
+from time import sleep
+from sympy import false, true
+from code_gen.environment import STR_TYPE_ID, Context, Environment, TypeData, VarData
 from common.graph import Graph
 from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, ForNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, NewNode, SetNode, VectorGetNode, VectorSetNode, WhileNode
 from common.ast_nodes.statements import AttributeNode, MethodNode, ProgramNode, ProtocolNode, SignatureNode, Statement, TypeNode
@@ -11,8 +13,14 @@ class EnvironmentBuilder(Visitor):
         self._environment : Environment = None
         self._context : Context = None
         self._params : dict[str, VarData] = None
+
         self._var_index : int = 0
+        self._type_index : int = STR_TYPE_ID + 1
+
         self._func_name : str
+        self._type_name : str
+        self._in_type = false
+
         self._type_graph = Graph()
         self._root_types : list[str] = []
 
@@ -30,6 +38,10 @@ class EnvironmentBuilder(Visitor):
     
     def visit_method_node(self, method_node: MethodNode):
         func_name = method_node.id.lexeme
+
+        if self._in_type:
+            func_name = f'{func_name}_{self._type_name}'
+
         func_type = method_node.type.lexeme
 
         # Create function context
@@ -40,8 +52,10 @@ class EnvironmentBuilder(Visitor):
         self._params = self._environment.get_params(func_name)
         self._func_name = func_name
 
-        # Link parameters to argument registers and to stack (if more than 4 parameters)
-        i = 0
+        if self._in_type:
+            self._params['self'] = VarData(self._var_index, self._type_name)
+            self._var_index += 1
+
         for param in method_node.params:
             param_name = param[0].lexeme
             param_type = param[1].lexeme
@@ -51,8 +65,6 @@ class EnvironmentBuilder(Visitor):
             
             self._params[param_name] = VarData(self._var_index, param_type)
             self._var_index += 1
-
-            i += 1
                 
         self._build(method_node.body)
         self._environment.add_variables(func_name, self._var_index)
@@ -99,11 +111,12 @@ class EnvironmentBuilder(Visitor):
 
     def visit_type_node(self, type_node: TypeNode):
         type_name = type_node.id.lexeme
-        type_data = TypeData()
+        type_data = TypeData(self._type_index)
+        self._type_index += 1
 
         i = 0
-        for attribute in type_node.attributes:
-            attribute_name = attribute.id.lexeme
+        for attribute, _ in type_node.attributes:
+            attribute_name = attribute.lexeme
             if attribute_name in type_data.attributes:
                 raise Exception(f"Cannot declare attribute '{attribute_name}' twice")
             type_data.attributes[attribute_name] = VarData(i)
@@ -119,10 +132,17 @@ class EnvironmentBuilder(Visitor):
             ancestor = type_node.ancestor_id.lexeme
             self._type_graph.add((ancestor, type_name))
         else:
+            self._type_graph.add_vertex(type_name)
             self._root_types.append(type_name)
             
 
         self._environment.add_type_data(type_name, type_data)
+        
+        self._type_name = type_name
+        self._in_type = True
+        for method in type_node.methods:
+            self._build(method)
+        self._in_type = False
             
 
     def visit_protocol_node(self, protocol_node: ProtocolNode):
