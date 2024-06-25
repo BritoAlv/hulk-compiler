@@ -58,12 +58,19 @@ Is -> Is isOp Str | Str .
 Str -> Str StrOp Term | Term .
 StrOp -> at | doubleAt .
 Term -> Term plus Factor | Term minus Factor | Factor .
+
 Factor -> Factor star Mod | Factor div Mod | Mod .
+
 Mod -> Mod modOp Power | Power .
-Power -> Primary powerOp number | Primary .
+
+Power -> Unary powerOp Power | Unary .
+
+Unary -> minus Primary | not Primary | Primary.
 
 Primary -> false | true | number | string | CallList .
 
 CallList -> CallList dot id | CallList lparen ArgList rparen | CallList lbracket Expr rbracket | self | id | lparen Expr rparen .
+
 ArgList -> Expr ArgTail | .
+
 ArgTail -> comma Expr ArgTail | .

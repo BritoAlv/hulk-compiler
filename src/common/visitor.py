@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, ForNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, NewNode, SetNode, VectorGetNode, VectorSetNode, WhileNode, WhileNode
-from common.ast_nodes.statements import AttributeNode, MethodNode, ProgramNode, ProtocolNode, SignatureNode, TypeNode
+from common.ast_nodes.expressions import *
+from common.ast_nodes.statements import *
 
 
 class Visitor(ABC):
@@ -88,6 +88,12 @@ class Visitor(ABC):
     def visit_binary_node(self, binary_node : BinaryNode):
         pass
 
+    
+    @abstractmethod
+    def visit_unary_node(self, unary_node : UnaryNode):
+        pass
+
     @abstractmethod
     def visit_literal_node(self, literal_node : LiteralNode):
         pass
+
