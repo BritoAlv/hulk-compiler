@@ -1,4 +1,3 @@
-import os
 from parsing.parser_generator_lr.grammar import Grammar
 from lexing.lexer_generator.finite_automata import *
 from common.token_class import *

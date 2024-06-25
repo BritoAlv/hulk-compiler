@@ -16,9 +16,16 @@ class FunctionData:
         self.params : dict[str, VarData] = {}
         self.var_count = 0
 
+class TypeData:
+    def __init__(self) -> None:
+        self.attributes : dict[str, VarData] = {}
+        self.methods : dict[str, str] = {} # Method name and it's associated assembly name
+        self.inherited_offset = 0
+
 class Environment:
     def __init__(self) -> None:
         self._functions : dict[str, FunctionData] = {}
+        self._types : dict[str, TypeData] = {}
 
     def add_function(self, func_name : str) -> None:
         if func_name in self._functions:
@@ -67,3 +74,37 @@ class Environment:
             raise Exception(f"Function {func_name} is not declared")
         
         return self._functions[func_name].type
+
+    def add_type_data(self, type_name : str, type_data : TypeData) -> None:
+        if type_name in self._types:
+            raise Exception(f"Type {type_name} was already declared")
+        
+        self._types[type_name] = type_data
+
+    def update_type_method(self, type_name : str, method_pair : tuple[str, str]):
+        if type_name not in self._types:
+            raise Exception(f"Type {type_name} is not declared")
+        
+        method_name = method_pair[0]
+        method_assembly_name = method_pair[1]
+
+        if method_name not in self._types[type_name].methods:
+            self._types[type_name].methods[method_name] = method_assembly_name
+
+    def get_type_methods(self, type_name : str) -> list[tuple[str, str]]:
+        if type_name not in self._types:
+            raise Exception(f"Type {type_name} is not declared")
+        
+        result : list[tuple[str, str]] = []
+        for method_name in self._types[type_name].methods:
+            result.append((method_name, self._types[type_name].methods[method_name]))
+
+        return result
+    
+    def _inherit_offset(self, target_type : str, source_type : str) -> None:
+        if target_type not in self._types:
+            raise Exception(f"Type {target_type} is not declared")
+        if source_type not in self._types:
+            raise Exception(f"Type {source_type} is not declared")
+        
+        self._types[target_type].inherited_offset = len(self._types[source_type].attributes) + self._types[source_type].inherited_offset

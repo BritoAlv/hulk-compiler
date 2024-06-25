@@ -2,6 +2,11 @@ class Graph:
     def __init__(self) -> None:
         self.vertices: dict[str, list[str]] = {}
 
+    def neighbors(self, vertex : str) -> list[str]:
+        if vertex not in self.vertices:
+            raise Exception("Vertex is not in graph")
+        return self.vertices[vertex]
+
     def contains_edge(self, pair: tuple[str, str]) -> bool:
         return pair[0] in self.vertices and pair[1] in self.vertices[pair[0]]
 

@@ -198,6 +198,8 @@ class ParsingTable:
                     return i
 
     def convertAst(self, tree: ParseNode):
+        assert(isinstance(tree, ParseNode))
+        assert(self.attributed_productions != None)
         body = tree.children
         s = []
 
@@ -212,9 +214,9 @@ class ParsingTable:
                     s[i] = node
                 else:
                     s[i] = self.convertAst(body[i - 1])
-
         lambda_list = self.attributed_productions[tree.value]
         lambda_index = self.get_index(tree)
+        # print(tree.token.lexeme, b, lambda_index)
         return lambda_list[lambda_index](s)  # type: ignore
 
     def __str__(self):

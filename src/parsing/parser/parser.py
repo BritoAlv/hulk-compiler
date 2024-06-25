@@ -1,31 +1,5 @@
-from ast import Return
-from requests import ReadTimeout
-from common.ast_nodes.expressions import (
-    BinaryNode,
-    BlockNode,
-    CallNode,
-    DestructorNode,
-    ExplicitVectorNode,
-    ForNode,
-    GetNode,
-    IfNode,
-    ImplicitVectorNode,
-    LetNode,
-    LiteralNode,
-    NewNode,
-    SetNode,
-    VectorGetNode,
-    VectorSetNode,
-    WhileNode,
-)
-from common.ast_nodes.statements import (
-    AttributeNode,
-    MethodNode,
-    ProgramNode,
-    ProtocolNode,
-    SignatureNode,
-    TypeNode,
-)
+from common.ast_nodes.expressions import *
+from common.ast_nodes.statements import *
 from common.parse_nodes.parse_node import ParseNode
 from common.parse_nodes.parse_tree import ParseTree
 from common.token_class import Token
@@ -41,7 +15,7 @@ class Parser:
         self.parsing_table.attributed_productions = {
             "Program": [
                 lambda s: ProgramNode(
-                        s[1] + [MethodNode(Token('id', 'main'), [], s[2])])],
+                        s[1] + [MethodNode(Token('id', 'main'), [], s[2], Token('id', 'void'))])],
             "Decls": [
                 lambda s: [s[1]] + s[2],
                 lambda s: [s[1]] + s[2],
@@ -55,7 +29,7 @@ class Parser:
             "TypedParamList": [lambda s: [(s[1], s[3])] + s[4], lambda s: []],
             "TypedParamTail": [lambda s: [(s[2], s[4])] + s[5], lambda s: []],
             "TypeDecl": [
-                lambda s: TypeNode(s[2].token, [(x.token, y.token if y != None else y) for (x, y) in s[3]], s[6][0], s[6][1], s[4][0], s[4][1])
+                lambda s: TypeNode(s[2].token, [(x.token, y.token if y != None else y) for (x, y) in s[3]], s[6][0], s[6][1], s[4][0].token if s[4][0] != None else s[4][0],  s[4][1])
             ],
             "OptParams": [lambda s: s[2], lambda s: []],
             "OptInheritance": [lambda s: (s[2], s[3]), lambda s: (None, None)],
@@ -146,6 +120,9 @@ class Parser:
             ],
             "Mod": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
             "Power": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
+            "Unary": [lambda s: UnaryNode(s[1].token, s[2]), 
+                      lambda s: UnaryNode(s[1].token, s[2]), 
+                      lambda s: s[1]],
             "Primary": [
                 lambda s: LiteralNode(s[1].token),
                 lambda s: LiteralNode(s[1].token),
@@ -186,24 +163,3 @@ class Parser:
 
     def toAst(self, tree: ParseTree):
         return self.parsing_table.convertAst(tree.root)
-    
-
-
-from parsing.parser_generator_lr.parsing_table import ParsingTable
-
-tableHulk = ParsingTable.load_parsing_table("hulk_grammar")
-# print(tableHulk)
-
-node = tableHulk.parse(
-    [Token(x, x, 0, 0) for x in [
-            'minus','number', "semicolon",
-        '$']]
-)
-
-
-node.root.print([0], 0, True)
-
-
-
-p = Parser()
-p.toAst(node)

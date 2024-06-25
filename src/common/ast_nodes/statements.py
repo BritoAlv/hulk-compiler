@@ -18,7 +18,7 @@ class AttributeNode(Statement):
         return visitor.visit_attribute_node(self)
 
 class MethodNode(Statement):
-    def __init__(self, id : Token, params : list[tuple[Token, Token]], body : Expr, type : Token | None = None):
+    def __init__(self, id : Token, params : list[tuple[Token, Token | None]], body : Expr, type : Token | None = None):
         self.id = id
         self.params = params
         self.body = body
@@ -37,9 +37,9 @@ class TypeNode(Statement):
                  ancestor_args : list[Expr] | None = None):
         self.id = id
         self.params = params
-        self.attributes = attributes,
-        self.methods = methods,
-        self.ancestor_id = ancestor_id,
+        self.attributes = attributes
+        self.methods = methods
+        self.ancestor_id = ancestor_id
         self.ancestor_args = ancestor_args
 
     def accept(self, visitor):

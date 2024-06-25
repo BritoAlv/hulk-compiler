@@ -160,6 +160,10 @@ class Vi(Visitor):
     def visit_binary_node(self, binary_node : BinaryNode):
         return binary_node.left.accept(self) and binary_node.right.accept(self)
     
+    def visit_unary_node(self, binary_node : UnaryNode):
+        
+        return True
+    
 
     def visit_literal_node(self, literal_node : LiteralNode):
         return True
