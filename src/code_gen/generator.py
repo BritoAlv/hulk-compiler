@@ -1,6 +1,6 @@
 from code_gen.resolver import Resolver
 from common.ast_nodes.base import Statement
-from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, ForNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, NewNode, SetNode, VectorGetNode, VectorSetNode, WhileNode
+from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, ForNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, NewNode, SetNode, UnaryNode, VectorGetNode, VectorSetNode, WhileNode
 from common.ast_nodes.statements import AttributeNode, MethodNode, ProgramNode, ProtocolNode, SignatureNode, TypeNode
 from common.visitor import Visitor
 
@@ -204,8 +204,21 @@ class Generator(Visitor):
     def visit_call_node(self, call_node: CallNode):
         code = ''
         arg_types = []
-        # We won't verify that length of args match length of params, previous semantic analysis assumed
+
+        ancestor_name = self._resolver.resolve_type_data(self._type_name).ancestor
+
         i = 1
+
+        #TODO: Refactor code for basing any method
+        if isinstance(call_node.callee, LiteralNode) and call_node.callee.id.lexeme == 'base':
+            self_offset = self._get_offset('self')
+            code += f'''
+    lw $t0 {self_offset}($sp)
+    sw $t0 {-WORD_SIZE}($sp)
+'''
+            i += 1
+        
+        # We won't verify that length of args match length of params, previous semantic analysis assumed
         for arg in call_node.args:
             result = self._generate(arg)
             arg_types.append(result.type)
@@ -218,7 +231,7 @@ class Generator(Visitor):
 
             i += 1
 
-        if isinstance(call_node.callee, LiteralNode):
+        if isinstance(call_node.callee, LiteralNode) and call_node.callee.id.lexeme != 'base':
             func_name = call_node.callee.id.lexeme
 
             # Handle print particular case
@@ -243,8 +256,14 @@ class Generator(Visitor):
     move $a0 $v0
     jal stack_push
 '''
-
             return GenerationResult(code, func_type)
+        elif isinstance(call_node.callee, LiteralNode) and call_node.callee.id.lexeme == 'base':
+            code += f'''
+    jal build_{ancestor_name}
+    move $a0 $v0
+    jal stack_push
+'''
+            return GenerationResult(code, ancestor_name)
     
     def visit_literal_node(self, literal_node: LiteralNode):
 
@@ -753,12 +772,16 @@ class Generator(Visitor):
     jal stack_pop
     sw $v0 {offset}($sp)
 '''
+            i += 1
         code += f'''
     jal build_{type_name}
     move $a0 $v0
     jal stack_push
 '''
         return GenerationResult(code, type_name)
+    
+    def visit_unary_node(self, unary_node : UnaryNode):
+        pass
     
     def visit_get_node(self, get_node: GetNode):
         pass

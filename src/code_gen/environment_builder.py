@@ -3,7 +3,7 @@ from time import sleep
 from sympy import false, true
 from code_gen.environment import STR_TYPE_ID, Context, Environment, TypeData, VarData
 from common.graph import Graph
-from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, ForNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, NewNode, SetNode, VectorGetNode, VectorSetNode, WhileNode
+from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, ForNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, NewNode, SetNode, UnaryNode, VectorGetNode, VectorSetNode, WhileNode
 from common.ast_nodes.statements import AttributeNode, MethodNode, ProgramNode, ProtocolNode, SignatureNode, Statement, TypeNode
 from common.visitor import Visitor
 
@@ -131,6 +131,7 @@ class EnvironmentBuilder(Visitor):
         if type_node.ancestor_id != None:
             ancestor = type_node.ancestor_id.lexeme
             self._type_graph.add((ancestor, type_name))
+            type_data.ancestor = ancestor
         else:
             self._type_graph.add_vertex(type_name)
             self._root_types.append(type_name)
@@ -143,7 +144,9 @@ class EnvironmentBuilder(Visitor):
         for method in type_node.methods:
             self._build(method)
         self._in_type = False
-            
+
+    def visit_unary_node(self, unary_node : UnaryNode):
+        pass
 
     def visit_protocol_node(self, protocol_node: ProtocolNode):
         pass

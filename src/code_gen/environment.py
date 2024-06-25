@@ -22,10 +22,11 @@ class FunctionData:
 
 class TypeData:
     def __init__(self, id : int) -> None:
+        self.id : int = id
         self.attributes : dict[str, VarData] = {}
         self.methods : dict[str, str] = {} # Method name and it's associated assembly name
         self.inherited_offset = 1 # One word is reserved for object metadata (type in this case)
-        self.id : int = id
+        self.ancestor : str = None
 
 class Environment:
     def __init__(self) -> None:

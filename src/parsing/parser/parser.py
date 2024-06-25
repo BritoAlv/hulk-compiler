@@ -38,7 +38,7 @@ class Parser:
                                               BlockNode(
                                                 ([CallNode(
                                                      LiteralNode(
-                                                         Token('id', f'build_{s[4][0].token.lexeme}')), 
+                                                         Token('id', 'base')), 
                                                          s[4][1]
                                                          )] 
                                                     if s[4][0] != None else []) 
