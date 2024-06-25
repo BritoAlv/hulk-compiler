@@ -1,5 +1,4 @@
 
-from copy import copy
 from code_gen.environment import Context, Environment, TypeData, VarData
 from common.graph import Graph
 from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, ForNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, NewNode, SetNode, VectorGetNode, VectorSetNode, WhileNode
@@ -197,6 +196,8 @@ class EnvironmentBuilder(Visitor):
             neighbors = graph.neighbors(vertex)
 
             for neighbor in neighbors:
+                self._environment._inherit_offset(neighbor, vertex)
+                
                 method_name_pairs = self._environment.get_type_methods(vertex)
                 for pair in method_name_pairs:
                     self._environment.update_type_method(neighbor, pair)

@@ -20,6 +20,7 @@ class TypeData:
     def __init__(self) -> None:
         self.attributes : dict[str, VarData] = {}
         self.methods : dict[str, str] = {} # Method name and it's associated assembly name
+        self.inherited_offset = 0
 
 class Environment:
     def __init__(self) -> None:
@@ -99,3 +100,11 @@ class Environment:
             result.append((method_name, self._types[type_name].methods[method_name]))
 
         return result
+    
+    def _inherit_offset(self, target_type : str, source_type : str) -> None:
+        if target_type not in self._types:
+            raise Exception(f"Type {target_type} is not declared")
+        if source_type not in self._types:
+            raise Exception(f"Type {source_type} is not declared")
+        
+        self._types[target_type].inherited_offset = len(self._types[source_type].attributes) + self._types[source_type].inherited_offset
