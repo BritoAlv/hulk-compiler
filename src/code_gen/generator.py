@@ -57,12 +57,14 @@ class Generator(Visitor):
     
     def visit_method_node(self, method_node: MethodNode) -> GenerationResult:
         func_name = method_node.id.lexeme
+        
         if self._in_type:
             func_name = f'{func_name}_{self._type_name}'
 
         self._func_name = func_name
         self._resolver.start(func_name)
-        stack_size = self._resolver.var_count * WORD_SIZE + 2 * WORD_SIZE
+        func_data = self._resolver.resolve_function_data(func_name)
+        stack_size = func_data.var_count * WORD_SIZE + 2 * WORD_SIZE
 
         code = f'''
 {func_name}:
@@ -91,6 +93,7 @@ class Generator(Visitor):
     # j done # Simulation code
     \n
 '''
+        self._func_name = None # Restore to None since we're exiting the node
         return GenerationResult(code, result.type)
     
     def visit_block_node(self, block_node: BlockNode):
@@ -116,39 +119,37 @@ class Generator(Visitor):
             result = self._generate(value)
             code += result.code
 
-            # Update variable's type (Assuming type-checking has been correctly done previously)
-            # It would be better if type were resolved previously (during type-checking)
-            self._resolver.resolve(var_name).type = result.type
+            self._resolver.resolve_var_data(var_name).type = result.type # TODO: Remove when types are correctly inferred during semantic analysis
 
             if result.type == 'bool':
                 code += f'''
-        jal stack_pop
-        lw $a0 4($v0)
-        jal build_bool
-        move $a0 $v0
-        sw $a0 {offset}($sp)
+    jal stack_pop
+    lw $a0 4($v0)
+    jal build_bool
+    move $a0 $v0
+    sw $a0 {offset}($sp)
         '''
             elif result.type == 'str':
                 code += f'''
-        jal stack_pop
-        lw $a0 4($v0)
-        jal build_str
-        move $a0 $v0
-        sw $a0 {offset}($sp)
+    jal stack_pop
+    lw $a0 4($v0)
+    jal build_str
+    move $a0 $v0
+    sw $a0 {offset}($sp)
         '''
             elif result.type == 'number':
                 code += f'''
-        jal stack_pop
-        lwc1 $f12 4($v0)
-        jal build_number
-        move $a0 $v0
-        sw $a0 {offset}($sp)
+    jal stack_pop
+    lwc1 $f12 4($v0)
+    jal build_number
+    move $a0 $v0
+    sw $a0 {offset}($sp)
         '''
             else:
                 code += f'''
-        jal stack_pop
-        move $a0 $v0
-        sw $a0 {offset}($sp)
+    jal stack_pop
+    move $a0 $v0
+    sw $a0 {offset}($sp)
         '''
 
         result = self._generate(let_node.body)
@@ -205,12 +206,11 @@ class Generator(Visitor):
         code = ''
         arg_types = []
 
-        ancestor_name = self._resolver.resolve_type_data(self._type_name).ancestor
-
         i = 1
 
         #TODO: Refactor code for basing any method
         if isinstance(call_node.callee, LiteralNode) and call_node.callee.id.lexeme == 'base':
+            ancestor_name = self._resolver.resolve_type_data(self._type_name).ancestor
             self_offset = self._get_offset('self')
             code += f'''
     lw $t0 {self_offset}($sp)
@@ -247,7 +247,7 @@ class Generator(Visitor):
                     func_name = 'print_pointer'
                 func_type = arg_type
             else:
-                func_type = self._resolver.get_func_type(func_name)
+                func_type = self._resolver.resolve_function_data(func_name).type
             
             code += f'''
     jal {func_name}
@@ -258,6 +258,8 @@ class Generator(Visitor):
 '''
             return GenerationResult(code, func_type)
         elif isinstance(call_node.callee, LiteralNode) and call_node.callee.id.lexeme == 'base':
+            ancestor_name = self._resolver.resolve_type_data(self._type_name).ancestor
+            
             code += f'''
     jal build_{ancestor_name}
     move $a0 $v0
@@ -286,7 +288,7 @@ class Generator(Visitor):
         elif literal_node.id.type == 'id':
             var_name = literal_node.id.lexeme
             offset = self._get_offset(var_name)
-            type = self._resolver.resolve(var_name).type
+            type = self._resolver.resolve_var_data(var_name).type
 
             code = f'''
     lw $a0 {offset}($sp)
@@ -607,8 +609,8 @@ class Generator(Visitor):
         for method in type_node.methods:
             code += self._generate(method).code
 
-        self._type_name = None
-        self._in_type = False
+        self._type_name = None # Restore to None since we're exiting the node
+        self._in_type = False # Restore to False since we're exiting the node
         return GenerationResult(code)
 
     def visit_protocol_node(self, protocol_node: ProtocolNode):
@@ -805,7 +807,9 @@ class Generator(Visitor):
         return stmt.accept(self)
         
     def _get_offset(self, var_name: str) -> int:
-        return ((self._resolver.var_count + 2) * WORD_SIZE) - ((self._resolver.resolve(var_name).index + 1) * WORD_SIZE)
+        func_data = self._resolver.resolve_function_data(self._func_name)
+
+        return ((func_data.var_count + 2) * WORD_SIZE) - ((self._resolver.resolve_var_data(var_name).index + 1) * WORD_SIZE)
     
     def _next_context(self):
         if not self._on_function_block:

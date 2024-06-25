@@ -1,7 +1,7 @@
 
 from time import sleep
 from sympy import false, true
-from code_gen.environment import STR_TYPE_ID, Context, Environment, TypeData, VarData
+from code_gen.environment import STR_TYPE_ID, Context, Environment, FunctionData, TypeData, VarData
 from common.graph import Graph
 from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, ForNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, NewNode, SetNode, UnaryNode, VectorGetNode, VectorSetNode, WhileNode
 from common.ast_nodes.statements import AttributeNode, MethodNode, ProgramNode, ProtocolNode, SignatureNode, Statement, TypeNode
@@ -12,14 +12,13 @@ class EnvironmentBuilder(Visitor):
     def __init__(self) -> None:
         self._environment : Environment = None
         self._context : Context = None
-        self._params : dict[str, VarData] = None
 
         self._var_index : int = 0
         self._type_index : int = STR_TYPE_ID + 1
 
         self._func_name : str
         self._type_name : str
-        self._in_type = false
+        self._in_type = False
 
         self._type_graph = Graph()
         self._root_types : list[str] = []
@@ -37,40 +36,41 @@ class EnvironmentBuilder(Visitor):
             self._build(decl)
     
     def visit_method_node(self, method_node: MethodNode):
+        func_data = FunctionData()
         func_name = method_node.id.lexeme
+        func_type = method_node.type.lexeme
+        func_data.type = func_type
 
         if self._in_type:
             func_name = f'{func_name}_{self._type_name}'
 
-        func_type = method_node.type.lexeme
-
-        # Create function context
+        self._environment.add_function_data(func_name, func_data)
         self._var_index = 0 # Reset var_index
-        self._environment.add_function(func_name)
-        self._environment.add_type(func_name, func_type)
-        self._context = self._environment.get_context(func_name)
-        self._params = self._environment.get_params(func_name)
         self._func_name = func_name
+        self._context = func_data.context
 
         if self._in_type:
-            self._params['self'] = VarData(self._var_index, self._type_name)
+            func_data.params['self'] = VarData(self._var_index, self._type_name)
             self._var_index += 1
 
         for param in method_node.params:
             param_name = param[0].lexeme
             param_type = param[1].lexeme
 
-            if param_name in self._params:
+            if param_name in func_data.params:
                     raise Exception("Params must be named differently")
             
-            self._params[param_name] = VarData(self._var_index, param_type)
+            func_data.params[param_name] = VarData(self._var_index, param_type)
             self._var_index += 1
                 
         self._build(method_node.body)
-        self._environment.add_variables(func_name, self._var_index)
+
+        self._func_name = None # Restore to None since we're exiting the node
+        func_data.var_count = self._var_index
 
     def visit_let_node(self, let_node: LetNode):
         old_context = self._create_context()
+        function_data = self._environment.get_function_data(self._func_name)
 
         for assignment in let_node.assignments:
             var_name = assignment.id.lexeme
@@ -78,7 +78,7 @@ class EnvironmentBuilder(Visitor):
             
             if var_name in self._context.variables:
                 raise Exception("Cannot declare the same variable twice in the same scope")
-            elif var_name in self._params:
+            elif var_name in function_data.params:
                 raise Exception("Variable is already used as a parameter name")
             
             self._context.variables[var_name] = VarData(self._var_index)
@@ -110,9 +110,11 @@ class EnvironmentBuilder(Visitor):
             self._build(expr)
 
     def visit_type_node(self, type_node: TypeNode):
-        type_name = type_node.id.lexeme
         type_data = TypeData(self._type_index)
         self._type_index += 1
+        type_name = type_node.id.lexeme
+        self._type_name = type_name
+        self._in_type = True
 
         i = 0
         for attribute, _ in type_node.attributes:
@@ -126,12 +128,12 @@ class EnvironmentBuilder(Visitor):
             method_name = method.id.lexeme
             if method_name in type_data.methods:
                 raise Exception(f"Cannot declare method '{method_name}' twice")
-            type_data.methods[method_name] = f'{method_name}_{type_name}'
+            type_data.methods[method_name] = [f'{method_name}_{type_name}']
 
         if type_node.ancestor_id != None:
             ancestor = type_node.ancestor_id.lexeme
-            self._type_graph.add((ancestor, type_name))
             type_data.ancestor = ancestor
+            self._type_graph.add((ancestor, type_name))
         else:
             self._type_graph.add_vertex(type_name)
             self._root_types.append(type_name)
@@ -139,11 +141,11 @@ class EnvironmentBuilder(Visitor):
 
         self._environment.add_type_data(type_name, type_data)
         
-        self._type_name = type_name
-        self._in_type = True
         for method in type_node.methods:
             self._build(method)
-        self._in_type = False
+
+        self._in_type = False # Restore to False since we're exiting the node
+        self._type_name = None # Restore to None since we're exiting the node
 
     def visit_unary_node(self, unary_node : UnaryNode):
         pass
@@ -195,10 +197,11 @@ class EnvironmentBuilder(Visitor):
     
     def _create_context(self):
         old_context = self._context
+        func_data = self._environment.get_function_data(self._func_name)
 
         if old_context == None:
             self._context = Context()
-            self._environment.add_context(self._func_name, self._context)
+            func_data.context = self._context
         else:
             new_context = Context()
             new_context.parent = old_context
@@ -217,11 +220,20 @@ class EnvironmentBuilder(Visitor):
         while(len(stack) > 0):
             vertex = stack.pop()
             neighbors = graph.neighbors(vertex)
+            vertex_type_data = self._environment.get_type_data(vertex)
 
             for neighbor in neighbors:
-                self._environment._inherit_offset(neighbor, vertex)
+                neighbor_type_data = self._environment.get_type_data(neighbor)
                 
-                method_name_pairs = self._environment.get_type_methods(vertex)
-                for pair in method_name_pairs:
-                    self._environment.update_type_method(neighbor, pair)
+                # Update inherited offset to descendant types
+                neighbor_type_data.inherited_offset = vertex_type_data.inherited_offset + len(vertex_type_data.attributes)
+
+                # Update methods to descendant types
+                for method in vertex_type_data.methods:
+                    if method not in neighbor_type_data.methods:
+                        neighbor_type_data.methods[method] = [vertex_type_data.methods[method]]
+                    else:
+                        neighbor_type_data.methods[method].insert(1, method)
+                
+                # Push onto stack
                 stack.append(neighbor)
