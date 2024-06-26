@@ -290,7 +290,7 @@ class Generator(Visitor):
                 offset = -(i * WORD_SIZE)
                 code += f'''
     jal stack_pop
-        sw $v0 {offset}($sp)
+    sw $v0 {offset}($sp)
     '''         
                 i += 1
             

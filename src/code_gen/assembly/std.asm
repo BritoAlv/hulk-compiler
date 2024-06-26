@@ -287,13 +287,13 @@ str_space_concat:
 #** Conversions code
 
 number_to_str:
-	addi $sp $sp -8
+	addi $sp $sp -12
 	sw $ra 4($sp)
 	sw $s0 8($sp)
 	
 	cvt.w.s $f12 $f12
-	swc1 $f12 8($sp)
-	lw $a0 8($sp)
+	swc1 $f12 12($sp)
+	lw $a0 12($sp)
 	move $s0 $a0
 	abs $a0 $a0
 	
@@ -304,7 +304,7 @@ number_to_str:
 	beq $s0 1 number_to_str_negative
 	lw $ra 4($sp)
 	lw $s0 8($sp)
-	addi $sp $sp 8
+	addi $sp $sp 12
 	jr $ra
 
 	number_to_str_negative:
@@ -322,7 +322,7 @@ number_to_str:
 	
 	lw $ra 4($sp)
 	lw $s0 8($sp)
-	addi $sp $sp 8
+	addi $sp $sp 12
 	jr $ra
 	
 int_to_str:
