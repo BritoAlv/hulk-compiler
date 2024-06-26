@@ -18,8 +18,6 @@ class Lexer:
         self.currentLine = 0
         self.positionInLine = 0
 
-       
-
     def scanTokens(self, inputStr: str) -> list[Token]:
         self.currentLine = 0
         self.positionInLine = 0

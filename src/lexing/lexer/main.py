@@ -36,7 +36,7 @@ stringg = "\"" + const.opar + const.opar
 for ch in string.punctuation:
     stringg += ch + const.plus
 
-stringg += digits + const.plus + letter + const.cpar + const.star + const.cpar + "\""
+stringg += " " + const.plus + digits + const.plus + letter + const.cpar + const.star + const.cpar + "\""
 
 
 hulk_lexer = Lexer(
