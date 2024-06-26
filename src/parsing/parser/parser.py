@@ -38,8 +38,8 @@ class Parser:
                                               BlockNode(
                                                 ([CallNode(
                                                      LiteralNode(
-                                                         Token('id', f'build_{s[4][0].token.lexeme}')), 
-                                                         s[4][1]
+                                                         Token('id', 'base')), 
+                                                         s[4][1] if s[4][1] != None else []
                                                          )] 
                                                     if s[4][0] != None else []) 
                                                 + s[6][0] + [LiteralNode(Token('id', 'self'))]), 
@@ -150,6 +150,7 @@ class Parser:
                 lambda s: GetNode(s[1], s[3].token),
                 lambda s: CallNode(s[1], s[3]),
                 lambda s: VectorGetNode(s[1], s[3]),
+                lambda s: LiteralNode(s[1].token),
                 lambda s: LiteralNode(s[1].token),
                 lambda s: LiteralNode(s[1].token),
                 lambda s: s[2],

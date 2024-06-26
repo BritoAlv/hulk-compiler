@@ -18,19 +18,13 @@ parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
-        protocol Hashable {
-            hash(): Number;
-        }
-        protocol fd {
-            hash(): Number;
-            hash(a: Number): Number;
-        }
         type Perro(color : string, edad: number)
         {
             color = color;
             edad = edad;
+            Ladrar(a: number, af: string) : number => print("Wolf" @ "Wolf");
         }
-        let a = new Perro("red", 6) in 7 + 3 + 3;
+        let a = new Perro("Negro", 7), b = [1, 3] in b;
         """
 
 inputStr = defaultHulkProgram
@@ -86,8 +80,8 @@ def run(inputStr : str):
     pass
 
 if len(sys.argv) == 1:
-    print(inputStr)
     ast(inputStr)
+    print(inputStr)
     semantic_analysis(inputStr)
     sys.exit(0)
     

@@ -1,4 +1,4 @@
-from code_gen.environment import Context, Environment, TypeData, VarData
+from code_gen.environment import Context, Environment, FunctionData, TypeData, VarData
 
 class Resolver:
     def __init__(self, environment : Environment) -> None:
@@ -6,12 +6,12 @@ class Resolver:
         self._params : dict[str, VarData] = None
         self._context : Context = None
         self._child_index : int = 0
-        self.var_count = 0
 
     def start(self, func_name: str) -> None:
-        self._params = self._environment.get_params(func_name)
-        self._context = self._environment.get_context(func_name)
-        self.var_count = self._environment.get_variables(func_name)
+        func_data = self._environment.get_function_data(func_name)
+
+        self._params = func_data.params
+        self._context = func_data.context
         self._child_index = 0
 
     def next(self) -> None:
@@ -30,7 +30,7 @@ class Resolver:
         self._child_index = 0
 
 
-    def resolve(self, var_name : str) -> VarData:
+    def resolve_var_data(self, var_name : str) -> VarData:
         if var_name in self._params:
             return self._params[var_name]
         
@@ -46,11 +46,28 @@ class Resolver:
 
         raise Exception("Variable was not declared")
     
-    def get_func_type(self, func_name : str) -> str:
-        return self._environment.get_type(func_name)
-    
-    def set_func_type(self, func_name : str, type : str) -> None:
-        self._environment.add_type(func_name, type)
+    def resolve_function_data(self, func_name : str) -> FunctionData:
+        return self._environment.get_function_data(func_name)
 
     def resolve_type_data(self, type_name : str) -> TypeData:
         return self._environment.get_type_data(type_name)
+    
+    def resolve_lowest_common_ancestor(self, type_1 : str, type_2 : str) -> str:
+        BASIC_TYPES = ['number', 'string', 'bool', 'object']
+        
+        if type_1 == type_2:
+            return type_1
+        
+        if type_1 in BASIC_TYPES or type_2 in BASIC_TYPES:
+            return 'object'
+
+        type_data_1 = self._environment.get_type_data(type_1)
+        type_data_2 = self._environment.get_type_data(type_2)
+
+        if type_1 == type_data_2.ancestor:
+            return type_1
+        
+        if type_data_1.ancestor == None:
+            return 'object'
+        
+        return self.resolve_lowest_common_ancestor(type_data_1.ancestor, type_2)
