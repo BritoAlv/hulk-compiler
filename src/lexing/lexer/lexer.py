@@ -55,7 +55,7 @@ class Lexer:
 
     def unterminated_string_literal(self, tokens : list[Token], marked : list[bool]):
         for i in range(0, len(tokens)):
-            if tokens[i].type == "Error" and tokens[i].lexeme[0] != "\"" and not marked[i]:
+            if tokens[i].type == "Error" and tokens[i].lexeme[0] == "\"" and not marked[i]:
                 self.errors.append(Token("Unterminated String Literal", tokens[i].lexeme, tokens[i].line, tokens[i].offsetLine))
                 marked[i] = True
     
