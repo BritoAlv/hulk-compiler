@@ -1,5 +1,7 @@
 from os import name
+from turtle import right
 from sqlalchemy import false
+from traitlets import default
 from common.ErrorLogger.ErrorLogger import ErrorLogger
 from common.ast_nodes.expressions import *
 from common.ast_nodes.expressions import VectorGetNode
@@ -20,9 +22,9 @@ class Type:
                 return i
         return None
     
-    def get_method(self, name):
+    def get_method(self, name, args):
         for i in self.method:
-            if i.name == name:
+            if i.name == name and i.args == args:
                 return i
         return None
 
@@ -62,10 +64,10 @@ class Context():
             return True
         return (self.parent != None and self.parent.is_defined_func(func, args))
     
-    def define(self, var) -> bool:
+    def define(self, var, type) -> bool:
         if self.is_defined(var):
             return False
-        self.dict[var] = True
+        self.dict[var] = type
         return True
     
     def define_func(self, var, args) -> bool:
@@ -122,6 +124,7 @@ class TypeCollectorVisitor(Visitor):
     def visit_program_node(self, program_node : ProgramNode):
         for i in program_node.decls:
             i.accept(self)
+        print(self.context.get_type("Perro") )
     
     
     def visit_attribute_node(self, attribute_node : AttributeNode):
@@ -199,6 +202,7 @@ class TypeBuilderVisitor(Visitor):
         self.actual_type = None
         self.hierarchy = hierarchy
         self.error_logger = ErrorLogger()
+        print(self.context.get_type("Perro") )
 
     def visit_program_node(self, program_node : ProgramNode):
         j = 1
@@ -210,12 +214,18 @@ class TypeBuilderVisitor(Visitor):
     
     def visit_attribute_node(self, attribute_node : AttributeNode):
         if self.actual_type != None:
-            self.actual_type.define_attribute(attribute_node.id.lexeme, attribute_node.type.lexeme if attribute_node.type != None else "object")
+            if self.actual_type.get_attribute(attribute_node.id.lexeme) == None:
+                self.actual_type.define_attribute(attribute_node.id.lexeme, attribute_node.type.lexeme if attribute_node.type != None else "object")
+                return    
+            self.error_logger.add("atributo ya definido " + attribute_node.id.lexeme + " de " + self.actual_type.name)
 
     def visit_method_node(self, method_node : MethodNode):
         if self.actual_type != None:
-            self.actual_type.define_method(method_node.id.lexeme, method_node.type.lexeme if method_node.type != None else "object", len(method_node.params))
-
+            if self.actual_type.get_method(method_node.id.lexeme, len(method_node.params)) == None:
+                self.actual_type.define_method(method_node.id.lexeme, method_node.type.lexeme if method_node.type != None else "object", len(method_node.params))
+                return
+            self.error_logger.add("metodo ya definido " + method_node.id.lexeme + " de " + self.actual_type.name)
+            
     def visit_type_node(self, type_node : TypeNode):
         last_type = self.actual_type
         self.actual_type = self.context.get_type(type_node.id.lexeme)
@@ -230,11 +240,12 @@ class TypeBuilderVisitor(Visitor):
 
     def visit_signature_node(self, signature_node : SignatureNode):
         if self.actual_type != None:
-            print(signature_node)
-            if self.actual_type.get_method(signature_node.id.lexeme) == True:
+            if self.actual_type.get_method(signature_node.id.lexeme, len(signature_node.params)) == None:
                 self.actual_type.define_method(signature_node.id.lexeme, signature_node.type.lexeme if signature_node.type != None else "object", len(signature_node.params))
                 return
-            self.error_logger.add("metodo ya definido")
+                
+            self.error_logger.add("metodo ya definido " + signature_node.id.lexeme + " de " + self.actual_type.name)
+
     def visit_protocol_node(self, protocol_node : ProtocolNode):
         last_type = self.actual_type
         self.actual_type = self.context.get_type(protocol_node.id.lexeme)
@@ -309,15 +320,28 @@ class TypeCheckerVisitor(Visitor):
         self.actual_type = None
         self.hierarchy = hierarchy
         self.error_logger = ErrorLogger()
+        print(self.context.get_type("Perro") )
+
 
     def visit_program_node(self, program_node : ProgramNode):
         for i in program_node.decls:
             i.accept(self)
-    def visit_attribute_node(self, attribute_node : AttributeNode):
-        pass
 
+    def visit_attribute_node(self, attribute_node : AttributeNode):
+        if self.context.is_defined(attribute_node.id.lexeme) == False:
+            body = attribute_node.body.accept(self)
+            if (attribute_node.type != None):
+                if (attribute_node.type.lexeme == body):
+                    self.context.define(attribute_node.id.lexeme, body)
+                    return 
+                self.error_logger.add("atributo " + attribute_node.id.lexeme + " con tipo incorrecto")
+                return
+            self.context.define(attribute_node.id.lexeme, body)
+            return
+        self.error_logger.add("atributo " + attribute_node.id.lexeme + "ya definido")
+        
     def visit_method_node(self, method_node : MethodNode):
-        pass
+        return method_node.body.accept(self)
 
     def visit_type_node(self, type_node : TypeNode):
         pass
@@ -329,8 +353,15 @@ class TypeCheckerVisitor(Visitor):
         pass
 
     def visit_let_node(self, let_node : LetNode):
-        pass
-
+        old_context = self.context
+        self.context = old_context.create_child_context()
+        for i in let_node.assignments:
+            i.accept(self)
+        # self.context.dict[""]
+        value = let_node.body.accept(self)             
+        self.context = old_context
+        return value
+    
     def visit_while_node(self, while_node : WhileNode):
         pass
 
@@ -368,17 +399,36 @@ class TypeCheckerVisitor(Visitor):
         pass
 
     def visit_new_node(self, new_node : NewNode):
-        pass
+        type = self.context.get_type(new_node.id.lexeme) 
+        if type != None:
+            for i in new_node.args:
+                i.accept(self)
+            return type.name
+        self.error_logger.add("clase no definida " + new_node.id.lexeme)
 
     def visit_binary_node(self, binary_node : BinaryNode):
-        pass
-
-    
+        left = binary_node.left.accept(self)
+        right = binary_node.right.accept(self)
+        # print(left, right)
+        if left == right:
+            return left
+        self.error_logger.add("inconsistencia de tipos en op binaria")
+        return "Object"
     def visit_unary_node(self, unary_node : UnaryNode):
         pass
 
     def visit_literal_node(self, literal_node : LiteralNode):
-        pass
+        match literal_node.id.type:
+            case "false":
+                return "Bolean"
+            case "true":
+                return "Bolean"
+            case "number":
+                return "Number"
+            case "string":
+                return "String"
+        return "Object"
+
 
 
 
@@ -393,15 +443,19 @@ class SemanticAnalysis:
         typeCollectorVisitor = TypeCollectorVisitor(context)
         typeBuilderVisitor = TypeBuilderVisitor(context, hierarchy)
         typeCheckerVisitor = TypeCheckerVisitor(context, hierarchy)
+
         err1 = typeCollectorVisitor.error_logger
         err2 = typeBuilderVisitor.error_logger
         err3 = typeCheckerVisitor.error_logger
+
         ast.accept(typeCollectorVisitor)
         ast.accept(typeBuilderVisitor)
         ast.accept(typeCheckerVisitor)
         
         err1.log_errors()
         err2.log_errors()
+        err3.log_errors()
+
 # from parsing.parser.parser import Parser
 # from parsing.parser_generator_lr.parsing_table import ParsingTable
 

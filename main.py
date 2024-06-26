@@ -23,8 +23,14 @@ defaultHulkProgram = """
         }
         protocol fd {
             hash(): Number;
+            hash(a: Number): Number;
         }
-        new Perro("Negro", 7);
+        type Perro(color : string, edad: number)
+        {
+            color = color;
+            edad = edad;
+        }
+        let a = new Perro("red", 6) in 7 + 3 + 3;
         """
 
 inputStr = defaultHulkProgram
