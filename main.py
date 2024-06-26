@@ -6,6 +6,7 @@ from code_gen.resolver import Resolver
 from common.printer import TreePrinter
 from lexing.lexer.main import *
 from parsing.parser.parser import Parser
+from semantic.tipos import SemanticAnalysis
 
 # Set up argument parsing
 parser = argparse.ArgumentParser(description='Hulk Compiler')
@@ -17,20 +18,20 @@ parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
-type A {
-    hello() => print("A");
-}
-
-type B inherits A {
-    hello() => print("B");
-}
-
-type C inherits A {
-    hello() => print("C");
-}
-4;
-"""
-
+        protocol Hashable {
+            hash(): Number;
+        }
+        protocol fd {
+            hash(): Number;
+            hash(a: Number): Number;
+        }
+        type Perro(color : string, edad: number)
+        {
+            color = color;
+            edad = edad;
+        }
+        let a = new Perro("red", 6) in 7 + 3 + 3;
+        """
 
 inputStr = defaultHulkProgram
 
@@ -71,8 +72,14 @@ def ast(inputStr : str):
     print(ast.accept(TreePrinter()))
     print("\n")
 
-def semanticAnalysis(inputStr : str):
-    pass
+def semantic_analysis(inputStr : str):
+    tokens = hulk_lexer.scanTokens(inputStr)
+    parser = Parser()
+    parse_tree = parser.parse(tokens)
+    ast = parser.toAst(parse_tree)
+    
+    sem_an = SemanticAnalysis()
+    sem_an.run(ast)
 
 def run(inputStr : str):
     # run the assembly code somehow
@@ -80,7 +87,7 @@ def run(inputStr : str):
 
 if len(sys.argv) == 1:
     ast(inputStr)
-    print(inputStr)
+    semantic_analysis(inputStr)
     sys.exit(0)
     
 # Parse arguments
