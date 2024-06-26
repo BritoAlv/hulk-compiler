@@ -1,9 +1,13 @@
 import argparse
 import sys
+
 from code_gen.environment_builder import EnvironmentBuilder
 from code_gen.generator import Generator
 from code_gen.resolver import Resolver
+from common.ast_nodes.statements import ProgramNode
+from common.parse_nodes.parse_tree import ParseTree
 from common.printer import TreePrinter
+from common.token_class import Token
 from lexing.lexer.main import *
 from parsing.parser.parser import Parser
 from semantic.tipos import SemanticAnalysis
@@ -20,18 +24,50 @@ parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
-{ 
-    "let 001 ;
+{
+    print(4+3); 
 }
 """
 
 inputStr = defaultHulkProgram
 
-def codeGen(inputStr : str):
+
+def lex(inputStr : str) -> list[Token]:
     tokens = hulk_lexer.scanTokens(inputStr)
+    if hulk_lexer.report(inputStr) :
+        return []
+    print("Tokens:")
+    for token in tokens:
+        print(token)
+    print("\n")
+    return tokens
+
+def parse(inputStr : str) -> ParseTree:
+    tokens = lex(inputStr)
     parser = Parser()
     parse_tree = parser.parse(tokens)
+    print("Parse Tree:")
+    parse_tree.root.print([0], 0, True)
+    print("\n")
+    return parse_tree
+
+def ast(inputStr : str) -> ProgramNode:
+    parse_tree = parse(inputStr)
+    parser = Parser()
     ast = parser.toAst(parse_tree)
+    print("AST:")
+    print(ast.accept(TreePrinter()))
+    print("\n")
+    return ast
+
+def semantic_analysis(inputStr : str) -> ProgramNode:
+    treeAst = ast(inputStr)
+    sem_an = SemanticAnalysis()
+    #sem_an.run(treeAst)
+    return treeAst
+
+def codeGen(inputStr : str) -> str:
+    ast = semantic_analysis(inputStr)
     environment_builder = EnvironmentBuilder()
     environment = environment_builder.build(ast)
     resolver = Resolver(environment)
@@ -39,57 +75,10 @@ def codeGen(inputStr : str):
     print("Generated Code:")
     print(generator.generate(ast))
     print("\n")
-
-def lex(inputStr : str):
-    tokens = hulk_lexer.scanTokens(inputStr)
-    if hulk_lexer.report(inputStr) :
-        return
-    print("Tokens:")
-    for token in tokens:
-        print(token)
-    print("\n")
-
-def parse(inputStr : str):
-    tokens = hulk_lexer.scanTokens(inputStr)
-    parser = Parser()
-    parse_tree = parser.parse(tokens)
-    print("Parse Tree:")
-    parse_tree.root.print([0], 0, True)
-    print("\n")
-
-def ast(inputStr : str):
-    tokens = hulk_lexer.scanTokens(inputStr)
-    parser = Parser()
-    parse_tree = parser.parse(tokens)
-    ast = parser.toAst(parse_tree)
-    print("AST:")
-    print(ast.accept(TreePrinter()))
-    print("\n")
-
-def semantic_analysis(inputStr : str):
-    tokens = hulk_lexer.scanTokens(inputStr)
-    parser = Parser()
-    parse_tree = parser.parse(tokens)
-    ast = parser.toAst(parse_tree)
+    return generator.generate(ast)
     
-    sem_an = SemanticAnalysis()
-    sem_an.run(ast)
-
 def run(inputStr : str):
-    tokens = hulk_lexer.scanTokens(inputStr)
-    parser = Parser()
-    parse_tree = parser.parse(tokens)
-    ast = parser.toAst(parse_tree)
-
-    sem_an = SemanticAnalysis()
-    #sem_an.run(ast)
-
-    environment_builder = EnvironmentBuilder()
-    environment = environment_builder.build(ast)
-    resolver = Resolver(environment)
-    generator = Generator(resolver)
-    assembly = generator.generate(ast)
-
+    assembly = codeGen(inputStr)
      # Paths of assembly files
     file1 = '.bin/main.asm'
     file2 = '.bin/std.asm'
@@ -134,7 +123,7 @@ def run(inputStr : str):
         print(f"Error running SPIM: {e}")
 
 if len(sys.argv) == 1:
-    lex(inputStr)
+    run(inputStr)
     sys.exit(0)
 else:    
     # Parse arguments
