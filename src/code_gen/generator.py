@@ -255,14 +255,19 @@ class Generator(Visitor):
         # Method call
         else:
 
-            if isinstance(call_node.callee, LiteralNode) and call_node.callee.id == 'base':
+            if isinstance(call_node.callee, LiteralNode) and call_node.callee.id.lexeme == 'base':
                 type_data = self._resolver.resolve_type_data(self._type_name)
                 self_offset = self._get_offset('self')
                 code = f'''
     lw $t0 {self_offset}($sp)
     sw $t0 {-WORD_SIZE}($sp)
     '''
-                method_name = type_data.methods[self._func_name][1]
+                # Remove type name attached to method name
+                func_name = self._func_name
+                if self._in_type:
+                    func_name = self._func_name[0 : self._func_name.rfind('_')]
+
+                method_name = type_data.methods[func_name][1]
             elif isinstance(call_node.callee, GetNode):
                 result = self._generate(call_node.callee)
                 type_data = self._resolver.resolve_type_data(result.type)
