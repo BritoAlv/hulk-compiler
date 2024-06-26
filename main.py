@@ -1,4 +1,5 @@
 import argparse
+from os import mkdir
 import sys
 
 from code_gen.environment_builder import EnvironmentBuilder
@@ -78,13 +79,39 @@ def codeGen(inputStr : str) -> str:
     return generator.generate(ast)
     
 def run(inputStr : str):
-    assembly = codeGen(inputStr)
-     # Paths of assembly files
-    file1 = '.bin/main.asm'
-    file2 = '.bin/std.asm'
-    file3 = '.bin/stack.asm'
+    tokens = hulk_lexer.scanTokens(inputStr)
+    parser = Parser()
+    parse_tree = parser.parse(tokens)
+    ast = parser.toAst(parse_tree)
 
-    with open(file1, 'w') as file:
+    sem_an = SemanticAnalysis()
+    #sem_an.run(ast)
+
+    environment_builder = EnvironmentBuilder()
+    environment = environment_builder.build(ast)
+    resolver = Resolver(environment)
+    generator = Generator(resolver)
+    assembly = generator.generate(ast)
+
+    # Paths of assembly files
+    file1_name = '.bin/main.asm'
+    file2_name = '.bin/std.asm'
+    file3_name = '.bin/stack.asm'
+
+    try:
+        mkdir('.bin/')
+    except:
+        pass
+
+    with open('src/code_gen/assembly/std.asm', 'r') as source:
+        with open(file2_name, 'w') as target:
+            target.write(source.read())
+
+    with open('src/code_gen/assembly/stack.asm', 'r') as source:
+        with open(file3_name, 'w') as target:
+            target.write(source.read())
+
+    with open(file1_name, 'w') as file:
         file.write(assembly)
 
     startup_regex = re.compile(
@@ -104,15 +131,15 @@ def run(inputStr : str):
         spim.expect(startup_regex.pattern)
 
         # Load the first file
-        spim.sendline(f'load "{file1}"')
+        spim.sendline(f'load "{file1_name}"')
         spim.expect_exact('(spim) ')
 
         # Load the second file
-        spim.sendline(f'load "{file2}"')
+        spim.sendline(f'load "{file2_name}"')
         spim.expect_exact('(spim) ')
 
         # Load the third file
-        spim.sendline(f'load "{file3}"')
+        spim.sendline(f'load "{file3_name}"')
         spim.expect_exact('(spim) ')
 
         spim.sendline(f'run')
