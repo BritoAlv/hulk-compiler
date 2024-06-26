@@ -80,6 +80,10 @@ def run(inputStr : str):
     parser = Parser()
     parse_tree = parser.parse(tokens)
     ast = parser.toAst(parse_tree)
+
+    sem_an = SemanticAnalysis()
+    #sem_an.run(ast)
+
     environment_builder = EnvironmentBuilder()
     environment = environment_builder.build(ast)
     resolver = Resolver(environment)
@@ -152,7 +156,7 @@ else:
         ast(inputStr)
 
     if args.semantic_analysis:
-        semanticAnalysis(inputStr)
+        semantic_analysis(inputStr)
 
     if args.codegen:
         codeGen(inputStr)
