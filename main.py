@@ -19,8 +19,8 @@ parser.add_argument('-r', '--run', action='store_true', help='Run the compiled a
 
 defaultHulkProgram = """
 { 
-    let p = new Knight("Phil", "Collins") in print(p.name());
-};
+    let ~   for~ ;
+}
 """
 
 inputStr = defaultHulkProgram
@@ -40,6 +40,8 @@ def codeGen(inputStr : str):
 
 def lex(inputStr : str):
     tokens = hulk_lexer.scanTokens(inputStr)
+    if hulk_lexer.report(inputStr) :
+        return
     print("Tokens:")
     for token in tokens:
         print(token)

@@ -17,10 +17,25 @@ class Lexer:
                 self.automatas.append(automata)
         self.currentLine = 0
         self.positionInLine = 0
+        self.errors : list[Token] = []
+
+    def report(self, inputStr: str) -> bool:
+        if len(self.errors) > 0:
+            for error in self.errors:
+                line =  error.line
+                position = error.offsetLine
+                lines = inputStr.split("\n")
+                error_line = lines[line]
+                print(f"Error on line {line}, unexpected symbol:")
+                print(error_line)
+                print(" " * (position-1) + "^")
+            return True
+        return False
 
     def scanTokens(self, inputStr: str) -> list[Token]:
         self.currentLine = 0
         self.positionInLine = 0
+        self.errors = []
         tokens = []
         cr = 0
         while cr < len(inputStr):
@@ -29,6 +44,7 @@ class Lexer:
                     self.currentLine += 1
                     self.positionInLine = 0
                 cr += 1
+                self.positionInLine += 1
                 continue
             elif inputStr[cr] == "#":
                 while cr < len(inputStr) and inputStr[cr] != "\n":
@@ -56,14 +72,12 @@ class Lexer:
             longest_matched = -1
             cr = offset
             st = self.automatas[i].start_state
-            while (
-                cr < len(inputStr)
-                and self.automatas[i].next_state(inputStr[cr], st) != -1
-            ):
+            while cr < len(inputStr) and self.automatas[i].next_state(inputStr[cr], st) != -1:
                 st = self.automatas[i].next_state(inputStr[cr], st)
                 cr += 1
-                if st in self.automatas[i].accepting_states:
-                    longest_matched = cr
+
+            if st in self.automatas[i].accepting_states:
+                longest_matched = cr
             if longest_matched != -1:
                 if matched == (-1, -1) or matched[1] < longest_matched:
                     matched = (i, longest_matched)
@@ -72,7 +86,9 @@ class Lexer:
             shift = 1
             while offset + shift + 1 < len(inputStr) and inputStr[offset + shift + 1] != " ":
                 shift += 1
-            return Token("Error", inputStr[offset: offset + shift], self.currentLine, self.positionInLine)
+            tok = Token("Error", inputStr[offset: offset + shift + 1], self.currentLine, self.positionInLine)
+            self.errors.append(tok)
+            return tok
         return Token(
             self.specs[matched[0]][0],
             inputStr[offset : matched[1]],
