@@ -44,7 +44,7 @@ class Generator(Visitor):
         # Add static data
         i = 0
         for str_literal in self._literal_strings:
-            static_data_code += f'str{i}: .asciiz "\\n{str_literal}\\n" \n' 
+            static_data_code += f'str{i}: .asciiz {str_literal} \n' 
             i += 1
 
         i = 0

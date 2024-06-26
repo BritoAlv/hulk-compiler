@@ -1,6 +1,6 @@
 
 .data
-str0: .asciiz "\n"Viva Cuba Libre!"\n" 
+str0: .asciiz "Viva Cuba Libre!" 
 
 
 .text
