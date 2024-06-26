@@ -231,7 +231,7 @@ class EnvironmentBuilder(Visitor):
                 # Update methods to descendant types
                 for method in vertex_type_data.methods:
                     if method not in neighbor_type_data.methods:
-                        neighbor_type_data.methods[method] = [vertex_type_data.methods[method]]
+                        neighbor_type_data.methods[method] = [] + vertex_type_data.methods[method]
                     else:
                         neighbor_type_data.methods[method].insert(1, f'{method}_{vertex}')
                 
