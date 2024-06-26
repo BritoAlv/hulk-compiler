@@ -69,7 +69,7 @@ Unary -> minus Primary | not Primary | Primary.
 
 Primary -> false | true | number | string | CallList .
 
-CallList -> CallList dot id | CallList lparen ArgList rparen | CallList lbracket Expr rbracket | self | id | lparen Expr rparen .
+CallList -> CallList dot id | CallList lparen ArgList rparen | CallList lbracket Expr rbracket | self | base | id | lparen Expr rparen .
 
 ArgList -> Expr ArgTail | .
 

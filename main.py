@@ -17,8 +17,20 @@ parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
-        function p(x) => print(x); 42;
-        """
+type A {
+    hello() => print("A");
+}
+
+type B inherits A {
+    hello() => print("B");
+}
+
+type C inherits A {
+    hello() => print("C");
+}
+4;
+"""
+
 
 inputStr = defaultHulkProgram
 
@@ -68,6 +80,8 @@ def run(inputStr : str):
 
 if len(sys.argv) == 1:
     ast(inputStr)
+    print(inputStr)
+    sys.exit(0)
     
 # Parse arguments
 args = parser.parse_args()

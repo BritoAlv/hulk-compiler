@@ -69,17 +69,15 @@ class TreePrinter(Visitor):
         self.add_word("Class " + type_node.id.lexeme)
         if type_node.ancestor_id != None:
             self.add_word(opt_inheritance)
-            if type_node.ancestor_args != None:
-                self.add_word("ancestor args ")
-                with IndentManager(self):
-                    for arg in type_node.ancestor_args:
-                        arg.accept(self)
         
         with IndentManager(self):
             self.add_word("Attributes")
             with IndentManager(self):
                 for attr in type_node.attributes:
-                    attr.accept(self) # type: ignore
+                    opt_type = ""
+                    if attr[1] != None:
+                        opt_type = " of type " + attr[1].lexeme
+                    self.add_word(attr[0].lexeme+ opt_type)
             self.add_word("Methods")
             with IndentManager(self):
                 for method in type_node.methods:
@@ -221,8 +219,10 @@ class TreePrinter(Visitor):
             self.add_word("At Position: ")
             vector_set_node.left.accept(self)
             self.add_word("With Index: ")
-            vector_set_node.index.accept(self)
-            self.add_word("Assigning Value: ")
+            with IndentManager(self):
+                vector_set_node.index.accept(self)
+            with IndentManager(self):
+                self.add_word("Assigning Value: ")
             vector_set_node.value.accept(self)
         return self.current    
 

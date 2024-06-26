@@ -30,7 +30,7 @@ class MethodNode(Statement):
 class TypeNode(Statement):
     def __init__(self, 
                  id : Token,
-                 attributes : list[tuple[Token, Token]],
+                 attributes : list[tuple[Token, Token | None]],
                  methods : list[MethodNode], 
                  ancestor_id : Token | None):
         self.id = id
