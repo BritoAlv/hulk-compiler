@@ -341,3 +341,66 @@ type C inherits A {
 }
 4;
 ```
+
+## 30
+```hulk
+print(tan(PI) ** 2 + cot(PI) ** 2); #error
+let msg = "Hello World" in print(msg);
+let number = 42, text = "The meaning of life is" in
+    print(text @ number);
+let number = 42 in
+    let text = "The meaning of life is" in
+        print(text @ number);
+let number = 42 in (
+    let text = "The meaning of life is" in (
+            print(text @ number);
+        )
+    );
+let a = 6, b = a * 7 in print(b);
+let a = 6 in
+    let b = a * 7 in
+        print(b);
+let a = 5, b = 10, c = 20 in {
+    print(a+b);
+    print(b*c);
+    print(c/a);
+};
+let a = (let b = 6 in b * 7) in print(a);
+print(let b = 6 in b * 7);
+let a = 20 in {
+    let a = 42 in print(a);
+    print(a);
+};
+let a = 7, a = 7 * 6 in print(a);
+let a = 7 in
+    let a = 7 * 6 in
+        print(a);
+let a = 0 in {
+    print(a);
+    a := 1;
+    print(a);
+};
+let a = 0 in
+    let b = a := 1 in {
+        print(a);
+        print(b);
+    };
+let a = 42 in if (a % 2 == 0) print("Even") else print("odd");
+let a = 42 in print(if (a % 2 == 0) "even" else "odd");
+let a = 42 in
+    if (a % 2 == 0) {
+        print(a);
+        print("Even");
+    }
+    else print("Odd");
+let a = 42, mod = a % 3 in # error
+    print(
+        if (mod == 0) "Magic"
+        elif (mod % 3 == 1) "Woke"
+        else "Dumb"
+    );
+let a = 10 in while (a >= 0) {
+    print(a);
+    a := a - 1;
+}
+```
