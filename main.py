@@ -18,20 +18,10 @@ parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
-        protocol Hashable {
-            hash(): Number;
-        }
-        protocol fd {
-            hash(): Number;
-            hash(a: Number): Number;
-        }
-        type Perro(color : string, edad: number)
-        {
-            color = color;
-            edad = edad;
-        }
-        let a = new Perro("red", 6) in 7 + 3 + 3;
-        """
+{ 
+    let p = new Knight("Phil", "Collins") in print(p.name());
+};
+"""
 
 inputStr = defaultHulkProgram
 
@@ -82,37 +72,36 @@ def semantic_analysis(inputStr : str):
     sem_an.run(ast)
 
 def run(inputStr : str):
-    # run the assembly code somehow
+    # run the assembly code somehow.
     pass
 
 if len(sys.argv) == 1:
-    ast(inputStr)
-    semantic_analysis(inputStr)
-    sys.exit(0)
-    
-# Parse arguments
-args = parser.parse_args()
-
-# Use the input argument
-inputStr = sys.stdin.read().strip()
-
-if inputStr == None or inputStr == "":
-    inputStr = defaultHulkProgram
-
-if args.lex:
     lex(inputStr)
+    sys.exit(0)
+else:    
+    # Parse arguments
+    args = parser.parse_args()
 
-if args.parse:
-    parse(inputStr)
+    # Use the input argument
+    inputStr = sys.stdin.read().strip()
 
-if args.ast:
-    ast(inputStr)
+    if inputStr == None or inputStr == "":
+        inputStr = defaultHulkProgram
 
-if args.semantic_analysis:
-    semanticAnalysis(inputStr)
+    if args.lex:
+        lex(inputStr)
 
-if args.codegen:
-    codeGen(inputStr)
+    if args.parse:
+        parse(inputStr)
 
-if args.run:
-    pass
+    if args.ast:
+        ast(inputStr)
+
+    if args.semantic_analysis:
+        semanticAnalysis(inputStr)
+
+    if args.codegen:
+        codeGen(inputStr)
+
+    if args.run:
+        pass

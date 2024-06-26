@@ -404,3 +404,17 @@ let a = 10 in while (a >= 0) {
     a := a - 1;
 }
 ```
+
+## 31
+```hulk
+{ 
+    print("The message is \\\" Hello World \\\" " @ "and\\\"nothing else \\\"");
+};
+```
+
+## 32
+```hulk
+{ 
+    let p = new Knight("Phil", "Collins") in print(p.name());
+};
+```
