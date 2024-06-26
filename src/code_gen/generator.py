@@ -369,6 +369,33 @@ class Generator(Visitor):
         
     def visit_binary_node(self, binary_node: BinaryNode):
         left_result = self._generate(binary_node.left)
+
+        if binary_node.op.type == 'isOp' and isinstance(binary_node.right, LiteralNode) and binary_node.right.id.type == 'id':
+            type_name = binary_node.right.id.lexeme
+            type_id = self._resolver.resolve_type_data(type_name).id
+            
+            code = left_result.code
+            code += f'''
+    jal stack_pop
+    lw $s0 ($v0)
+    li $s1 {type_id}
+    seq $s0 $s0 $s1
+    move $a0 $s0
+    jal build_bool
+    move $a0 $v0
+    jal stack_push
+'''
+            return GenerationResult(code, 'bool')
+        elif binary_node.op.type == 'asOp' and isinstance(binary_node.right, LiteralNode) and binary_node.right.id.type == 'id':
+            type_name = binary_node.right.id.lexeme
+
+            try:
+                self._resolver.resolve_type_data(type_name)            
+            except:
+                raise Exception(f'Type {type_name} is not defined')
+
+            return GenerationResult(left_result.code, type_name)
+
         right_result = self._generate(binary_node.right)
         left_type = left_result.type
         right_type = right_result.type
