@@ -21,7 +21,7 @@ parser.add_argument('-r', '--run', action='store_true', help='Run the compiled a
 
 defaultHulkProgram = """
 { 
-    let ~   for~ ;
+    "let 001 ;
 }
 """
 
