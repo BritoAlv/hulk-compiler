@@ -1,5 +1,6 @@
 from os import name
 from sqlalchemy import false
+from common.ErrorLogger.ErrorLogger import ErrorLogger
 from common.ast_nodes.expressions import *
 from common.ast_nodes.expressions import VectorGetNode
 from common.ast_nodes.statements import *
@@ -30,7 +31,7 @@ class Type:
             return False
         self.attribute.append(Attribute(name, type))
 
-    def define_method(self, name, return_type, arg, arg_types):
+    def define_method(self, name, return_type, arg):
         if self.get_attribute(name) != None:
             return False
         self.method.append(Method(name, return_type, arg))
@@ -80,17 +81,43 @@ class Context():
         for i in self.types:
             if i.name == type_name:
                 return i
+        return None
     def get_type_for(self, symbol):
         pass
     def defineSymbol(self, symbol, type) -> bool:
         return False
     def create_type(self, name):
+        if (self.get_type(name) != None):
+            return False
         self.types.append(Type(name))
-        pass
+        return True
 
+class NodeClass:
+    def __init__(self, name, sons = []) -> None:
+        self.name = name
+        self.sons = sons
+class Hierarchy:
+    def __init__(self) -> None:
+        self.root = NodeClass("Object", [NodeClass("Number"), NodeClass("String"), NodeClass("Boolean")])
+
+    def get_type(self, actual: NodeClass, name):
+        if (actual.name == name):
+            return actual
+        for i in actual.sons:
+            if self.get_type(i, name) != None:
+                return i
+        return None
+    
+    def add_type(self, name, ancestor_name):
+        ancestor = self.get_type(self.root, ancestor_name)
+        if ancestor != None:
+            ancestor.sons.append(name)
+
+# construye el contexto de los tipos definidos y chequea que no hayan dos con el mismo nombre
 class TypeCollectorVisitor(Visitor):
     def __init__(self, context : Context):
         self.context = context
+        self.error_logger = ErrorLogger()
     
     def visit_program_node(self, program_node : ProgramNode):
         for i in program_node.decls:
@@ -104,13 +131,16 @@ class TypeCollectorVisitor(Visitor):
         pass
 
     def visit_type_node(self, type_node : TypeNode):
-        self.context.create_type(type_node.id.lexeme)            
+        if self.context.create_type(type_node.id.lexeme) == False:
+            self.error_logger.add("variable ya creada")
+
 
     def visit_signature_node(self, signature_node : SignatureNode):
         pass
 
     def visit_protocol_node(self, protocol_node : ProtocolNode):
-        self.context.create_type(protocol_node.id.lexeme)            
+        if self.context.create_type(protocol_node.id.lexeme) == False:
+            self.error_logger.add("variable ya creada")
 
     def visit_let_node(self, let_node : LetNode):
         pass
@@ -163,17 +193,126 @@ class TypeCollectorVisitor(Visitor):
     def visit_literal_node(self, literal_node : LiteralNode):
         pass
  
-
-
 class TypeBuilderVisitor(Visitor):
-    def __init__(self, context):
+    def __init__(self, context : Context, hierarchy : Hierarchy):
         self.context = context
+        self.actual_type = None
+        self.hierarchy = hierarchy
+        self.error_logger = ErrorLogger()
+
+    def visit_program_node(self, program_node : ProgramNode):
+        j = 1
+        for i in program_node.decls:
+            if j < len(program_node.decls):
+                # print(i, len(program_node.decls))
+                i.accept(self)
+            j+=1
     
+    def visit_attribute_node(self, attribute_node : AttributeNode):
+        if self.actual_type != None:
+            self.actual_type.define_attribute(attribute_node.id.lexeme, attribute_node.type.lexeme if attribute_node.type != None else "object")
+
+    def visit_method_node(self, method_node : MethodNode):
+        if self.actual_type != None:
+            self.actual_type.define_method(method_node.id.lexeme, method_node.type.lexeme if method_node.type != None else "object", len(method_node.params))
+
+    def visit_type_node(self, type_node : TypeNode):
+        last_type = self.actual_type
+        self.actual_type = self.context.get_type(type_node.id.lexeme)
+        if type_node.ancestor_id != None:
+            ancestor_type = self.context.get_type(type_node.ancestor_id.lexeme)
+            if ancestor_type == False:
+                self.error_logger.add("clase herada incorrectamente")
+            self.hierarchy.add_type(type_node.id.lexeme, type_node.ancestor_id.lexeme)
+        for i in type_node.methods:
+            i.body.accept(self)
+        self.actual_type = last_type
+
+    def visit_signature_node(self, signature_node : SignatureNode):
+        if self.actual_type != None:
+            print(signature_node)
+            if self.actual_type.get_method(signature_node.id.lexeme) == True:
+                self.actual_type.define_method(signature_node.id.lexeme, signature_node.type.lexeme if signature_node.type != None else "object", len(signature_node.params))
+                return
+            self.error_logger.add("metodo ya definido")
+    def visit_protocol_node(self, protocol_node : ProtocolNode):
+        last_type = self.actual_type
+        self.actual_type = self.context.get_type(protocol_node.id.lexeme)
+        if protocol_node.ancestor_node != None:
+            ancestor_type = self.context.get_type(protocol_node.ancestor_node.lexeme)
+            if ancestor_type == False:
+                self.error_logger.add("clase herada incorrectamente")
+            self.hierarchy.add_type(protocol_node.id.lexeme, protocol_node.ancestor_node.lexeme)
+        
+        for i in protocol_node.signatures:
+            i.accept(self)
+            
+        self.actual_type = last_type
+
+    def visit_let_node(self, let_node : LetNode):
+        pass
+
+    def visit_while_node(self, while_node : WhileNode):
+        pass
+
+    def visit_for_node(self, for_node : ForNode):
+        pass
+
+    def visit_if_node(self, if_node : IfNode):
+        pass
+
+    def visit_explicit_vector_node(self, explicit_vector_node : ExplicitVectorNode):
+        pass
+
+    def visit_implicit_vector_node(self, implicit_vector_node : ImplicitVectorNode):
+        pass
+
+    def visit_destructor_node(self, destructor_node : DestructorNode):
+        pass
+
+    def visit_block_node(self, block_node : BlockNode):
+        # print(1)
+        for i in block_node.exprs:
+            i.accept(self)
+
+    def visit_call_node(self, call_node : CallNode):
+        pass
+
+    def visit_get_node(self, get_node : GetNode):
+        pass
+
+    def visit_set_node(self, set_node : SetNode):
+        pass
+
+    def visit_vector_set_node(self, vector_set_node : VectorSetNode):
+        pass
+
+    def visit_vector_get_node(self, vector_get_node : VectorGetNode):
+        pass
+
+    def visit_new_node(self, new_node : NewNode):
+        pass
+
+    def visit_binary_node(self, binary_node : BinaryNode):
+        pass
+
+    def visit_literal_node(self, literal_node : LiteralNode):
+        pass
+    def visit_unary_node(self, binary_node : UnaryNode):
+        
+        return True
+    
+
+class TypeCheckerVisitor(Visitor):
+    def __init__(self, context : Context, hierarchy : Hierarchy):
+        self.context = context
+        self.actual_type = None
+        self.hierarchy = hierarchy
+        self.error_logger = ErrorLogger()
+
     def visit_program_node(self, program_node : ProgramNode):
         for i in program_node.decls:
             i.accept(self)
-    
-    
     def visit_attribute_node(self, attribute_node : AttributeNode):
         pass
 
@@ -181,9 +320,8 @@ class TypeBuilderVisitor(Visitor):
         pass
 
     def visit_type_node(self, type_node : TypeNode):
-        current_type = self.context.get_type(type_node.id.lexeme)
-        for i in type_node.params:
-            current_type.define_attribute(i[0])
+        pass
+
     def visit_signature_node(self, signature_node : SignatureNode):
         pass
 
@@ -235,82 +373,90 @@ class TypeBuilderVisitor(Visitor):
     def visit_binary_node(self, binary_node : BinaryNode):
         pass
 
+    
+    def visit_unary_node(self, unary_node : UnaryNode):
+        pass
+
     def visit_literal_node(self, literal_node : LiteralNode):
         pass
-    def visit_unary_node(self, binary_node : UnaryNode):
-        
-        return True
-    
+
+
 
 class SemanticAnalysis:
     def __init__(self) -> None:
         pass
     
     def run(self, ast):
-        
         context = Context()
+        hierarchy = Hierarchy()
 
         typeCollectorVisitor = TypeCollectorVisitor(context)
-        typeBuilderVisitor = TypeBuilderVisitor(context)
-
+        typeBuilderVisitor = TypeBuilderVisitor(context, hierarchy)
+        typeCheckerVisitor = TypeCheckerVisitor(context, hierarchy)
+        err1 = typeCollectorVisitor.error_logger
+        err2 = typeBuilderVisitor.error_logger
+        err3 = typeCheckerVisitor.error_logger
         ast.accept(typeCollectorVisitor)
-        print(ast.accept(typeBuilderVisitor))
-
-from parsing.parser.parser import Parser
-from parsing.parser_generator_lr.parsing_table import ParsingTable
-
-tableHulk = ParsingTable.load_parsing_table("hulk_grammar")
-# print(tableHulk)
-
-node = tableHulk.parse(
-    [Token(x, x, 0, 0) for x in [
-        'type', 'id', 'lparen', 'id', 'colon', 'id', 'comma', 'id', 'colon', 'id', 'rparen',
-        'lbrace',
-            'id', 'equal', 'id', 'semicolon',
-            'id', 'equal', 'id', 'semicolon',
-            'id', 'equal', 'id', 'minus', 'number','semicolon',
-
-            'id', 'lparen', 'rparen', 'colon', 'id', 'arrow', 'lparen', 'self', 'dot', 'id', 'destrucOp', 'self', 'dot', 'id', 'plus', 'number', 'rparen', 'less', 'id', 'semicolon',
-        'rbrace',
-
-        'protocol', 'id',
-        'lbrace',
-            'id', 'lparen', 'id', 'colon', 'id', 'rparen', 'colon', 'id', 'semicolon',
-            'id', 'lparen', 'rparen', 'colon', 'id', 'semicolon',
-        'rbrace',
+        ast.accept(typeBuilderVisitor)
+        ast.accept(typeCheckerVisitor)
         
-        'protocol', 'id', 'extends', 'id',
-        'lbrace',
-            'id', 'lparen', 'id', 'colon', 'id', 'rparen', 'colon', 'id', 'semicolon',
-            'id', 'lparen', 'rparen', 'colon', 'id', 'semicolon',
-        'rbrace',
+        err1.log_errors()
+        err2.log_errors()
+# from parsing.parser.parser import Parser
+# from parsing.parser_generator_lr.parsing_table import ParsingTable
 
-        'lbrace',
+# tableHulk = ParsingTable.load_parsing_table("hulk_grammar")
+# # print(tableHulk)
 
-        'let', 'id', 'equal', 'lbracket', 'id', 'doubleOr', 'id', 'in', 'id', 'lparen', 'id', 'comma', 'id', 'rparen', 'rbracket', 'in', 'id', 'lparen', 'id', 'rparen', 'semicolon',
+# node = tableHulk.parse(
+#     [Token(x, x, 0, 0) for x in [
+#         'type', 'id', 'lparen', 'id', 'colon', 'id', 'comma', 'id', 'colon', 'id', 'rparen',
+#         'lbrace',
+#             'id', 'equal', 'id', 'semicolon',
+#             'id', 'equal', 'id', 'semicolon',
+#             'id', 'equal', 'id', 'minus', 'number','semicolon',
 
-        'let', 'id', 'equal', 'lbracket', 'number', 'comma', 'number', 'comma', 'number', 'comma', 'number', 'comma', 'number', 'rbracket', 'in',
-        'for', 'lparen', 'id', 'in', 'id', 'rparen',
-            'id', 'lparen', 'id', 'rparen', 'semicolon',
+#             'id', 'lparen', 'rparen', 'colon', 'id', 'arrow', 'lparen', 'self', 'dot', 'id', 'destrucOp', 'self', 'dot', 'id', 'plus', 'number', 'rparen', 'less', 'id', 'semicolon',
+#         'rbrace',
 
-        'lparen', 'id', 'rparen', 'dot', 'id', 'semicolon',
+#         'protocol', 'id',
+#         'lbrace',
+#             'id', 'lparen', 'id', 'colon', 'id', 'rparen', 'colon', 'id', 'semicolon',
+#             'id', 'lparen', 'rparen', 'colon', 'id', 'semicolon',
+#         'rbrace',
+        
+#         'protocol', 'id', 'extends', 'id',
+#         'lbrace',
+#             'id', 'lparen', 'id', 'colon', 'id', 'rparen', 'colon', 'id', 'semicolon',
+#             'id', 'lparen', 'rparen', 'colon', 'id', 'semicolon',
+#         'rbrace',
 
-        'let', 'id', 'equal', 'new', 'id', 'lparen', 'number', 'comma', 'id', 'rparen', 'in', 'id', 'lparen', 'id', 'rparen', 'semicolon',
-        'rbrace', 'semicolon',
-        '$']]
-)
+#         'lbrace',
+
+#         'let', 'id', 'equal', 'lbracket', 'id', 'doubleOr', 'id', 'in', 'id', 'lparen', 'id', 'comma', 'id', 'rparen', 'rbracket', 'in', 'id', 'lparen', 'id', 'rparen', 'semicolon',
+
+#         'let', 'id', 'equal', 'lbracket', 'number', 'comma', 'number', 'comma', 'number', 'comma', 'number', 'comma', 'number', 'rbracket', 'in',
+#         'for', 'lparen', 'id', 'in', 'id', 'rparen',
+#             'id', 'lparen', 'id', 'rparen', 'semicolon',
+
+#         'lparen', 'id', 'rparen', 'dot', 'id', 'semicolon',
+
+#         'let', 'id', 'equal', 'new', 'id', 'lparen', 'number', 'comma', 'id', 'rparen', 'in', 'id', 'lparen', 'id', 'rparen', 'semicolon',
+#         'rbrace', 'semicolon',
+#         '$']]
+# )
 
 
-node.root.print([0], 0, True)
+# node.root.print([0], 0, True)
 
-context = Context()
+# context = Context()
 
-typeCollectorVisitor = TypeCollectorVisitor(context)
-typeBuilderVisitor = TypeBuilderVisitor(context)
+# typeCollectorVisitor = TypeCollectorVisitor(context)
+# typeBuilderVisitor = TypeBuilderVisitor(context)
 
-p = Parser()
+# p = Parser()
 
-ast = p.toAst(node)
+# ast = p.toAst(node)
 
-ast.accept(typeCollectorVisitor)
-print(ast.accept(typeBuilderVisitor))
+# ast.accept(typeCollectorVisitor)
+# print(ast.accept(typeBuilderVisitor))

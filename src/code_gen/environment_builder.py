@@ -1,6 +1,5 @@
 
 from time import sleep
-from sympy import false, true
 from code_gen.environment import STR_TYPE_ID, Context, Environment, TypeData, VarData
 from common.graph import Graph
 from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, ForNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, NewNode, SetNode, VectorGetNode, VectorSetNode, WhileNode
@@ -19,7 +18,7 @@ class EnvironmentBuilder(Visitor):
 
         self._func_name : str
         self._type_name : str
-        self._in_type = false
+        self._in_type = False
 
         self._type_graph = Graph()
         self._root_types : list[str] = []

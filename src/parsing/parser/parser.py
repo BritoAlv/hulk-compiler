@@ -25,7 +25,7 @@ class Parser:
             "ProtocolDecl": [lambda s: ProtocolNode(s[2].token, s[5], s[3].token if s[3] != None else s[3])],
             "OptExtension": [lambda s: s[2], lambda s: None],
             "ProtocolElems": [lambda s: [s[1]] + s[2], lambda s: []],
-            "MethodSignature": [lambda s: SignatureNode(s[1], [(x.token, y.token) for (x, y) in s[3]], s[6])],
+            "MethodSignature": [lambda s: SignatureNode(s[1].token, [(x.token, y.token) for (x, y) in s[3]], s[6].token)],
             "TypedParamList": [lambda s: [(s[1], s[3])] + s[4], lambda s: []],
             "TypedParamTail": [lambda s: [(s[2], s[4])] + s[5], lambda s: []],
             "TypeDecl": [

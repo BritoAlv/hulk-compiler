@@ -82,7 +82,7 @@ type Knight inherits Person {
 type Person(firstname, lastname) {
     firstname = firstname;
     lastname = lastname;
-
+    ada = 43;
     name() => self.firstname @@ self.lastname;
     hash() : Number {
         5;

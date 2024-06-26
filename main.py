@@ -18,11 +18,11 @@ parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
-        type Perro(color : string, edad: number)
-        {
-            color = color;
-            edad = edad;
-            Ladrar() : string => print("Wolf" @ "Wolf");
+        protocol Hashable {
+            hash(): Number;
+        }
+        protocol fd {
+            hash(): Number;
         }
         new Perro("Negro", 7);
         """
@@ -66,7 +66,7 @@ def ast(inputStr : str):
     print(ast.accept(TreePrinter()))
     print("\n")
 
-def semanticAnalysis(inputStr : str):
+def semantic_analysis(inputStr : str):
     tokens = hulk_lexer.scanTokens(inputStr)
     parser = Parser()
     parse_tree = parser.parse(tokens)
@@ -82,6 +82,7 @@ def run(inputStr : str):
 if len(sys.argv) == 1:
     print(inputStr)
     ast(inputStr)
+    semantic_analysis(inputStr)
     sys.exit(0)
     
 # Parse arguments
