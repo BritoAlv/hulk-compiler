@@ -100,9 +100,15 @@ class Generator(Visitor):
         code = ''
         type = None
 
-        for expr in block_node.exprs:
+        for i, expr in enumerate(block_node.exprs):
             result = self._generate(expr)
             code += result.code
+
+            # Pop all the expression results previous to the last one
+            if i < len(block_node.exprs) - 1:
+                code += '''
+    jal stack_pop
+'''
             type = result.type
 
         return GenerationResult(code, type)
@@ -203,37 +209,26 @@ class Generator(Visitor):
         return GenerationResult(code, result.type)
 
     def visit_call_node(self, call_node: CallNode):
-        code = ''
-        arg_types = []
-
-        i = 1
-
-        #TODO: Refactor code for basing any method
-        if isinstance(call_node.callee, LiteralNode) and call_node.callee.id.lexeme == 'base':
-            ancestor_name = self._resolver.resolve_type_data(self._type_name).ancestor
-            self_offset = self._get_offset('self')
-            code += f'''
-    lw $t0 {self_offset}($sp)
-    sw $t0 {-WORD_SIZE}($sp)
-'''
-            i += 1
-        
-        # We won't verify that length of args match length of params, previous semantic analysis assumed
-        for arg in call_node.args:
-            result = self._generate(arg)
-            arg_types.append(result.type)
-            code += result.code
-            offset = -(i * WORD_SIZE)
-            code += f'''
-    jal stack_pop
-    sw $v0 {offset}($sp)
-'''         
-
-            i += 1
-
+        # Function call
         if isinstance(call_node.callee, LiteralNode) and call_node.callee.id.lexeme != 'base':
             func_name = call_node.callee.id.lexeme
+            code = ''
+            arg_types = []
 
+            # We won't verify that length of args match length of params, previous semantic analysis assumed
+            i = 1
+            for arg in call_node.args:
+                result = self._generate(arg)
+                arg_types.append(result.type)
+                code += result.code
+                offset = -(i * WORD_SIZE)
+                code += f'''
+    jal stack_pop
+    sw $v0 {offset}($sp)
+    '''         
+                i += 1
+
+            
             # Handle print particular case
             if func_name == 'print':
                 arg_type = arg_types[0]
@@ -257,15 +252,50 @@ class Generator(Visitor):
     jal stack_push
 '''
             return GenerationResult(code, func_type)
-        elif isinstance(call_node.callee, LiteralNode) and call_node.callee.id.lexeme == 'base':
-            ancestor_name = self._resolver.resolve_type_data(self._type_name).ancestor
+        # Method call
+        else:
+
+            if isinstance(call_node.callee, LiteralNode) and call_node.callee.id == 'base':
+                type_data = self._resolver.resolve_type_data(self._type_name)
+                self_offset = self._get_offset('self')
+                code = f'''
+    lw $t0 {self_offset}($sp)
+    sw $t0 {-WORD_SIZE}($sp)
+    '''
+                method_name = type_data.methods[self._func_name][1]
+            elif isinstance(call_node.callee, GetNode):
+                result = self._generate(call_node.callee)
+                type_data = self._resolver.resolve_type_data(result.type)
+                called_method = call_node.callee.id.lexeme
+
+                code = result.code
+
+                method_name = type_data.methods[called_method][0]
+                code += f'''
+    jal stack_pop
+    sw $v0 {-WORD_SIZE}($sp)
+'''         
+            else:
+                raise Exception("Functions are not a type here, cannot be called that way")
+                
+            i = 2
+            for arg in call_node.args:
+                result = self._generate(arg)
+                code += result.code
+                offset = -(i * WORD_SIZE)
+                code += f'''
+    jal stack_pop
+        sw $v0 {offset}($sp)
+    '''         
+                i += 1
             
             code += f'''
-    jal build_{ancestor_name}
+    jal {method_name}
     move $a0 $v0
     jal stack_push
 '''
-            return GenerationResult(code, ancestor_name)
+            func_data = self._resolver.resolve_function_data(method_name)
+            return GenerationResult(code, func_data.type)
     
     def visit_literal_node(self, literal_node: LiteralNode):
 
@@ -325,9 +355,9 @@ class Generator(Visitor):
 '''
             return GenerationResult(code, 'bool')
         elif literal_node.id.type == 'self':
-            offset = self._get_offset(var_name)
+            offset = self._get_offset('self')
             code = f'''
-    sw $a0 {offset}($sp)
+    lw $a0 {offset}($sp)
     jal stack_push
 '''
             return GenerationResult(code, self._type_name)
@@ -625,7 +655,7 @@ class Generator(Visitor):
         type_data.attributes[attribute_name].type = result.type # TODO: Remove when types are correctly inferred during semantic analysis
 
         self_offset = self._get_offset('self')
-        attribute_offset = (type_data.attributes[attribute_name].index + type_data.inherited_offset) * 4
+        attribute_offset = (type_data.attributes[attribute_name].index + type_data.inherited_offset) * WORD_SIZE
 
         if result.type == 'bool':
                 code += f'''
@@ -654,6 +684,8 @@ class Generator(Visitor):
         code += f'''
     lw $t0 {self_offset}($sp)
     sw $v0 {attribute_offset}($t0)
+    move $a0 $v0
+    jal stack_push
 '''
 
         return GenerationResult(code)
@@ -786,10 +818,37 @@ class Generator(Visitor):
         pass
     
     def visit_get_node(self, get_node: GetNode):
-        pass
-
+        if isinstance(get_node.left, LiteralNode) and get_node.left.id.lexeme == 'self':
+            type_data = self._resolver.resolve_type_data(self._type_name)
+            if get_node.id.lexeme in type_data.attributes:
+                var_data = type_data.attributes[get_node.id.lexeme]
+                attribute_offset = (var_data.index + type_data.inherited_offset) * WORD_SIZE
+                self_offset = self._get_offset('self')
+                code = f'''
+    lw $t0 {self_offset}($sp)
+    lw $a0 {attribute_offset}($t0)
+    jal stack_push
+'''
+                return GenerationResult(code, var_data.type)
+        return self._generate(get_node.left)
+                
     def visit_set_node(self, set_node: SetNode):
-        pass
+        if isinstance(set_node.left, LiteralNode) and set_node.left.id.lexeme == 'self':
+            result = self._generate(set_node.value)
+            code = result.code
+
+            type_data = self._resolver.resolve_type_data(self._type_name)
+            var_data = type_data.attributes[set_node.id.lexeme]
+            self_offset = self._get_offset('self')
+            attribute_offset = (var_data.index + type_data.inherited_offset) * WORD_SIZE
+            code += f'''
+    jal stack_pop
+    lw $t0 {self_offset}($sp)
+    sw $v0 {attribute_offset}($t0)
+    move $a0 $v0
+    jal stack_push
+'''
+            return GenerationResult(code, result.type)
 
     def visit_explicit_vector_node(self, explicit_vector_node: ExplicitVectorNode):
         pass
