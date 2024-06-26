@@ -847,7 +847,29 @@ class Generator(Visitor):
         return GenerationResult(code, type_name)
     
     def visit_unary_node(self, unary_node : UnaryNode):
-        pass
+        result = self._generate(unary_node.expr)
+        code = result.code
+        if unary_node.op.type == 'not':
+            code += '''
+    jal stack_pop
+    lw $a0 4($v0)
+    li $t0 0
+    seq $a0 $a0 $t0
+    jal build_bool
+    move $a0 $v0
+    jal stack_push
+'''
+            return GenerationResult(code, 'bool')
+        else:
+            code += '''
+    jal stack_pop
+    lwc1 $f12 4($v0)
+    neg.s $f12 $f12
+    jal build_number
+    move $a0 $v0
+    jal stack_push
+'''
+            return GenerationResult(code, 'number')
     
     def visit_get_node(self, get_node: GetNode):
         if isinstance(get_node.left, LiteralNode) and get_node.left.id.lexeme == 'self':
