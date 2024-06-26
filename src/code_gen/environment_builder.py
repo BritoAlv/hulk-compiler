@@ -1,5 +1,3 @@
-
-from time import sleep
 from code_gen.environment import OBJ_TYPE_ID, Context, Environment, FunctionData, TypeData, VarData
 from common.graph import Graph
 from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, ForNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, NewNode, SetNode, UnaryNode, VectorGetNode, VectorSetNode, WhileNode
