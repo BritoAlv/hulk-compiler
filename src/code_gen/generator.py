@@ -591,8 +591,8 @@ class Generator(Visitor):
 '''
             if binary_node.op.type == 'at':
                 code += '''
-    move $a0 $s0
-    move $a1 $s1
+    move $a0 $s1
+    move $a1 $s0
     jal str_concat
     move $a0 $v0
     jal build_str
@@ -601,8 +601,8 @@ class Generator(Visitor):
 '''
             else:
                 code += '''
-    move $a0 $s0
-    move $a1 $s1
+    move $a0 $s1
+    move $a1 $s0
     jal str_space_concat
     move $a0 $v0
     jal build_str
