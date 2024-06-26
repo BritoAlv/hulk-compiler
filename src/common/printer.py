@@ -69,11 +69,6 @@ class TreePrinter(Visitor):
         self.add_word("Class " + type_node.id.lexeme)
         if type_node.ancestor_id != None:
             self.add_word(opt_inheritance)
-            if type_node.ancestor_args != None:
-                self.add_word("ancestor args ")
-                with IndentManager(self):
-                    for arg in type_node.ancestor_args:
-                        arg.accept(self)
         
         with IndentManager(self):
             self.add_word("Attributes")

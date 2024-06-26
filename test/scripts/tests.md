@@ -187,7 +187,6 @@ let squares = [x^2 || x in range(1, 10)] in print(x + y);
 # semantic error
 let squares = [x^2 || x in range(1, 10)] in print(x + y);
 ```
-
 ## 22
 ```hulk
 type range(st:Number, ed:Number, offset : Number) {
@@ -275,3 +274,70 @@ type BinaryNode(left : Node, op : string, right : Node) {
 let node = parseTerm([3, "*", 2, "*", 4, "-", 1, "-", 1]) in print(node.eval());
 ```
 
+## 23
+```hulk
+print(sin(1.03432)^2 + cos(1.03432)^2);
+```
+
+## 24
+```hulk
+4 @ 4;
+```
+
+## 25
+```hulk
+type Person
+{
+    message = "Hi";
+    greet() => print(self.message);
+}
+
+(new Person()).greet();
+```
+## 26
+```hulk
+
+type Num
+{
+    num = 4;
+    get_num() => self.num;
+}
+print(3^(new Num()).get_num())
+```
+
+## 27
+```hulk
+type Num
+{
+    num = 4;
+    get_num() => self.num;
+}
+print(3^(new Num()).get_num())
+```
+
+## 28
+```hulk
+type Superman {
+}
+type Bird {
+}
+type Plane {
+}
+4;
+```
+
+## 29
+```hulk
+type A {
+    hello() => print("A");
+}
+
+type B inherits A {
+    hello() => print("B");
+}
+
+type C inherits A {
+    hello() => print("C");
+}
+4;
+```

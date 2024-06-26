@@ -17,140 +17,18 @@ parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
-
-function parseFactor(cr : int, tokens : Vector){
-    let node = LiteralNode(tokens[cr]) in {
-        if (cr == len(tokens))
-        {
-            node;
-        }
-        else
-        {
-            let op = tokens[cr], right = parseFactor(cr + 1, tokens) in {
-                BinaryNode(node, op, right);
-            }
-        }
-    };
+type A {
+    hello() => print("A");
 }
 
-protocol Node {
-    eval() : Number;
+type B inherits A {
+    hello() => print("B");
 }
 
-type LiteralNode(value : Number) extends Node {
-    value = value;
-    eval() => value;
+type C inherits A {
+    hello() => print("C");
 }
-
-type BinaryNode(left : Node, op : string, right : Node) {
-    left = left;
-    op = op;
-    right = right;
-    function eval() {
-        if(op == "+")
-        {
-            eval(left) + eval(right);
-        }
-        else if(op == "-")
-        {
-            eval(left) - eval(right);
-        }
-        else if(op == "*")
-        {
-            eval(left) * eval(right);
-        }
-        else
-        {
-            eval(left) / eval(right);
-        }
-    };
-}
-"""
-
-defaultHulkProgram = """
-type range(st:Number, ed:Number, offset : Number) {
-    st = st;
-    ed = ed;
-    current = st - offset;
-
-    next(): Boolean => (self.current := self.current + offset) < ed;
-    current(): Number => self.current;
-}
-
-
-function parseTerm(tokens: Vector){
-    let node = LiteralNode(tokens[0]), done = false in 
-    {
-        for( i in range(len(tokens)-1, -1, -1))
-        {
-            if (!done & (tokens[i] == "+" | tokens[i] == "-"))
-            {
-                let right = parseFactor(i+1, tokens),
-                    op = tokens[i],
-                    toks = [tokens[x] || x in range(0, i)], 
-                    left = parseTerm(toks),
-                    done = true in 
-                {
-                    node := BinaryNode(left, op, right);
-                };
-            }
-            else
-            {
-                4;
-            };
-        };
-    };
-};
-
-function parseFactor(cr : int, tokens : Vector){
-    let node = LiteralNode(tokens[cr]) in {
-        if (cr == len(tokens))
-        {
-            node;
-        }
-        else
-        {
-            let op = tokens[cr], right = parseFactor(cr + 1, tokens) in {
-                BinaryNode(node, op, right);
-            };
-        };
-    };
-};
-
-protocol Node {
-    eval() : Number;
-}
-
-type LiteralNode(value : Number) {
-    value = value;
-    eval() => value;
-}
-
-type BinaryNode(left : Node, op : string, right : Node) {
-    left = left;
-    op = op;
-    right = right;
-    eval() {
-        if(op == "+")
-        {
-            eval(left) + eval(right);
-        }
-        elif (op == "-")
-        {
-            eval(left) - eval(right);
-        }
-        elif (op == "*")
-        {
-            eval(left) * eval(right);
-        }
-        else
-        {
-            eval(left) / eval(right);
-        };
-    };
-}
-
-let node = parseTerm([3, "*", 2, "*", 4, "-", 1, "-", 1]) in print(node.eval());
+4;
 """
 
 

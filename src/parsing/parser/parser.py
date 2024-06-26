@@ -39,7 +39,7 @@ class Parser:
                                                 ([CallNode(
                                                      LiteralNode(
                                                          Token('id', f'build_{s[4][0].token.lexeme}')), 
-                                                         s[4][1]
+                                                         s[4][1] if s[4][1] != None else []
                                                          )] 
                                                     if s[4][0] != None else []) 
                                                 + s[6][0] + [LiteralNode(Token('id', 'self'))]), 
