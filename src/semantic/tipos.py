@@ -544,13 +544,13 @@ class TypeCheckerVisitor(Visitor):
         right = binary_node.right.accept(self)
         type = None
         value = None
-        msg = ""
+        msg = "" 
         match binary_node.op.lexeme:
             case "==":
                 type = "boolean"
                 if left.type == right.type:
                     value = None
-                    if left.value != None or right.value != None:
+                    if left.value == None or right.value == None:
                         value = None
                     else:
                         if left.value == right.value:
@@ -559,6 +559,115 @@ class TypeCheckerVisitor(Visitor):
                             value = False
                 else:
                     value = False
+
+            case ">=":
+                type = "boolean"
+                if left.type == right.type:
+                    value = None
+                    if left.value == None or right.value == None:
+                        value = None
+                    else:
+                        if left.value >= right.value:
+                            value = True
+                        else:
+                            value = False
+                else:
+                    value = False
+            
+            case "<=":
+                type = "boolean"
+                if left.type == right.type:
+                    value = None
+                    if left.value == None or right.value == None:
+                        value = None
+                    else:
+                        if left.value <= right.value:
+                            value = True
+                        else:
+                            value = False
+                else:
+                    value = False
+
+            case "<":
+                type = "boolean"
+                if left.type == right.type:
+                    value = None
+                    if left.value == None or right.value == None:
+                        value = None
+                    else:
+                        if left.value < right.value:
+                            value = True
+                        else:
+                            value = False
+                else:
+                    value = False
+
+            case ">":
+                type = "boolean"
+                if left.type == right.type:
+                    value = None
+                    if left.value == None or right.value == None:
+                        value = None
+                    else:
+                        if left.value > right.value:
+                            value = True
+                        else:
+                            value = False
+                else:
+                    value = False
+            
+            case "+":
+                if left.type == "number" and right.type == "number":
+                    type = "number"
+                    if left.value == None or right.value == None:
+                        value = None
+                    else:
+                        value = left.value + right.value
+                else:
+                    msg = "error tipos en suma"
+                    value = None
+                    type = None
+                
+            case "-":
+                if left.type == "number" and right.type == "number":
+                    type = "number"
+                    if left.value == None or right.value == None:
+                        value = None
+                    else:
+                        value = left.value - right.value
+                else:
+                    msg = "error tipos en -"
+                    value = None
+                    type = None
+            
+            case "*":
+                if left.type == "number" and right.type == "number":
+                    type = "number"
+                    if left.value == None or right.value == None:
+                        value = None
+                    else:
+                        value = left.value * right.value
+                else:
+                    msg = "error tipos en *"
+                    value = None
+                    type = None
+            
+            case "/":
+                if left.type == "number" and right.type == "number":
+                    type = "number"
+                    if left.value == None or right.value == None:
+                        value = None
+                    else:
+                        if (right.value == 0):
+                            msg = "division por cero"
+                            type = None
+                            value = None
+                        else:
+                            value = left.value / right.value
+                else:
+                    msg = "error tipos en /"
+                    value = None
+                    type = None
             
         value = ComputedValue(type, value)
         if msg != "":
@@ -567,24 +676,31 @@ class TypeCheckerVisitor(Visitor):
     
     def visit_unary_node(self, unary_node : UnaryNode):
         expr = unary_node.expr.accept(self)
-        value = "object" 
+        value = None 
+        type = None
         match unary_node.op.lexeme:
-            case "not":
-                if expr != "bolean":
+            case "!":
+                if expr.type != "boolean":
                     self.error_logger.add("no unaria not")
                 else:
-                    value = expr
-            case "plus":
-                if expr != "number":
+                    type = "boolean"
+                    if expr.value != None:
+                        value = True if expr.value == False else False
+            case "+":
+                if expr.type != "number":
                     self.error_logger.add("no unaria not")
                 else:
-                    value = expr
-            case "minus":
-                if expr != "number":
+                    type = "number"
+                    if expr.value != None:
+                        value = expr.value
+            case "-":
+                if expr.type != "number":
                     self.error_logger.add("no unaria not")
                 else:
-                    value = expr
-        return value
+                    type = "number"
+                    if expr.value != None:
+                        value = expr.value * -1
+        return ComputedValue(type, value)
 
     def visit_literal_node(self, literal_node : LiteralNode):
         match literal_node.id.type:
@@ -597,8 +713,8 @@ class TypeCheckerVisitor(Visitor):
             case "string":
                 return ComputedValue("string", literal_node.id.lexeme)
             case "id":
-                return self.context.is_defined(literal_node.id.lexeme)
-        return "object"
+                return ComputedValue(self.context.is_defined(literal_node.id.lexeme), None)
+        return ComputedValue(None, None)
 
 
 

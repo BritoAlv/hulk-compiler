@@ -504,3 +504,14 @@ let stack = new Stack() in
     print("Count:" @@ stack.getCount());
 };
 ```
+
+#david 1
+```hulk
+type Perro(color : string, color: number)
+{
+    color = color;
+    edad = edad;
+    Ladrar(a: number, af: string) : number => print("Wolf" @ "Wolf");
+}
+let a = new Perro("Negro", 7), c = new Perro("Negro", 7), b = [1, "3"] in if(1 == 1) "t" else 1;
+```
