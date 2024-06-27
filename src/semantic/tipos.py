@@ -151,9 +151,6 @@ class TypeCollectorVisitor(Visitor):
     def visit_while_node(self, while_node : WhileNode):
         pass
 
-    def visit_for_node(self, for_node : ForNode):
-        pass
-
     def visit_if_node(self, if_node : IfNode):
         pass
 
@@ -266,9 +263,6 @@ class TypeBuilderVisitor(Visitor):
     def visit_while_node(self, while_node : WhileNode):
         pass
 
-    def visit_for_node(self, for_node : ForNode):
-        pass
-
     def visit_if_node(self, if_node : IfNode):
         pass
 
@@ -365,8 +359,6 @@ class TypeCheckerVisitor(Visitor):
     def visit_while_node(self, while_node : WhileNode):
         pass
 
-    def visit_for_node(self, for_node : ForNode):
-        pass
 
     def visit_if_node(self, if_node : IfNode):
         pass

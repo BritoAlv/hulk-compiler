@@ -196,6 +196,8 @@ class ParsingTable:
                 if flag:
                     return i
 
+
+
     def convertAst(self, tree: ParseNode):
         assert(isinstance(tree, ParseNode))
         assert(self.attributed_productions != None)

@@ -26,17 +26,7 @@ parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
-    type Person(firstname : string, lastname : string)
-    {
-        firstname = firstname;
-        lastname = lastname;
-        ada = 43;
-        name() : string => self.firstname @@ self.lastname;
-        hash() : number {
-            self.ada;
-        };
-    }
-	print("Alvaro says \\\"hablar es facil\\\"");
+    print(2a);
 """
 
 inputStr = defaultHulkProgram
