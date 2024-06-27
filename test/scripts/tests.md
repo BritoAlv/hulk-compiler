@@ -119,9 +119,125 @@ let a = "Thomas", a = "John" in
 };
 ```
 
+##
+```hulk
+{
+    let a = 6 in
+        let b = a * 7 in
+            print(b);
+    
+    print(let b = 6 in b * 7);
 
+    let a = 20 in {
+        let a = 42 in print(a);
+        print(a);
+    };
+
+    let a = 7, a = 7 * 6 in print(a);
+
+    let a = 0 in {
+        print(a);
+        a := 1;
+        print(a);
+    };
+
+    let a = 0 in
+        let b = a := 1 in {
+            print(a);
+            print(b);
+        };
+};
+```
+
+```hulk
+type Range(start : number, end : number, offset : number) {
+    start = start;
+    end = end;
+    current = start - offset;
+    offset = offset;
+
+    next(): bool => (self.current := self.current + self.offset) < self.end ;
+    current(): number => self.current;
+}
+
+let interval = new Range(1, 5, 1) in 
+{
+    print(interval.next());
+    print(interval.current());
+    print(interval.next());
+    print(interval.current());
+    print(interval.next());
+    print(interval.current());
+    print(interval.next());
+    print(interval.current());
+    print(interval.next());
+    print(interval.current());
+    print(interval.next());
+    print(interval.current());
+};
+```
 
 # Not Passed
+
+## (Not HULK valid) : Self cannot be assign to an attribute
+```hulk
+type Stack
+{
+    top = new Node(0);
+    count = 0;
+
+    push(n : number) : number => let pushedNode = new Node(n) in 
+    {
+        pushedNode.addPrevious(self.top);
+        self.top.addNext(pushedNode);
+        self.top := pushedNode;
+        self.count := self.count + 1;
+        n;
+    };
+
+    pop(n : number) : number => let popped = self.top.getValue() in 
+    {
+        self.top := self.top.getPrevious();
+        self.count := self.count - 1;
+        popped;
+    };
+
+    peek() : number => self.top.getValue();
+
+    getCount() : number => self.count;
+}
+
+type Node(value : number)
+{
+    value = value;
+    previous = self;
+    next = self;
+    addPrevious(previous : Node) : Node => self.previous := previous;
+    addNext(next : Node) : Node => self.next := next;
+    getPrevious() : Node => self.previous;
+    getNext() : Node => self.next;
+    print() : number => print(self.value);
+    getValue() : number => self.value;
+}
+
+let stack = new Stack() in
+{
+    stack.push(4);
+    print("Top:" @@ stack.peek());
+    print("Count:" @@ stack.getCount());
+    stack.push(3);
+    stack.pop();
+    stack.push(2);
+    stack.push(5);
+    stack.pop();
+    stack.pop();
+    print("Top:" @@ stack.peek());
+    print("Count:" @@ stack.getCount());
+    stack.push(10);
+    print("Top:" @@ stack.peek());
+    print("Count:" @@ stack.getCount());
+};
+```
 
 ## (Not HULK valid)
 ```hulk
@@ -177,7 +293,7 @@ print("Semantic should work but code don't");
 print("The message is \"Hello World\"");
 ```
 
-## 15
+## 15 (Not HULK valid)
 ```hulk
 let a = 10 in { 
             a := "A";
@@ -195,11 +311,12 @@ let p = new Knight("Phil", "Collins") in
     print(p.name());
 ```
 
-## 17
+## 17 (Not HULK valid)
 ```hulk
 let pt = new PolarPoint(3,4) in
     print("rho: " @ pt.rho());
 ```
+
 ## 18
 ```hulk
 # print first square greater or equal than x.
@@ -504,67 +621,6 @@ let n1 = new Node(4), n2 = new Node(6), n3 = new Node(8) in
     n3.addPrevious(n2);
     n1.getNext().getNext().print();
     n2.getPrevious().print();
-};
-```
-
-## 34
-
-```hulk
-type Stack
-{
-    top = new Node(0);
-    count = 0;
-
-    push(n : number) : number => let pushedNode = new Node(n) in 
-    {
-        pushedNode.addPrevious(self.top);
-        self.top.addNext(pushedNode);
-        self.top := pushedNode;
-        self.count := self.count + 1;
-        n;
-    };
-
-    pop(n : number) : number => let popped = self.top.getValue() in 
-    {
-        self.top := self.top.getPrevious();
-        self.count := self.count - 1;
-        popped;
-    };
-
-    peek() : number => self.top.getValue();
-
-    getCount() : number => self.count;
-}
-
-type Node(value : number)
-{
-    value = value;
-    previous = self;
-    next = self;
-    addPrevious(previous : Node) : Node => self.previous := previous;
-    addNext(next : Node) : Node => self.next := next;
-    getPrevious() : Node => self.previous;
-    getNext() : Node => self.next;
-    print() : number => print(self.value);
-    getValue() : number => self.value;
-}
-
-let stack = new Stack() in
-{
-    stack.push(4);
-    print("Top:" @@ stack.peek());
-    print("Count:" @@ stack.getCount());
-    stack.push(3);
-    stack.pop();
-    stack.push(2);
-    stack.push(5);
-    stack.pop();
-    stack.pop();
-    print("Top:" @@ stack.peek());
-    print("Count:" @@ stack.getCount());
-    stack.push(10);
-    print("Top:" @@ stack.peek());
-    print("Count:" @@ stack.getCount());
 };
 ```
 
