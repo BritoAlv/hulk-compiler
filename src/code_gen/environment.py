@@ -17,7 +17,7 @@ class Context:
 class FunctionData:
     def __init__(self):
         self.type : str = None
-        self.context : Context = None
+        self.context : Context = Context()
         self.params : dict[str, VarData] = {}
         self.var_count = 0
 

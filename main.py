@@ -2,6 +2,7 @@ import argparse
 from os import mkdir
 import sys
 
+from code_gen.constructor_builder import ConstructorBuilder
 from code_gen.environment_builder import EnvironmentBuilder
 from code_gen.generator import Generator
 from code_gen.resolver import Resolver
@@ -25,9 +26,29 @@ parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
+type A(id : string) 
 {
-    print("\\\" a"); 
+    id = id;
+    jump() : object => print(self.id);
+    greet() : object => print("Call me" @@ self.id);
 }
+
+type B(id : string, size : number) inherits A(id)
+{
+    size = size;
+    jump() : object => print("My size is" @@ self.size);
+}
+
+type C inherits B { }
+
+let a = new A("Pancho"), b = new B("Jenn", 20), c = new C("John", 30) in 
+{
+    a.jump();
+    b.jump();
+    b.greet();
+    c.jump();
+    c.greet();
+};
 """
 
 inputStr = defaultHulkProgram
@@ -72,6 +93,8 @@ def semantic_analysis(inputStr : str) -> ProgramNode:
 
 def codeGen(inputStr : str, show = False) -> str:
     ast = semantic_analysis(inputStr)
+    constructor_builder = ConstructorBuilder()
+    constructor_builder.build(ast)
     environment_builder = EnvironmentBuilder()
     environment = environment_builder.build(ast)
     resolver = Resolver(environment)
