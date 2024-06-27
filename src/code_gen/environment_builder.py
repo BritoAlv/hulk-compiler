@@ -146,34 +146,40 @@ class EnvironmentBuilder(Visitor):
         self._type_name = None # Restore to None since we're exiting the node
 
     def visit_unary_node(self, unary_node : UnaryNode):
-        pass
+        self._build(unary_node.expr)
 
     def visit_protocol_node(self, protocol_node: ProtocolNode):
         pass
 
     def visit_attribute_node(self, attribute_node: AttributeNode):
-        pass
+        self._build(attribute_node.body)
 
     def visit_signature_node(self, signature_node: SignatureNode):
         pass
     
     def visit_if_node(self, if_node: IfNode):
-        pass
+        for if_pair in if_node.body:
+            self._build(if_pair[0])
+            self._build(if_pair[1])
+        
+        self._build(if_node.elsebody)
 
     def visit_while_node(self, while_node: WhileNode):
-        pass
+        self._build(while_node.condition)
+        self._build(while_node.body)
 
     def visit_for_node(self, for_node: ForNode):
         pass
 
     def visit_new_node(self, new_node: NewNode):
-        pass
+        for arg in new_node.args:
+            self._build(arg)
     
     def visit_get_node(self, get_node: GetNode):
         pass
 
     def visit_set_node(self, set_node: SetNode):
-        pass
+        self._build(set_node.value)
 
     def visit_explicit_vector_node(self, explicit_vector_node: ExplicitVectorNode):
         pass
