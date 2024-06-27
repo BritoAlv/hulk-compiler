@@ -106,7 +106,12 @@ print(fib(6));
 
 ##
 ```hulk
-print(print(2));
+print(print(2)); # Prints pointer address
+```
+
+##
+```hulk
+print(print(2) as number); # Prints 2
 ```
 
 ##
@@ -208,6 +213,25 @@ type Node(value : number)
         
         print(node.getValue());
     };
+};
+```
+
+```hulk
+type Node(value : number) 
+{
+    value = value;
+    previous = while(false) 0;
+    getPrevious() : Node => self.previous;
+    setPrevious(node : Node) : Node => self.previous := node;
+    getValue() : number => self.value;
+}
+
+let a = new Node(10) in 
+{
+    a.setPrevious(new Node(20));
+    print(a.getValue());
+    print(a.getPrevious().getValue());
+    a.getPrevious().getPrevious().getValue(); # Null reference error
 };
 ```
 
