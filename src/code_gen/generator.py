@@ -204,6 +204,7 @@ class Generator(Visitor):
             code += f'''
     jal stack_pop
     move $a0 $v0
+    sw $a0 {offset}($sp)
     jal stack_push
     '''
 
