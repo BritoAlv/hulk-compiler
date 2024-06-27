@@ -240,7 +240,7 @@ class Generator(Visitor):
                     func_name = 'print_str'
                 else:
                     func_name = 'print_pointer'
-                func_type = arg_type
+                func_type = 'object'
             else:
                 func_type = self._resolver.resolve_function_data(func_name).type
             
