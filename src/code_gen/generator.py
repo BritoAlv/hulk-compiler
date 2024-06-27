@@ -290,7 +290,7 @@ class Generator(Visitor):
                 offset = -(i * WORD_SIZE)
                 code += f'''
     jal stack_pop
-        sw $v0 {offset}($sp)
+    sw $v0 {offset}($sp)
     '''         
                 i += 1
             
@@ -369,6 +369,33 @@ class Generator(Visitor):
         
     def visit_binary_node(self, binary_node: BinaryNode):
         left_result = self._generate(binary_node.left)
+
+        if binary_node.op.type == 'isOp' and isinstance(binary_node.right, LiteralNode) and binary_node.right.id.type == 'id':
+            type_name = binary_node.right.id.lexeme
+            type_id = self._resolver.resolve_type_data(type_name).id
+            
+            code = left_result.code
+            code += f'''
+    jal stack_pop
+    lw $s0 ($v0)
+    li $s1 {type_id}
+    seq $s0 $s0 $s1
+    move $a0 $s0
+    jal build_bool
+    move $a0 $v0
+    jal stack_push
+'''
+            return GenerationResult(code, 'bool')
+        elif binary_node.op.type == 'asOp' and isinstance(binary_node.right, LiteralNode) and binary_node.right.id.type == 'id':
+            type_name = binary_node.right.id.lexeme
+
+            try:
+                self._resolver.resolve_type_data(type_name)            
+            except:
+                raise Exception(f'Type {type_name} is not defined')
+
+            return GenerationResult(left_result.code, type_name)
+
         right_result = self._generate(binary_node.right)
         left_type = left_result.type
         right_type = right_result.type
@@ -820,7 +847,29 @@ class Generator(Visitor):
         return GenerationResult(code, type_name)
     
     def visit_unary_node(self, unary_node : UnaryNode):
-        pass
+        result = self._generate(unary_node.expr)
+        code = result.code
+        if unary_node.op.type == 'not':
+            code += '''
+    jal stack_pop
+    lw $a0 4($v0)
+    li $t0 0
+    seq $a0 $a0 $t0
+    jal build_bool
+    move $a0 $v0
+    jal stack_push
+'''
+            return GenerationResult(code, 'bool')
+        else:
+            code += '''
+    jal stack_pop
+    lwc1 $f12 4($v0)
+    neg.s $f12 $f12
+    jal build_number
+    move $a0 $v0
+    jal stack_push
+'''
+            return GenerationResult(code, 'number')
     
     def visit_get_node(self, get_node: GetNode):
         if isinstance(get_node.left, LiteralNode) and get_node.left.id.lexeme == 'self':

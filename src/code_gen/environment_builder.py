@@ -1,6 +1,4 @@
-
-from time import sleep
-from code_gen.environment import STR_TYPE_ID, Context, Environment, FunctionData, TypeData, VarData
+from code_gen.environment import OBJ_TYPE_ID, Context, Environment, FunctionData, TypeData, VarData
 from common.graph import Graph
 from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, ForNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, NewNode, SetNode, UnaryNode, VectorGetNode, VectorSetNode, WhileNode
 from common.ast_nodes.statements import AttributeNode, MethodNode, ProgramNode, ProtocolNode, SignatureNode, Statement, TypeNode
@@ -13,7 +11,7 @@ class EnvironmentBuilder(Visitor):
         self._context : Context = None
 
         self._var_index : int = 0
-        self._type_index : int = STR_TYPE_ID + 1
+        self._type_index : int = OBJ_TYPE_ID + 1
 
         self._func_name : str
         self._type_name : str
