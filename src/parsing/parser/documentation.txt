@@ -1,4 +1,5 @@
-Program -> Decls Expr semicolon.
+Program -> Decls FunnyBlock.
+
 Decls -> FuncDecl Decls | TypeDecl Decls | ProtocolDecl Decls | .
 
 ProtocolDecl -> protocol id OptExtension lbrace ProtocolElems rbrace.
@@ -26,14 +27,16 @@ OptType -> colon id | .
 
 FuncDecl -> function MethodDecl .
 
+FunnyBlock -> Expr semicolon | BlockExpr .
+
 Expr -> BlockExpr | IfExpr | WhileExpr | ForExpr | LetExpr | DestrucExpr | VectorExpr | NewExpr | As .
 
 LetExpr -> let Assignment AssignmentList in Expr .
 AssignmentList -> comma Assignment AssignmentList | .
 
 BlockExpr -> lbrace ExprList rbrace .
-ExprList -> Expr semicolon ExprTail .
-ExprTail -> Expr semicolon ExprTail | .
+ExprList -> FunnyBlock ExprTail .
+ExprTail -> FunnyBlock ExprTail | .
 
 IfExpr -> if lparen Expr rparen Expr OptElif else Expr .
 OptElif -> elif lparen Expr rparen Expr OptElif | .

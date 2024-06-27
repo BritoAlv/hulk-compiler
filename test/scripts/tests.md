@@ -341,3 +341,166 @@ type C inherits A {
 }
 4;
 ```
+
+## 30
+```hulk
+print(tan(PI) ** 2 + cot(PI) ** 2); #error
+let msg = "Hello World" in print(msg);
+let number = 42, text = "The meaning of life is" in
+    print(text @ number);
+let number = 42 in
+    let text = "The meaning of life is" in
+        print(text @ number);
+let number = 42 in (
+    let text = "The meaning of life is" in (
+            print(text @ number);
+        )
+    );
+let a = 6, b = a * 7 in print(b);
+let a = 6 in
+    let b = a * 7 in
+        print(b);
+let a = 5, b = 10, c = 20 in {
+    print(a+b);
+    print(b*c);
+    print(c/a);
+};
+let a = (let b = 6 in b * 7) in print(a);
+print(let b = 6 in b * 7);
+let a = 20 in {
+    let a = 42 in print(a);
+    print(a);
+};
+let a = 7, a = 7 * 6 in print(a);
+let a = 7 in
+    let a = 7 * 6 in
+        print(a);
+let a = 0 in {
+    print(a);
+    a := 1;
+    print(a);
+};
+let a = 0 in
+    let b = a := 1 in {
+        print(a);
+        print(b);
+    };
+let a = 42 in if (a % 2 == 0) print("Even") else print("odd");
+let a = 42 in print(if (a % 2 == 0) "even" else "odd");
+let a = 42 in
+    if (a % 2 == 0) {
+        print(a);
+        print("Even");
+    }
+    else print("Odd");
+let a = 42, mod = a % 3 in # error
+    print(
+        if (mod == 0) "Magic"
+        elif (mod % 3 == 1) "Woke"
+        else "Dumb"
+    );
+let a = 10 in while (a >= 0) {
+    print(a);
+    a := a - 1;
+}
+```
+
+## 31
+```hulk
+{ 
+    print("The message is \\\" Hello World \\\" " @ "and\\\"nothing else \\\"");
+};
+```
+
+## 32
+```hulk
+{ 
+    let p = new Knight("Phil", "Collins") in print(p.name());
+};
+```
+
+## 33
+```hulk
+type Node(value : number)
+{
+    value = value;
+    previous = self;
+    next = self;
+    addPrevious(previous : Node) : Node => self.previous := previous;
+    addNext(next : Node) : Node => self.next := next;
+    getPrevious() : Node => self.previous;
+    getNext() : Node => self.next;
+    print() : number => print(self.value);
+}
+
+let n1 = new Node(4), n2 = new Node(6), n3 = new Node(8) in 
+{
+    n1.addNext(n2);
+    n2.addNext(n3);
+    n2.addPrevious(n1);
+    n3.addPrevious(n2);
+    n1.getNext().getNext().print();
+    n2.getPrevious().print();
+};
+```
+
+## 34
+
+```hulk
+type Stack
+{
+    top = new Node(0);
+    count = 0;
+
+    push(n : number) : number => let pushedNode = new Node(n) in 
+    {
+        pushedNode.addPrevious(self.top);
+        self.top.addNext(pushedNode);
+        self.top := pushedNode;
+        self.count := self.count + 1;
+        n;
+    };
+
+    pop(n : number) : number => let popped = self.top.getValue() in 
+    {
+        self.top := self.top.getPrevious();
+        self.count := self.count - 1;
+        popped;
+    };
+
+    peek() : number => self.top.getValue();
+
+    getCount() : number => self.count;
+}
+
+type Node(value : number)
+{
+    value = value;
+    previous = self;
+    next = self;
+    addPrevious(previous : Node) : Node => self.previous := previous;
+    addNext(next : Node) : Node => self.next := next;
+    getPrevious() : Node => self.previous;
+    getNext() : Node => self.next;
+    print() : number => print(self.value);
+    getValue() : number => self.value;
+}
+
+let stack = new Stack() in
+{
+    stack.push(4);
+    print("Top:" @@ stack.peek());
+    print("Count:" @@ stack.getCount());
+    stack.push(3);
+    stack.pop();
+    stack.push(2);
+    stack.push(5);
+    stack.pop();
+    stack.pop();
+    print("Top:" @@ stack.peek());
+    print("Count:" @@ stack.getCount());
+    stack.push(10);
+    print("Top:" @@ stack.peek());
+    print("Count:" @@ stack.getCount());
+};
+```

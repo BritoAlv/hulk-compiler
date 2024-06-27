@@ -17,10 +17,54 @@ class Lexer:
                 self.automatas.append(automata)
         self.currentLine = 0
         self.positionInLine = 0
+        self.errors : list[Token] = []
+
+    def report(self, inputStr: str) -> bool:
+        if len(self.errors) > 0:
+            for error in self.errors:
+                line =  error.line
+                position = error.offsetLine
+                lines = inputStr.split("\n")
+                error_line = lines[line]
+                print(f"Error on line {line}, " + error.type +  ":")
+                print(error_line)
+                print(" " * (position-1) + "^")
+            return True
+        return False
+
+    def sanity_check(self, tokens: list[Token]):
+        marked = [False for _ in range(0, len(tokens))]
+        self.after_num(tokens, marked)
+        self.unterminated_string_literal(tokens, marked)
+        for i in range(len(marked)-1, -1, -1):
+            if marked[i]:
+                tokens.pop(i)
+
+        for x in tokens:
+            if x.type == "Error":
+                self.errors.append(Token("Invalid Symbol", x.lexeme, x.line, x.offsetLine))
+        
+    def after_num(self, tokens: list[Token], marked : list[bool]):
+        for i in range(0, len(tokens) - 1):
+            if tokens[i].type == "number" and tokens[i + 1].type == "number" and not marked[i]:
+                self.errors.append(Token("Invalid Number Format", tokens[i].lexeme, tokens[i].line, tokens[i].offsetLine))
+                marked[i] = marked[i+1] = True
+            if tokens[i].type == "number" and tokens[i+1].type == "id" and not marked[i]:
+                self.errors.append(Token("Identifier can't start with number", tokens[i].lexeme, tokens[i].line, tokens[i].offsetLine))
+                marked[i] = marked[i+1] = True
+
+    def unterminated_string_literal(self, tokens : list[Token], marked : list[bool]):
+        for i in range(0, len(tokens)):
+            if tokens[i].type == "Error" and tokens[i].lexeme[0] == "\"" and not marked[i]:
+                self.errors.append(Token("Unterminated String Literal", tokens[i].lexeme, tokens[i].line, tokens[i].offsetLine))
+                marked[i] = True
+    
+            
 
     def scanTokens(self, inputStr: str) -> list[Token]:
         self.currentLine = 0
         self.positionInLine = 0
+        self.errors = []
         tokens = []
         cr = 0
         while cr < len(inputStr):
@@ -29,6 +73,7 @@ class Lexer:
                     self.currentLine += 1
                     self.positionInLine = 0
                 cr += 1
+                self.positionInLine += 1
                 continue
             elif inputStr[cr] == "#":
                 while cr < len(inputStr) and inputStr[cr] != "\n":
@@ -45,8 +90,10 @@ class Lexer:
                 else:
                     self.positionInLine += 1
             cr += len(tok.lexeme)
+            tok.lexeme = tok.lexeme.replace("\\\"", "\"")
             tokens.append(tok)
         tokens.append(Token("$", "$", self.currentLine, self.positionInLine))
+        self.sanity_check(tokens)
         return tokens
 
     def scanToken(self, inputStr: str, offset: int):
@@ -55,10 +102,7 @@ class Lexer:
             longest_matched = -1
             cr = offset
             st = self.automatas[i].start_state
-            while (
-                cr < len(inputStr)
-                and self.automatas[i].next_state(inputStr[cr], st) != -1
-            ):
+            while cr < len(inputStr) and self.automatas[i].next_state(inputStr[cr], st) != -1:
                 st = self.automatas[i].next_state(inputStr[cr], st)
                 cr += 1
                 if st in self.automatas[i].accepting_states:
@@ -71,7 +115,8 @@ class Lexer:
             shift = 1
             while offset + shift + 1 < len(inputStr) and inputStr[offset + shift + 1] != " ":
                 shift += 1
-            return Token("Error", inputStr[offset: offset + shift], self.currentLine, self.positionInLine)
+            tok = Token("Error", inputStr[offset: offset + shift + 1], self.currentLine, self.positionInLine)
+            return tok
         return Token(
             self.specs[matched[0]][0],
             inputStr[offset : matched[1]],

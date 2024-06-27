@@ -34,10 +34,13 @@ number = const.opar + number1 + const.plus + number2 + const.plus + number3 +  c
 stringg = "\"" + const.opar + const.opar
 
 for ch in string.punctuation:
+    if ch != "\"":
+        stringg += ch + const.plus
+
+for ch in [" ", "\n", "\t", "\r"]:
     stringg += ch + const.plus
 
-stringg += " " + const.plus + digits + const.plus + letter + const.cpar + const.star + const.cpar + "\""
-
+stringg += "\\\"" + const.plus + digits + const.plus + letter + const.cpar + const.star + const.cpar + "\""
 
 hulk_lexer = Lexer(
     [
@@ -60,7 +63,7 @@ hulk_lexer = Lexer(
         ("type", "type"),
         ("arrow", "=>"),
         ("equal", "="),
-        *[(x, x) for x in ["if", "else", "elif", "protocol", "in", "let", "function", "inherits", "extends", "while", "for", "true", "false", "self", "new", "base"]],
+        *[(x, x) for x in ["if", "else", "elif", "protocol", "in", "let", "function", "inherits", "extends", "while", "for", "true", "false", "self", "new", "base", "is", "as"]],
         ("destrucOp", ":="),
         ("doubleOr", "||"),
         ("or", "|"),

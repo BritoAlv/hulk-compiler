@@ -24,7 +24,7 @@ defaultHulkProgram = """
             edad = edad;
             Ladrar(a: number, af: string) : number => print("Wolf" @ "Wolf");
         }
-        let a = new Perro("Negro", 7), b = [1, 3] in b;
+        let a = new Perro("Negro", 7), b = [1, "3"] in b[1];
         """
 
 inputStr = defaultHulkProgram

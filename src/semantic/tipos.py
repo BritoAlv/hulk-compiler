@@ -1,16 +1,20 @@
-from calendar import c
-from os import name
-from turtle import right
-from sqlalchemy import false
-from traitlets import default
 from common.ErrorLogger.ErrorLogger import ErrorLogger
 from common.ast_nodes.expressions import *
 from common.ast_nodes.expressions import VectorGetNode
 from common.ast_nodes.statements import *
 from common.visitor import Visitor
 
+class ComputedValue:
+    def __init__(self, type, value = None) -> None:
+        self.type = type
+        self.value = value 
 
-
+class Vector:
+    def __init__(self, values) -> None:
+        self.values = values
+    def __str__(self) -> str:
+        return "Vector"
+    
 class Type:
     def __init__(self, name, args) -> None:
         self.name = name
@@ -419,7 +423,7 @@ class TypeCheckerVisitor(Visitor):
     def visit_if_node(self, if_node : IfNode):
         for (i, j) in if_node.body:
             self.context.create_child_context()
-            if i.accept(self) != "bolean":
+            if i.accept(self).type != "bolean":
                 self.error_logger.add("condicion mal")
                 continue
             j.accept(self)
@@ -430,10 +434,23 @@ class TypeCheckerVisitor(Visitor):
         return value
 
     def visit_explicit_vector_node(self, explicit_vector_node : ExplicitVectorNode):
-        return "Vector"
-
+        values = []
+        types = []
+        for i in explicit_vector_node.items:
+            j = i.accept(self)
+            values.append(j.value)
+            types.append(j.type)
+        return ComputedValue(Vector(types), values)
+    
     def visit_implicit_vector_node(self, implicit_vector_node : ImplicitVectorNode):
-        return "Vector"
+        self.context.create_child_context()
+        self.context.define(implicit_vector_node.target)
+        if implicit_vector_node.iterable.accept(self).type != "Iterable":
+            self.error_logger.add("no iterable")
+            return ComputedValue('object')
+        value = implicit_vector_node.result.accept(self)
+        self.context.remove_child_context()
+        return value
 
     def visit_destructor_node(self, destructor_node : DestructorNode):
         pass
@@ -459,7 +476,13 @@ class TypeCheckerVisitor(Visitor):
         pass
 
     def visit_vector_get_node(self, vector_get_node : VectorGetNode):
-        pass
+        left = vector_get_node.left.accept(self)
+        index = vector_get_node.index.accept(self)
+        if (isinstance(left.type, Vector) and index.type == "number"):
+            if index.value >= len(left.value):
+                self.error_logger.add("indice fuera de rango")
+                return ComputedValue("object")
+            return left.value[index.value]
 
     def visit_new_node(self, new_node : NewNode):
         type = self.context.get_type(new_node.id.lexeme) 
@@ -468,16 +491,16 @@ class TypeCheckerVisitor(Visitor):
             mk = False
             for (i, j) in enumerate(new_node.args, 0):
                 arg_type = j.accept(self)
-                if i < len(args) and args[i].type != arg_type:
+                if i < len(args) and args[i].type != arg_type.type:
                     self.error_logger.add("argumentos incorrecto de tipo " + args[i].type + " " + new_node.id.lexeme)
                     continue
                 if i >= len(args):
                     self.error_logger.add("argumentos de mas " + new_node.id.lexeme)
                     continue
                     
-            return type.name
+            return ComputedValue(type.name)
         self.error_logger.add("clase no definida " + new_node.id.lexeme)
-        return "object"
+        return ComputedValue("object")
 
     def visit_binary_node(self, binary_node : BinaryNode):
         left = binary_node.left.accept(self)
@@ -511,13 +534,13 @@ class TypeCheckerVisitor(Visitor):
     def visit_literal_node(self, literal_node : LiteralNode):
         match literal_node.id.type:
             case "false":
-                return "bolean"
+                return ComputedValue("bolean", literal_node.id.lexeme)
             case "true":
-                return "bolean"
+                return ComputedValue("bolean", literal_node.id.lexeme)
             case "number":
-                return "number"
+                return ComputedValue("number", int(literal_node.id.lexeme))
             case "string":
-                return "string"
+                return ComputedValue("string", literal_node.id.lexeme)
             case "id":
                 return self.context.is_defined(literal_node.id.lexeme)
         return "object"
