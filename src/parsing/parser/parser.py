@@ -105,7 +105,7 @@ class Parser:
             "VectorElems": [lambda s: [s[1]] + s[2], lambda s: []],
             "VectorTail": [lambda s: [s[2]] + s[3], lambda s: []],
             'NewExpr': [self.new_expr],
-            "As": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
+            "As": [lambda s: BinaryNode(s[1], s[2].token, LiteralNode(s[3].token)), lambda s: s[1]],
             "LogicOr": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
             "LogicAnd": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
             "Equality": [
