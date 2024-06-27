@@ -2,6 +2,7 @@
 nl: .asciiz "\n"
 true: .asciiz "true"
 false: .asciiz "false"
+null: .asciiz "Null reference error"
 one: .float 1.0
 
 .text
@@ -19,6 +20,8 @@ one: .float 1.0
 .globl build_bool
 .globl build_number
 .globl build_str
+.globl build_null
+.globl null_error
 # .globl done # Simulation code
 
 #** Constructors
@@ -56,6 +59,14 @@ build_str:
 	li $t1 2 # Type-id is 0 for bool data type
 	sw $t1 ($v0)
 	sw $t0 4($v0)
+	jr $ra
+
+build_null:
+	li $a0 8
+    li $v0 9
+    syscall
+    li $t0 -1
+    sw $t0 4($v0)
 	jr $ra
 
 #** Printing code
@@ -436,5 +447,14 @@ mod:
 
 	addi $sp $sp 8
 	jr $ra
+
+null_error:
+	la $a0 null
+	jal build_str
+	sw $v0 -4($sp)
+	jal print_str
+	li $a0 1
+	li $v0 17
+	syscall
 
 # done: # Simulation code
