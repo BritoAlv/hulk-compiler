@@ -1,4 +1,60 @@
-## 1
+# Passed
+
+##
+
+```hulk
+type A(id : string) 
+{
+    id = id;
+    jump() : object => print(self.id);
+    greet() : object => print("Call me" @@ self.id);
+}
+
+type B(id : string, size : number) inherits A(id)
+{
+    size = size;
+    jump() : object => print("My size is" @@ self.size);
+}
+
+type C inherits B { }
+
+let a = new A("Pancho"), b = new B("Jenn", 20), c = new C("John", 30) in 
+{
+    a.jump();
+    b.jump();
+    b.greet();
+    c.jump();
+    c.greet();
+};
+```
+
+##
+
+```hulk
+type Knight inherits Person {
+    name() : string => "Sir" @@ base();
+}
+
+type Person(firstname : string, lastname : string) {
+    firstname = firstname;
+    lastname = lastname;
+    ada = 43;
+    name() : string => self.firstname @@ self.lastname;
+    hash() : number {
+        self.ada;
+    };
+}
+
+let phil = new Knight("Phil", "Collins"), thomas = new Person("Thomas", "Shelby") in 
+{
+    print(phil.name());
+    print(thomas.name());
+    print(phil.hash());
+    print(thomas.hash());
+};
+```
+
+## 
 ```hulk
 function factorial(n : number) : number => 
 if (n < 1)
@@ -9,7 +65,7 @@ else
 print(factorial(5));
 ```
 
-## 2
+##
 ```hulk
 function fibonacci(n : number) : number => 
 if (n < 2)
@@ -20,7 +76,7 @@ else
 print(fibonacci(5));
 ```
 
-## 3
+##
 ```hulk
 function fibonacci(n : number) : number => 
 let index = 0, next = 1, current = 1, temp = next, condition = true in 
@@ -41,20 +97,21 @@ let index = 0, next = 1, current = 1, temp = next, condition = true in
 print(fibonacci(40));
 ```
 
-## 4
 ```hulk
 function fib(n : number) : number => if (n == 0 | n == 1) 1 else fib(n-1) + fib(n-2);
 
 print(fib(6));
 ```
 
-## 5
+# Not Passed
+
+## 5 (Not HULK valid)
 ```hulk
 function fib(n : number, n : number) : number => 2;
 print(fib(6));
 ```
 
-## 6
+## 6 (Not HULK valid)
 ```hulk
 function fib(n : number, n : number) : nn + 1;
 ```
