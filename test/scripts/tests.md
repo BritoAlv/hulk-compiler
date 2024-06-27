@@ -504,3 +504,10 @@ let stack = new Stack() in
     print("Count:" @@ stack.getCount());
 };
 ```
+
+## 35
+"""
+{
+    print("\\\" a"); 
+}
+"""
