@@ -177,6 +177,40 @@ let interval = new Range(1, 5, 1) in
 };
 ```
 
+```hulk
+type Node(value : number)
+{
+    value = value;
+    previous = 0 as object;
+    next = 0 as object;
+    getValue() : number => self.value;
+    setPrevious(node : Node) : Node => self.previous := node; 
+    getPrevious() : Node => self.previous;
+}
+
+{
+    print(("Casa" as bool) is string);
+    print(("Casa" as bool) is bool);
+
+    let node = new Node(40), previous = node.getPrevious() in 
+    {
+        if (previous is Node)
+            print(previous.getValue())
+        else
+            print("Null pointer");
+        
+        previous := node.setPrevious(new Node(30));
+
+        if (previous is Node)
+            print(previous.getValue())
+        else
+            print("Null pointer");
+        
+        print(node.getValue());
+    };
+};
+```
+
 # Not Passed
 
 ## (Not HULK valid) : Self cannot be assign to an attribute
