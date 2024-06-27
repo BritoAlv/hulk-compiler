@@ -183,6 +183,111 @@ let interval = new Range(1, 5, 1) in
 ```
 
 ```hulk
+let i = 0 in
+while (i < 10) 
+    print(i := i + 1);
+```
+
+```hulk
+type Range(start : number, end : number, offset : number) {
+    start = start;
+    end = end;
+    current = start - offset;
+    offset = offset;
+
+    next(): bool => (self.current := self.current + self.offset) < self.end ;
+    current(): number => self.current;
+}
+
+for (n in new Range(1, 10, 1)) print(n);
+```
+
+```hulk
+type Stack
+{
+    count = 0;
+    top : Node = (while(false) 0) as Node;
+    index = 0;
+    currentProp = while(false) 0 as Node;
+
+    push(value : number) : number => let node = new Node(value) in 
+    {
+        if (self.count == 0)
+        {
+            self.top := node;
+            self.count := 1;
+        }
+        else
+        {
+            self.top.setNext(node);
+            node.setPrevious(self.top);
+            self.top := node;
+            self.count := self.count + 1;
+        };
+
+        self.currentProp := self.top;
+        self.index := self.count;
+        value;
+    };
+    
+    peek() : number => self.top.getValue();
+
+    getCount() : number => self.count;
+
+    next() : bool 
+    {
+        if (self.index == self.count & self.index > 0)
+        {
+            self.currentProp := self.top;
+            self.index := self.index - 1;
+            true;
+        }
+        elif (self.index > 0)
+        {
+            self.currentProp := self.currentProp.getPrevious();
+            self.index := self.index - 1;
+            true;
+        }
+        else
+            false;
+    }
+
+    current() : number => self.currentProp.getValue(); 
+}
+
+type Node(value : number) 
+{
+    value = value;
+    previous : Node = while(false) 0;
+    next : Node = while(false) 0;
+    getValue() : number => self.value;
+    getNext() : Node => self.next;
+    getPrevious() : Node => self.previous;
+    setNext(node : Node) : Node => self.next := node;
+    setPrevious(node : Node) : Node => self.previous := node;
+}
+
+let s = new Stack() in 
+{
+    s.push(1);
+    s.push(2);
+    s.push(3);
+    
+    for (elem in s) 
+        print(elem);
+
+    print("\n");
+
+    s.push(10);
+    s.push(25);
+    s.push(100);
+
+    for (elem in s) 
+        print(elem);
+};
+```
+
+```hulk
 type Node(value : number)
 {
     value = value;
