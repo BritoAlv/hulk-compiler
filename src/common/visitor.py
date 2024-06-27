@@ -37,10 +37,6 @@ class Visitor(ABC):
         pass
 
     @abstractmethod
-    def visit_for_node(self, for_node : ForNode):
-        pass
-
-    @abstractmethod
     def visit_if_node(self, if_node : IfNode):
         pass
 

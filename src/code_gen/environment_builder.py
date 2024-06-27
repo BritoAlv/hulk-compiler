@@ -168,9 +168,6 @@ class EnvironmentBuilder(Visitor):
         self._build(while_node.condition)
         self._build(while_node.body)
 
-    def visit_for_node(self, for_node: ForNode):
-        pass
-
     def visit_new_node(self, new_node: NewNode):
         for arg in new_node.args:
             self._build(arg)

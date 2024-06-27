@@ -77,9 +77,6 @@ class ConstructorBuilder(Visitor):
     def visit_while_node(self, while_node: WhileNode):
         pass
 
-    def visit_for_node(self, for_node: ForNode):
-        pass
-
     def visit_new_node(self, new_node: NewNode):
         pass
     

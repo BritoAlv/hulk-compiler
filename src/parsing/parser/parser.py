@@ -96,7 +96,42 @@ class Parser:
             "IfExpr": [lambda s: IfNode([(s[3], s[5])] + s[6], s[8])],
             "OptElif": [lambda s: [(s[3], s[5])] + s[6], lambda s: []],
             "WhileExpr": [lambda s: WhileNode(s[3], s[5])],
-            "ForExpr": [lambda s: ForNode(s[3].token, s[5], s[7])],
+            # "ForExpr": [lambda s: ForNode(s[3].token, s[5], s[7])],
+            "ForExpr": [lambda s: LetNode(
+                [
+                    AttributeNode(
+                        Token('id', 'iter'),
+                        s[5],
+                        None
+                        )
+                ],
+                WhileNode(
+                    CallNode(
+                        GetNode(
+                            LiteralNode(
+                                Token('id', 'iter')
+                            ),
+                            Token('id', 'next')
+                        ),
+                        []
+                    ),
+                    LetNode(
+                        [
+                            AttributeNode(
+                                s[3].token,
+                                CallNode(
+                                    GetNode(
+                                        LiteralNode(
+                                            Token('id', 'iter')
+                                        ),
+                                        Token('id', 'current')
+                                    ),
+                                    []
+                                ),
+                                None)
+                        ],
+                        s[7]
+            )))],
             "DestrucExpr": [self.destruct_Expr],
             "VectorExpr": [
                 lambda s: ExplicitVectorNode(s[2]),

@@ -749,9 +749,6 @@ class Generator(Visitor):
 
         return GenerationResult(code, body_result.type)
 
-    def visit_for_node(self, for_node: ForNode):
-        pass
-
     def visit_new_node(self, new_node: NewNode):
         type_name = new_node.id.lexeme
         type_data = self._resolver.resolve_type_data(type_name)
