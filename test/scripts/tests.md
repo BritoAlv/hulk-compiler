@@ -664,3 +664,13 @@ let n1 = new Node(4), n2 = new Node(6), n3 = new Node(8) in
     print("\\\" a"); 
 }
 """
+
+## 35
+"""hulk
+{
+	print("Alvaro says: 'what is a regular expression'");
+    print("Someone older says to him: \\\"let drama go\\\"");
+    print("He answers with \\\"Speak is easy\\\"");
+    print("There is no need to escape this ' symbol because in Hulk it is not a special character");
+}
+"""
