@@ -131,12 +131,14 @@ class Context():
         return True
 
 class NodeClass:
-    def __init__(self, name, sons = []) -> None:
+    def __init__(self, name, sons = [], parent = None) -> None:
         self.name = name
         self.sons = sons
+        self.parent = None
 class Hierarchy:
     def __init__(self) -> None:
-        self.root = NodeClass("object", [NodeClass("Number"), NodeClass("String"), NodeClass("Boolean")])
+        self.root = NodeClass("object", [NodeClass("number"), NodeClass("string"), NodeClass("boolean"), 
+                                         NodeClass("Iterable", [NodeClass("Vector")])])
 
     def get_type(self, actual: NodeClass, name):
         if (actual.name == name):
@@ -147,10 +149,32 @@ class Hierarchy:
         return None
     
     def add_type(self, name, ancestor_name):
+        check_name = self.get_type(self.root, name)
+        if check_name != None:
+            return None
         ancestor = self.get_type(self.root, ancestor_name)
         if ancestor != None:
             ancestor.sons.append(name)
+    
+    def get_ancestors(self, actual: NodeClass, name):
+        if (actual.name == name):
+            return [actual]
+        for i in actual.sons:
+            v = self.get_ancestors(i, name)
+            if len(v) > 0:
+                return v + [actual]
+        return []
 
+    def get_lca(self, nodo1, nodo2):
+        t1 = self.get_ancestors(self.root, nodo1)
+        t2 = self.get_ancestors(self.root, nodo2)
+        path = {}
+        for i in t1:
+            path[i.name] = True
+        for i in t2:
+            if path.get(i.name):
+                return i
+        return self.root
 # construye el contexto de los tipos definidos y chequea que no hayan dos con el mismo nombre
 class TypeCollectorVisitor(Visitor):
     def __init__(self, context : Context):
@@ -421,17 +445,23 @@ class TypeCheckerVisitor(Visitor):
         return value
 
     def visit_if_node(self, if_node : IfNode):
+        types = []
         for (i, j) in if_node.body:
             self.context.create_child_context()
             if i.accept(self).type != "bolean":
                 self.error_logger.add("condicion mal")
                 continue
-            j.accept(self)
+            types.append(j.accept(self))
             self.context.remove_child_context()
         self.context.create_child_context()
-        value = if_node.elsebody.accept(self)
+        types.append(if_node.elsebody.accept(self))
+
+        value = types[0]
+        for i in range(len(types) - 1):
+            ele = types[i]
+            value = self.hierarchy.get_lca(ele, value)
         self.context.remove_child_context()
-        return value
+        return ComputedValue(value.name, None)
 
     def visit_explicit_vector_node(self, explicit_vector_node : ExplicitVectorNode):
         values = []
@@ -505,10 +535,27 @@ class TypeCheckerVisitor(Visitor):
     def visit_binary_node(self, binary_node : BinaryNode):
         left = binary_node.left.accept(self)
         right = binary_node.right.accept(self)
-        if left == right:
-            return left
-        self.error_logger.add("inconsistencia de tipos en op binaria")
-        return "object"
+        type = None
+        value = None
+        msg = ""
+        match binary_node.op.lexeme:
+            case "doubleEqual":
+                type = "boolean"
+                if left.type == right.type:
+                    value = None
+                    if left.value != None or right.value != None:
+                        value = None
+                    else:
+                        if left.value == right.value:
+                            value = True
+                        else:
+                            value = False
+                else:
+                    value = False
+        value = ComputedValue(type, value)
+        if msg != "":
+            self.error_logger.add("inconsistencia de tipos en op binaria")
+        return value
     
     def visit_unary_node(self, unary_node : UnaryNode):
         expr = unary_node.expr.accept(self)

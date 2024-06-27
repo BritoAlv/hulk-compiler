@@ -18,13 +18,13 @@ parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
-        type Perro(color : string, edad: number)
+        type Perro(color : string, color: number)
         {
             color = color;
             edad = edad;
             Ladrar(a: number, af: string) : number => print("Wolf" @ "Wolf");
         }
-        let a = new Perro("Negro", 7), b = [1, "3"] in b[1];
+        let a = new Perro("Negro", 7), c = new Perro("Negro", 7), b = [1, "3"] in b[if(2 == ) 0 else 1];
         """
 
 inputStr = defaultHulkProgram
