@@ -2,6 +2,7 @@
 nl: .asciiz "\n"
 true: .asciiz "true"
 false: .asciiz "false"
+null: .asciiz "Null reference error"
 one: .float 1.0
 
 .text
@@ -19,6 +20,8 @@ one: .float 1.0
 .globl build_bool
 .globl build_number
 .globl build_str
+.globl build_null
+.globl null_error
 # .globl done # Simulation code
 
 #** Constructors
@@ -56,6 +59,14 @@ build_str:
 	li $t1 2 # Type-id is 0 for bool data type
 	sw $t1 ($v0)
 	sw $t0 4($v0)
+	jr $ra
+
+build_null:
+	li $a0 8
+    li $v0 9
+    syscall
+    li $t0 -1
+    sw $t0 4($v0)
 	jr $ra
 
 #** Printing code
@@ -287,13 +298,13 @@ str_space_concat:
 #** Conversions code
 
 number_to_str:
-	addi $sp $sp -8
+	addi $sp $sp -12
 	sw $ra 4($sp)
 	sw $s0 8($sp)
 	
 	cvt.w.s $f12 $f12
-	swc1 $f12 8($sp)
-	lw $a0 8($sp)
+	swc1 $f12 12($sp)
+	lw $a0 12($sp)
 	move $s0 $a0
 	abs $a0 $a0
 	
@@ -304,7 +315,7 @@ number_to_str:
 	beq $s0 1 number_to_str_negative
 	lw $ra 4($sp)
 	lw $s0 8($sp)
-	addi $sp $sp 8
+	addi $sp $sp 12
 	jr $ra
 
 	number_to_str_negative:
@@ -322,7 +333,7 @@ number_to_str:
 	
 	lw $ra 4($sp)
 	lw $s0 8($sp)
-	addi $sp $sp 8
+	addi $sp $sp 12
 	jr $ra
 	
 int_to_str:
@@ -436,5 +447,14 @@ mod:
 
 	addi $sp $sp 8
 	jr $ra
+
+null_error:
+	la $a0 null
+	jal build_str
+	sw $v0 -4($sp)
+	jal print_str
+	li $a0 1
+	li $v0 17
+	syscall
 
 # done: # Simulation code

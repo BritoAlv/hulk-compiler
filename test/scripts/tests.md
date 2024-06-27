@@ -1,4 +1,60 @@
-## 1
+# Passed
+
+##
+
+```hulk
+type A(id : string) 
+{
+    id = id;
+    jump() : object => print(self.id);
+    greet() : object => print("Call me" @@ self.id);
+}
+
+type B(id : string, size : number) inherits A(id)
+{
+    size = size;
+    jump() : object => print("My size is" @@ self.size);
+}
+
+type C inherits B { }
+
+let a = new A("Pancho"), b = new B("Jenn", 20), c = new C("John", 30) in 
+{
+    a.jump();
+    b.jump();
+    b.greet();
+    c.jump();
+    c.greet();
+};
+```
+
+##
+
+```hulk
+type Knight inherits Person {
+    name() : string => "Sir" @@ base();
+}
+
+type Person(firstname : string, lastname : string) {
+    firstname = firstname;
+    lastname = lastname;
+    ada = 43;
+    name() : string => self.firstname @@ self.lastname;
+    hash() : number {
+        self.ada;
+    };
+}
+
+let phil = new Knight("Phil", "Collins"), thomas = new Person("Thomas", "Shelby") in 
+{
+    print(phil.name());
+    print(thomas.name());
+    print(phil.hash());
+    print(thomas.hash());
+};
+```
+
+## 
 ```hulk
 function factorial(n : number) : number => 
 if (n < 1)
@@ -9,7 +65,7 @@ else
 print(factorial(5));
 ```
 
-## 2
+##
 ```hulk
 function fibonacci(n : number) : number => 
 if (n < 2)
@@ -20,7 +76,7 @@ else
 print(fibonacci(5));
 ```
 
-## 3
+##
 ```hulk
 function fibonacci(n : number) : number => 
 let index = 0, next = 1, current = 1, temp = next, condition = true in 
@@ -41,53 +97,339 @@ let index = 0, next = 1, current = 1, temp = next, condition = true in
 print(fibonacci(40));
 ```
 
-## 4
+##
 ```hulk
 function fib(n : number) : number => if (n == 0 | n == 1) 1 else fib(n-1) + fib(n-2);
 
 print(fib(6));
 ```
 
-## 5
+##
+```hulk
+print(print(2)); # Prints pointer address
+```
+
+##
+```hulk
+print(print(2) as number); # Prints 2
+```
+
+##
+```hulk
+let a = "Thomas", a = "John" in 
+{
+    let a = "Shelby" in print(a);
+    let b = a @@ "McArthur" in print(b);
+    print(a);
+};
+```
+
+##
+```hulk
+{
+    let a = 6 in
+        let b = a * 7 in
+            print(b);
+    
+    print(let b = 6 in b * 7);
+
+    let a = 20 in {
+        let a = 42 in print(a);
+        print(a);
+    };
+
+    let a = 7, a = 7 * 6 in print(a);
+
+    let a = 0 in {
+        print(a);
+        a := 1;
+        print(a);
+    };
+
+    let a = 0 in
+        let b = a := 1 in {
+            print(a);
+            print(b);
+        };
+};
+```
+
+```hulk
+type Range(start : number, end : number, offset : number) {
+    start = start;
+    end = end;
+    current = start - offset;
+    offset = offset;
+
+    next(): bool => (self.current := self.current + self.offset) < self.end ;
+    current(): number => self.current;
+}
+
+let interval = new Range(1, 5, 1) in 
+{
+    print(interval.next());
+    print(interval.current());
+    print(interval.next());
+    print(interval.current());
+    print(interval.next());
+    print(interval.current());
+    print(interval.next());
+    print(interval.current());
+    print(interval.next());
+    print(interval.current());
+    print(interval.next());
+    print(interval.current());
+};
+```
+
+```hulk
+let i = 0 in
+while (i < 10) 
+    print(i := i + 1);
+```
+
+```hulk
+type Range(start : number, end : number, offset : number) {
+    start = start;
+    end = end;
+    current = start - offset;
+    offset = offset;
+
+    next(): bool => (self.current := self.current + self.offset) < self.end ;
+    current(): number => self.current;
+}
+
+for (n in new Range(1, 10, 1)) print(n);
+```
+
+```hulk
+type Stack
+{
+    count = 0;
+    top : Node = (while(false) 0) as Node;
+    index = 0;
+    currentProp = while(false) 0 as Node;
+
+    push(value : number) : number => let node = new Node(value) in 
+    {
+        if (self.count == 0)
+        {
+            self.top := node;
+            self.count := 1;
+        }
+        else
+        {
+            self.top.setNext(node);
+            node.setPrevious(self.top);
+            self.top := node;
+            self.count := self.count + 1;
+        };
+
+        self.currentProp := self.top;
+        self.index := self.count;
+        value;
+    };
+    
+    peek() : number => self.top.getValue();
+
+    getCount() : number => self.count;
+
+    next() : bool 
+    {
+        if (self.index == self.count & self.index > 0)
+        {
+            self.currentProp := self.top;
+            self.index := self.index - 1;
+            true;
+        }
+        elif (self.index > 0)
+        {
+            self.currentProp := self.currentProp.getPrevious();
+            self.index := self.index - 1;
+            true;
+        }
+        else
+            false;
+    }
+
+    current() : number => self.currentProp.getValue(); 
+}
+
+type Node(value : number) 
+{
+    value = value;
+    previous : Node = while(false) 0;
+    next : Node = while(false) 0;
+    getValue() : number => self.value;
+    getNext() : Node => self.next;
+    getPrevious() : Node => self.previous;
+    setNext(node : Node) : Node => self.next := node;
+    setPrevious(node : Node) : Node => self.previous := node;
+}
+
+let s = new Stack() in 
+{
+    s.push(1);
+    s.push(2);
+    s.push(3);
+    
+    for (elem in s) 
+        print(elem);
+
+    print("\n");
+
+    s.push(10);
+    s.push(25);
+    s.push(100);
+
+    for (elem in s) 
+        print(elem);
+};
+```
+
+```hulk
+type Node(value : number)
+{
+    value = value;
+    previous = 0 as object;
+    next = 0 as object;
+    getValue() : number => self.value;
+    setPrevious(node : Node) : Node => self.previous := node; 
+    getPrevious() : Node => self.previous;
+}
+
+{
+    print(("Casa" as bool) is string);
+    print(("Casa" as bool) is bool);
+
+    let node = new Node(40), previous = node.getPrevious() in 
+    {
+        if (previous is Node)
+            print(previous.getValue())
+        else
+            print("Null pointer");
+        
+        previous := node.setPrevious(new Node(30));
+
+        if (previous is Node)
+            print(previous.getValue())
+        else
+            print("Null pointer");
+        
+        print(node.getValue());
+    };
+};
+```
+
+```hulk
+type Node(value : number) 
+{
+    value = value;
+    previous = while(false) 0;
+    getPrevious() : Node => self.previous;
+    setPrevious(node : Node) : Node => self.previous := node;
+    getValue() : number => self.value;
+}
+
+let a = new Node(10) in 
+{
+    a.setPrevious(new Node(20));
+    print(a.getValue());
+    print(a.getPrevious().getValue());
+    a.getPrevious().getPrevious().getValue(); # Null reference error
+};
+```
+
+# Not Passed
+
+## (Not HULK valid) : Self cannot be assign to an attribute
+```hulk
+type Stack
+{
+    top = new Node(0);
+    count = 0;
+
+    push(n : number) : number => let pushedNode = new Node(n) in 
+    {
+        pushedNode.addPrevious(self.top);
+        self.top.addNext(pushedNode);
+        self.top := pushedNode;
+        self.count := self.count + 1;
+        n;
+    };
+
+    pop(n : number) : number => let popped = self.top.getValue() in 
+    {
+        self.top := self.top.getPrevious();
+        self.count := self.count - 1;
+        popped;
+    };
+
+    peek() : number => self.top.getValue();
+
+    getCount() : number => self.count;
+}
+
+type Node(value : number)
+{
+    value = value;
+    previous = self;
+    next = self;
+    addPrevious(previous : Node) : Node => self.previous := previous;
+    addNext(next : Node) : Node => self.next := next;
+    getPrevious() : Node => self.previous;
+    getNext() : Node => self.next;
+    print() : number => print(self.value);
+    getValue() : number => self.value;
+}
+
+let stack = new Stack() in
+{
+    stack.push(4);
+    print("Top:" @@ stack.peek());
+    print("Count:" @@ stack.getCount());
+    stack.push(3);
+    stack.pop();
+    stack.push(2);
+    stack.push(5);
+    stack.pop();
+    stack.pop();
+    print("Top:" @@ stack.peek());
+    print("Count:" @@ stack.getCount());
+    stack.push(10);
+    print("Top:" @@ stack.peek());
+    print("Count:" @@ stack.getCount());
+};
+```
+
+## (Not HULK valid)
+```hulk
+let a = "Thomas" in 
+{
+    let a = a @@ "Shelby" in print(a);
+    print(a);
+};
+```
+
+## 5 (Not HULK valid)
 ```hulk
 function fib(n : number, n : number) : number => 2;
 print(fib(6));
 ```
 
-## 6
+## 6 (Not HULK valid)
 ```hulk
 function fib(n : number, n : number) : nn + 1;
 ```
 
-## 7
-```hulk
-print(print(2));
-```
-
-## 8
+## 8 (Not HULK valid)
 ```hulk
 print("a" + 2);
 ```
 
-## 9
+## 9 (Not HULK valid)
 ```hulk
 let x = 2 in print(x + y);
-```
-
-## 10
-```hulk
-type Knight inherits Person {
-    name() => "Sir" @@ base();
-}
-type Person(firstname, lastname) {
-    firstname = firstname;
-    lastname = lastname;
-    ada = 43;
-    name() => self.firstname @@ self.lastname;
-    hash() : Number {
-        5;
-    }
-}
 ```
 
 ## 11
@@ -95,26 +437,26 @@ type Person(firstname, lastname) {
 print(sin(10));
 ```
 
-## 12
+## 12 (Not HULK valid)
 ```hulk
 function g() => f(x);
 function f() => g(x);
 print("Boom");
 ```
 
-## 13
+## 13 (Not HULK valid)
 ```hulk
 function g(x) => f(x);
 function f(x) => g(x);
 print("Semantic should work but code don't");
 ```
 
-## 14
+## 14 
 ```hulk
 print("The message is \"Hello World\"");
 ```
 
-## 15
+## 15 (Not HULK valid)
 ```hulk
 let a = 10 in { 
             a := "A";
@@ -132,11 +474,12 @@ let p = new Knight("Phil", "Collins") in
     print(p.name());
 ```
 
-## 17
+## 17 (Not HULK valid)
 ```hulk
 let pt = new PolarPoint(3,4) in
     print("rho: " @ pt.rho());
 ```
+
 ## 18
 ```hulk
 # print first square greater or equal than x.
@@ -445,62 +788,18 @@ let n1 = new Node(4), n2 = new Node(6), n3 = new Node(8) in
 ```
 
 ## 34
-
-```hulk
-type Stack
+"""
 {
-    top = new Node(0);
-    count = 0;
-
-    push(n : number) : number => let pushedNode = new Node(n) in 
-    {
-        pushedNode.addPrevious(self.top);
-        self.top.addNext(pushedNode);
-        self.top := pushedNode;
-        self.count := self.count + 1;
-        n;
-    };
-
-    pop(n : number) : number => let popped = self.top.getValue() in 
-    {
-        self.top := self.top.getPrevious();
-        self.count := self.count - 1;
-        popped;
-    };
-
-    peek() : number => self.top.getValue();
-
-    getCount() : number => self.count;
+    print("\\\" a"); 
 }
+"""
 
-type Node(value : number)
+## 35
+"""hulk
 {
-    value = value;
-    previous = self;
-    next = self;
-    addPrevious(previous : Node) : Node => self.previous := previous;
-    addNext(next : Node) : Node => self.next := next;
-    getPrevious() : Node => self.previous;
-    getNext() : Node => self.next;
-    print() : number => print(self.value);
-    getValue() : number => self.value;
+	print("Alvaro says: 'what is a regular expression'");
+    print("Someone older says to him: \\\"let drama go\\\"");
+    print("He answers with \\\"Speak is easy\\\"");
+    print("There is no need to escape this ' symbol because in Hulk it is not a special character");
 }
-
-let stack = new Stack() in
-{
-    stack.push(4);
-    print("Top:" @@ stack.peek());
-    print("Count:" @@ stack.getCount());
-    stack.push(3);
-    stack.pop();
-    stack.push(2);
-    stack.push(5);
-    stack.pop();
-    stack.pop();
-    print("Top:" @@ stack.peek());
-    print("Count:" @@ stack.getCount());
-    stack.push(10);
-    print("Top:" @@ stack.peek());
-    print("Count:" @@ stack.getCount());
-};
-```
+"""

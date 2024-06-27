@@ -210,9 +210,6 @@ class TypeCollectorVisitor(Visitor):
     def visit_while_node(self, while_node : WhileNode):
         pass
 
-    def visit_for_node(self, for_node : ForNode):
-        pass
-
     def visit_if_node(self, if_node : IfNode):
         pass
 
@@ -331,9 +328,6 @@ class TypeBuilderVisitor(Visitor):
     def visit_while_node(self, while_node : WhileNode):
         pass
 
-    def visit_for_node(self, for_node : ForNode):
-        pass
-
     def visit_if_node(self, if_node : IfNode):
         pass
 
@@ -434,15 +428,6 @@ class TypeCheckerVisitor(Visitor):
         self.context.remove_child_context()
         return value
 
-    def visit_for_node(self, for_node : ForNode):
-        self.context.create_child_context()
-        if for_node.iterable.accept(self) != "Iterable":
-            self.error_logger.add("no iterable")
-        if self.context.is_defined(for_node.target.lexeme) != None:
-            self.error_logger.add("target for ya definida")
-        value = for_node.body.accept(self)
-        self.context.remove_child_context()
-        return value
 
     def visit_if_node(self, if_node : IfNode):
         types = []

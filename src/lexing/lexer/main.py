@@ -40,6 +40,8 @@ for ch in string.punctuation:
 for ch in [" ", "\n", "\t", "\r"]:
     stringg += ch + const.plus
 
+stringg += "\\\'" + const.plus
+
 stringg += "\\\"" + const.plus + digits + const.plus + letter + const.cpar + const.star + const.cpar + "\""
 
 hulk_lexer = Lexer(
@@ -63,7 +65,9 @@ hulk_lexer = Lexer(
         ("type", "type"),
         ("arrow", "=>"),
         ("equal", "="),
-        *[(x, x) for x in ["if", "else", "elif", "protocol", "in", "let", "function", "inherits", "extends", "while", "for", "true", "false", "self", "new", "base", "is", "as"]],
+        *[(x, x) for x in ["if", "else", "elif", "protocol", "in", "let", "function", "inherits", "extends", "while", "for", "true", "false", "self", "new", "base"]],
+        ("isOp", "is"),
+        ("asOp", "as"),
         ("destrucOp", ":="),
         ("doubleOr", "||"),
         ("or", "|"),

@@ -1,8 +1,6 @@
-
-from time import sleep
-from code_gen.environment import STR_TYPE_ID, Context, Environment, FunctionData, TypeData, VarData
+from code_gen.environment import OBJ_TYPE_ID, Context, Environment, FunctionData, TypeData, VarData
 from common.graph import Graph
-from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, ForNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, NewNode, SetNode, UnaryNode, VectorGetNode, VectorSetNode, WhileNode
+from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, NewNode, SetNode, UnaryNode, VectorGetNode, VectorSetNode, WhileNode
 from common.ast_nodes.statements import AttributeNode, MethodNode, ProgramNode, ProtocolNode, SignatureNode, Statement, TypeNode
 from common.visitor import Visitor
 
@@ -12,7 +10,7 @@ class EnvironmentBuilder(Visitor):
         self._context : Context = None
 
         self._var_index : int = 0
-        self._type_index : int = STR_TYPE_ID + 1
+        self._type_index : int = OBJ_TYPE_ID + 1
 
         self._func_name : str
         self._type_name : str
@@ -75,8 +73,8 @@ class EnvironmentBuilder(Visitor):
             value = assignment.body
             
             if var_name in self._context.variables:
-                raise Exception("Cannot declare the same variable twice in the same scope")
-            elif var_name in function_data.params:
+                continue
+            if var_name in function_data.params:
                 raise Exception("Variable is already used as a parameter name")
             
             self._context.variables[var_name] = VarData(self._var_index)
@@ -133,7 +131,8 @@ class EnvironmentBuilder(Visitor):
             type_data.ancestor = ancestor
             self._type_graph.add((ancestor, type_name))
         else:
-            self._type_graph.add_vertex(type_name)
+            if type_name not in self._type_graph.vertices:
+                self._type_graph.add_vertex(type_name)
             self._root_types.append(type_name)
             
 
@@ -146,34 +145,37 @@ class EnvironmentBuilder(Visitor):
         self._type_name = None # Restore to None since we're exiting the node
 
     def visit_unary_node(self, unary_node : UnaryNode):
-        pass
+        self._build(unary_node.expr)
 
     def visit_protocol_node(self, protocol_node: ProtocolNode):
         pass
 
     def visit_attribute_node(self, attribute_node: AttributeNode):
-        pass
+        self._build(attribute_node.body)
 
     def visit_signature_node(self, signature_node: SignatureNode):
         pass
     
     def visit_if_node(self, if_node: IfNode):
-        pass
+        for if_pair in if_node.body:
+            self._build(if_pair[0])
+            self._build(if_pair[1])
+        
+        self._build(if_node.elsebody)
 
     def visit_while_node(self, while_node: WhileNode):
-        pass
-
-    def visit_for_node(self, for_node: ForNode):
-        pass
+        self._build(while_node.condition)
+        self._build(while_node.body)
 
     def visit_new_node(self, new_node: NewNode):
-        pass
+        for arg in new_node.args:
+            self._build(arg)
     
     def visit_get_node(self, get_node: GetNode):
         pass
 
     def visit_set_node(self, set_node: SetNode):
-        pass
+        self._build(set_node.value)
 
     def visit_explicit_vector_node(self, explicit_vector_node: ExplicitVectorNode):
         pass
@@ -195,16 +197,11 @@ class EnvironmentBuilder(Visitor):
     
     def _create_context(self):
         old_context = self._context
-        func_data = self._environment.get_function_data(self._func_name)
-
-        if old_context == None:
-            self._context = Context()
-            func_data.context = self._context
-        else:
-            new_context = Context()
-            new_context.parent = old_context
-            old_context.children.append(new_context)
-            self._context = new_context
+        
+        new_context = Context()
+        new_context.parent = old_context
+        old_context.children.append(new_context)
+        self._context = new_context
 
         return old_context
     

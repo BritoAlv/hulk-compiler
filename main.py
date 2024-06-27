@@ -1,5 +1,7 @@
 import argparse
 import sys
+
+from code_gen.constructor_builder import ConstructorBuilder
 from code_gen.environment_builder import EnvironmentBuilder
 from code_gen.generator import Generator
 from code_gen.resolver import Resolver
@@ -31,9 +33,36 @@ inputStr = defaultHulkProgram
 
 def codeGen(inputStr : str):
     tokens = hulk_lexer.scanTokens(inputStr)
+    if hulk_lexer.report(inputStr) :
+        sys.exit(1)
+    if show:
+        print("Tokens:")
+        for token in tokens:
+            print(token)
+        print("\n")
+    return tokens
+
+def parse(inputStr : str, show = False) -> ParseTree:
+    tokens = lex(inputStr)
     parser = Parser()
     parse_tree = parser.parse(tokens)
     ast = parser.toAst(parse_tree)
+    if show:
+        print("AST:")
+        print(ast.accept(TreePrinter()))
+        print("\n")
+    return ast
+
+def semantic_analysis(inputStr : str) -> ProgramNode:
+    treeAst = ast(inputStr)
+    sem_an = SemanticAnalysis()
+    #sem_an.run(treeAst)
+    return treeAst
+
+def codeGen(inputStr : str, show = False) -> str:
+    ast = semantic_analysis(inputStr)
+    constructor_builder = ConstructorBuilder()
+    constructor_builder.build(ast)
     environment_builder = EnvironmentBuilder()
     environment = environment_builder.build(ast)
     resolver = Resolver(environment)
@@ -109,5 +138,5 @@ if args.semantic_analysis:
 if args.codegen:
     codeGen(inputStr)
 
-if args.run:
-    pass
+    if args.run:
+        run(inputStr)

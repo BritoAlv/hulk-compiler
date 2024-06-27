@@ -30,8 +30,6 @@ class Parser:
             "TypedParamList": [lambda s: [(s[1], s[3])] + s[4], lambda s: []],
             "TypedParamTail": [lambda s: [(s[2], s[4])] + s[5], lambda s: []],
             "TypeDecl": [
-                # lambda s: TypeNode(s[2].token, 
-                # [(x.token, y.token if y != None else y) for (x, y) in s[3]], s[6][0], s[6][1], s[4][0].token if s[4][0] != None else s[4][0],  s[4][1]),
                 lambda s: TypeNode(s[2].token, 
                                    [(node.id, node.type) for node in s[6][0]],
                                    [MethodNode(Token('id', f'build'), 
@@ -98,7 +96,42 @@ class Parser:
             "IfExpr": [lambda s: IfNode([(s[3], s[5])] + s[6], s[8])],
             "OptElif": [lambda s: [(s[3], s[5])] + s[6], lambda s: []],
             "WhileExpr": [lambda s: WhileNode(s[3], s[5])],
-            "ForExpr": [lambda s: ForNode(s[3].token, s[5], s[7])],
+            # "ForExpr": [lambda s: ForNode(s[3].token, s[5], s[7])],
+            "ForExpr": [lambda s: LetNode(
+                [
+                    AttributeNode(
+                        Token('id', 'iter'),
+                        s[5],
+                        None
+                        )
+                ],
+                WhileNode(
+                    CallNode(
+                        GetNode(
+                            LiteralNode(
+                                Token('id', 'iter')
+                            ),
+                            Token('id', 'next')
+                        ),
+                        []
+                    ),
+                    LetNode(
+                        [
+                            AttributeNode(
+                                s[3].token,
+                                CallNode(
+                                    GetNode(
+                                        LiteralNode(
+                                            Token('id', 'iter')
+                                        ),
+                                        Token('id', 'current')
+                                    ),
+                                    []
+                                ),
+                                None)
+                        ],
+                        s[7]
+            )))],
             "DestrucExpr": [self.destruct_Expr],
             "VectorExpr": [
                 lambda s: ExplicitVectorNode(s[2]),
@@ -107,7 +140,7 @@ class Parser:
             "VectorElems": [lambda s: [s[1]] + s[2], lambda s: []],
             "VectorTail": [lambda s: [s[2]] + s[3], lambda s: []],
             'NewExpr': [self.new_expr],
-            "As": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
+            "As": [lambda s: BinaryNode(s[1], s[2].token, LiteralNode(s[3].token)), lambda s: s[1]],
             "LogicOr": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
             "LogicAnd": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
             "Equality": [

@@ -40,7 +40,7 @@ class Resolver:
         temp_context = self._context.parent
         while(temp_context != None):
             if var_name in temp_context.variables:
-                return self._context.variables[var_name]
+                return temp_context.variables[var_name]
 
             temp_context = temp_context.parent
 
