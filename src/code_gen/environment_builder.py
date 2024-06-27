@@ -132,7 +132,8 @@ class EnvironmentBuilder(Visitor):
             type_data.ancestor = ancestor
             self._type_graph.add((ancestor, type_name))
         else:
-            self._type_graph.add_vertex(type_name)
+            if type_name not in self._type_graph.vertices:
+                self._type_graph.add_vertex(type_name)
             self._root_types.append(type_name)
             
 
