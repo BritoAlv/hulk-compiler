@@ -20,7 +20,7 @@ AttributeDecl -> Assignment  semicolon .
 MethodDecl -> id lparen ParamList rparen OptType FuncBody .
 ParamList -> id OptType ParamTail | .
 ParamTail -> comma id OptType ParamTail | .
-FuncBody -> arrow Expr semicolon | BlockExpr semicolon .
+FuncBody -> arrow Expr semicolon | FunnyBlock .
 
 Assignment -> id OptType equal Expr .
 OptType -> colon id | .

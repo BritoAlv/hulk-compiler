@@ -3,8 +3,7 @@ from lexing.lexer_generator.finite_automata import *
 from common.token_class import *
 from common.parse_nodes.parse_tree import *
 from common.parse_nodes.parse_node import *
-
-EOF = "$"
+from common.constants import EOF
 
 import pickle
 

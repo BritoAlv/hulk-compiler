@@ -26,29 +26,17 @@ parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
-type A(id : string) 
-{
-    id = id;
-    jump() : object => print(self.id);
-    greet() : object => print("Call me" @@ self.id);
-}
-
-type B(id : string, size : number) inherits A(id)
-{
-    size = size;
-    jump() : object => print("My size is" @@ self.size);
-}
-
-type C inherits B { }
-
-let a = new A("Pancho"), b = new B("Jenn", 20), c = new C("John", 30) in 
-{
-    a.jump();
-    b.jump();
-    b.greet();
-    c.jump();
-    c.greet();
-};
+    type Person(firstname : string, lastname : string)
+    {
+        firstname = firstname;
+        lastname = lastname;
+        ada = 43;
+        name() : string => self.firstname @@ self.lastname;
+        hash() : number {
+            self.ada;
+        };
+    }
+	print("Alvaro says \\\"hablar es facil\\\"");
 """
 
 inputStr = defaultHulkProgram
@@ -57,7 +45,7 @@ inputStr = defaultHulkProgram
 def lex(inputStr : str, show = False) -> list[Token]:
     tokens = hulk_lexer.scanTokens(inputStr)
     if hulk_lexer.report(inputStr) :
-        return []
+        sys.exit(1)
     if show:
         print("Tokens:")
         for token in tokens:
