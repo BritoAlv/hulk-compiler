@@ -72,8 +72,13 @@ class Lexer:
                 if inputStr[cr] == "\n":
                     self.currentLine += 1
                     self.positionInLine = 0
+                elif inputStr[cr] == " ":
+                    self.positionInLine += 1
+                elif inputStr[cr] == "\t":
+                    self.positionInLine += 4
+                else:
+                    self.positionInLine += 1
                 cr += 1
-                self.positionInLine += 1
                 continue
             elif inputStr[cr] == "#":
                 while cr < len(inputStr) and inputStr[cr] != "\n":
@@ -104,8 +109,8 @@ class Lexer:
             while cr < len(inputStr) and self.automatas[i].next_state(inputStr[cr], st) != -1:
                 st = self.automatas[i].next_state(inputStr[cr], st)
                 cr += 1
-                if st in self.automatas[i].accepting_states:
-                    longest_matched = cr
+            if st in self.automatas[i].accepting_states:
+                longest_matched = cr
             if longest_matched != -1:
                 if matched == (-1, -1) or matched[1] < longest_matched:
                     matched = (i, longest_matched)

@@ -40,6 +40,8 @@ for ch in string.punctuation:
 for ch in [" ", "\n", "\t", "\r"]:
     stringg += ch + const.plus
 
+stringg += "\\\'" + const.plus
+
 stringg += "\\\"" + const.plus + digits + const.plus + letter + const.cpar + const.star + const.cpar + "\""
 
 hulk_lexer = Lexer(
