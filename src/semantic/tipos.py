@@ -391,7 +391,7 @@ class TypeCheckerVisitor(Visitor):
         value = ""
         for i in program_node.decls:
             value = i.accept(self)
-        print("retorno ", value)
+        print("retorno ", value.type, value.value)
 
     def visit_attribute_node(self, attribute_node : AttributeNode):
         if self.context.is_defined(attribute_node.id.lexeme) == False:
@@ -448,16 +448,17 @@ class TypeCheckerVisitor(Visitor):
         types = []
         for (i, j) in if_node.body:
             self.context.create_child_context()
-            if i.accept(self).type != "bolean":
+            if i.accept(self).type != "boolean":
                 self.error_logger.add("condicion mal")
                 continue
-            types.append(j.accept(self))
+            t = j.accept(self)
+            types.append(t)
             self.context.remove_child_context()
+
         self.context.create_child_context()
         types.append(if_node.elsebody.accept(self))
-
         value = types[0]
-        for i in range(len(types) - 1):
+        for i in range(len(types) ):
             ele = types[i]
             value = self.hierarchy.get_lca(ele, value)
         self.context.remove_child_context()
@@ -509,6 +510,12 @@ class TypeCheckerVisitor(Visitor):
         left = vector_get_node.left.accept(self)
         index = vector_get_node.index.accept(self)
         if (isinstance(left.type, Vector) and index.type == "number"):
+            if index.value == None:
+                value = left.type.values[0]
+                for i in range(len(left.type.values)):
+                    ele = left.type.values[i]
+                    value = self.hierarchy.get_lca(ele, value)
+                return ComputedValue(value, None)
             if index.value >= len(left.value):
                 self.error_logger.add("indice fuera de rango")
                 return ComputedValue("object")
@@ -539,7 +546,7 @@ class TypeCheckerVisitor(Visitor):
         value = None
         msg = ""
         match binary_node.op.lexeme:
-            case "doubleEqual":
+            case "==":
                 type = "boolean"
                 if left.type == right.type:
                     value = None
@@ -552,6 +559,7 @@ class TypeCheckerVisitor(Visitor):
                             value = False
                 else:
                     value = False
+            
         value = ComputedValue(type, value)
         if msg != "":
             self.error_logger.add("inconsistencia de tipos en op binaria")
