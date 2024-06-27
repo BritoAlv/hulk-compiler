@@ -181,7 +181,7 @@ class Generator(Visitor):
     sw $a0 {offset}($sp)
     jal stack_push
     '''
-        elif result.type == 'str':
+        elif result.type == 'string':
             code += f'''
     jal stack_pop
     lw $a0 4($v0)
