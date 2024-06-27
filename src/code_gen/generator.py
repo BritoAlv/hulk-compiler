@@ -114,8 +114,7 @@ class Generator(Visitor):
         return GenerationResult(code, type)
     
     def visit_let_node(self, let_node: LetNode):
-        self._next_context() # Move to next context, since it's a let-node
-
+        self._resolver.next() # Move to next context
         code = ''
         for assignment in let_node.assignments:
             var_name = assignment.id.lexeme
@@ -157,11 +156,13 @@ class Generator(Visitor):
     move $a0 $v0
     sw $a0 {offset}($sp)
         '''
-
+                
         result = self._generate(let_node.body)
+
         code += result.code
         type = result.type
 
+        self._resolver.next() # Move to next context
         return GenerationResult(code, type)
 
     def visit_destructor_node(self, destructor_node: DestructorNode):
@@ -923,9 +924,3 @@ class Generator(Visitor):
         func_data = self._resolver.resolve_function_data(self._func_name)
 
         return ((func_data.var_count + 2) * WORD_SIZE) - ((self._resolver.resolve_var_data(var_name).index + 1) * WORD_SIZE)
-    
-    def _next_context(self):
-        if not self._on_function_block:
-            self._resolver.next()
-        else:
-            self._on_function_block = False

@@ -74,8 +74,8 @@ class EnvironmentBuilder(Visitor):
             value = assignment.body
             
             if var_name in self._context.variables:
-                raise Exception("Cannot declare the same variable twice in the same scope")
-            elif var_name in function_data.params:
+                continue
+            if var_name in function_data.params:
                 raise Exception("Variable is already used as a parameter name")
             
             self._context.variables[var_name] = VarData(self._var_index)
@@ -195,16 +195,11 @@ class EnvironmentBuilder(Visitor):
     
     def _create_context(self):
         old_context = self._context
-        func_data = self._environment.get_function_data(self._func_name)
-
-        if old_context == None:
-            self._context = Context()
-            func_data.context = self._context
-        else:
-            new_context = Context()
-            new_context.parent = old_context
-            old_context.children.append(new_context)
-            self._context = new_context
+        
+        new_context = Context()
+        new_context.parent = old_context
+        old_context.children.append(new_context)
+        self._context = new_context
 
         return old_context
     
