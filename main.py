@@ -26,7 +26,7 @@ parser.add_argument('-r', '--run', action='store_true', help='Run the compiled a
 
 defaultHulkProgram = """
 {
-    print(4+3); 
+    print("\\\" a"); 
 }
 """
 

@@ -90,7 +90,7 @@ class Lexer:
                 else:
                     self.positionInLine += 1
             cr += len(tok.lexeme)
-            tok.lexeme = tok.lexeme.replace("\\\"", "\"")
+            #tok.lexeme = tok.lexeme.replace("\\\"", "\"")
             tokens.append(tok)
         tokens.append(Token("$", "$", self.currentLine, self.positionInLine))
         self.sanity_check(tokens)
