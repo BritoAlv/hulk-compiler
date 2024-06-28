@@ -22,9 +22,16 @@ defaultHulkProgram = """
         {
             color = color;
             edad = edad;
-            Ladrar(a: number, af: string) : number => print("Wolf" @ "Wolf");
+            Ladrar(a: number) : Vector => [12];
         }
-        let a = new Perro("Negro", 7), c = new Perro("Negro", 7), b = [1, "3"] in if(-21 <= 20) "t" else 1;
+        function h(a: number) : number =>
+            43; 
+        
+        let a = [1,2,3], b = 3, c = new Perro("ds", 3) in 
+            {
+              b:= 3; 
+              a := c.Ladrar(1);       
+            };
         """
 
 inputStr = defaultHulkProgram

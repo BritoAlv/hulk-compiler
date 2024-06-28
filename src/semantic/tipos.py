@@ -34,7 +34,7 @@ class Type:
     
     def get_method(self, name, args):
         for i in self.method:
-            if i.name == name and i.args == args:
+            if i.name == name and len(i.args) == len(args):
                 return i
         return None
 
@@ -66,15 +66,16 @@ class ContextLower():
     def __init__(self, parent = None) -> None:
         self.parent = parent
         self.dict = {}
-        self.function = {}
+        self.method = []
 
-    def is_defined(self, var) -> bool:
-        return self.dict.get(var) or (self.parent != None and self.parent.is_defined(var))
+    def is_defined(self, var) -> bool:  # da o False si no existe o el valor del dict
+        return self.dict.get(var) != None or (self.parent != None and self.parent.is_defined(var))
     
-    def is_defined_func(self, func, args) -> bool:
-        if self.function.get(func) and self.function[func] == args:
-            return True
-        return (self.parent != None and self.parent.is_defined_func(func, args))
+    def is_defined_func(self, name, args) -> bool:
+        for i in self.method:
+            if i.name == name and len(i.args) == len(args):
+                return i
+        return None
     
     def define(self, var, type) -> bool:
         if self.is_defined(var):
@@ -82,11 +83,14 @@ class ContextLower():
         self.dict[var] = type
         return True
     
-    def define_func(self, var, args) -> bool:
-        if self.is_defined_func(var, args):
+    def define_func(self, name, return_type, args) -> bool:
+        if self.is_defined_func(name, args) != None:
             return False
-        self.function[var] = True
-        return True
+        args_type = []
+        # print(args)
+        for (i, j) in args:
+            args_type.append(Attribute(i.lexeme, j.lexeme if j != None else None))
+        self.method.append(Method(name, return_type, args_type))
     
     def create_child_context(self):
         return Context(self)
@@ -100,12 +104,18 @@ class Context():
     
     def is_defined_func(self, func, args) -> bool:
         return self.context_lower.is_defined_func(func, args)
-        
+
+    def get(self, name):
+        return self.context_lower.dict[name]        
+    
+    def set(self, name, type_new):
+        self.context_lower.dict[name] = type_new
+
     def define(self, var, type) -> bool:
         return self.context_lower.define(var, type)
     
-    def define_func(self, var, args) -> bool:
-        return self.context_lower.define_func(var, args)
+    def define_func(self, var, return_type, args) -> bool:
+        return self.context_lower.define_func(var, return_type, args)
     
     def create_child_context(self):
         self.context = self.context_lower.create_child_context()
@@ -255,6 +265,7 @@ class TypeCollectorVisitor(Visitor):
     def visit_literal_node(self, literal_node : LiteralNode):
         pass
  
+
 class TypeBuilderVisitor(Visitor):
     def __init__(self, context : Context, hierarchy : Hierarchy):
         self.context = context
@@ -266,7 +277,6 @@ class TypeBuilderVisitor(Visitor):
         j = 1
         for i in program_node.decls:
             if j < len(program_node.decls):
-                # print(i, len(program_node.decls))
                 i.accept(self)
             j+=1
     
@@ -347,7 +357,6 @@ class TypeBuilderVisitor(Visitor):
         pass
 
     def visit_block_node(self, block_node : BlockNode):
-        # print(1)
         for i in block_node.exprs:
             i.accept(self)
 
@@ -377,7 +386,74 @@ class TypeBuilderVisitor(Visitor):
     def visit_unary_node(self, binary_node : UnaryNode):
         
         return True
-    
+
+
+class TypeFunctionVisitor(Visitor):
+    def __init__(self, context : Context, hierarchy : Hierarchy):
+        self.context = context
+        self.actual_type = None
+        self.hierarchy = hierarchy
+        self.error_logger = ErrorLogger()
+
+    def visit_program_node(self, program_node : ProgramNode):
+        j = 1
+        for i in program_node.decls:
+            if j < len(program_node.decls):
+                i.accept(self)
+            j+=1
+
+    def visit_attribute_node(self, attribute_node : AttributeNode):
+        pass
+    def visit_method_node(self, method_node : MethodNode):
+        id = method_node.id.lexeme
+        args = method_node.params
+        ret = method_node.type
+        if (self.context.is_defined_func(id, args)):
+            self.error_logger.add("funcion " + id + " ya definida")
+            return
+        self.context.define_func(id, ret, args)
+    def visit_type_node(self, type_node : TypeNode):
+        pass
+    def visit_signature_node(self, signature_node : SignatureNode):
+        pass
+    def visit_protocol_node(self, protocol_node : ProtocolNode):
+        pass
+    def visit_let_node(self, let_node : LetNode):
+        pass
+    def visit_while_node(self, while_node : WhileNode):
+        pass
+    def visit_for_node(self, for_node : ForNode):
+        pass
+    def visit_if_node(self, if_node : IfNode):
+        pass
+    def visit_explicit_vector_node(self, explicit_vector_node : ExplicitVectorNode):
+        pass
+    def visit_implicit_vector_node(self, implicit_vector_node : ImplicitVectorNode):
+        pass
+    def visit_destructor_node(self, destructor_node : DestructorNode):
+        pass
+    def visit_block_node(self, block_node : BlockNode):
+        pass
+    def visit_call_node(self, call_node : CallNode):
+        pass
+    def visit_get_node(self, get_node : GetNode):
+        pass
+    def visit_set_node(self, set_node : SetNode):
+        pass
+    def visit_vector_set_node(self, vector_set_node : VectorSetNode):
+        pass
+    def visit_vector_get_node(self, vector_get_node : VectorGetNode):
+        pass
+    def visit_new_node(self, new_node : NewNode):
+        pass
+    def visit_binary_node(self, binary_node : BinaryNode):
+        pass
+    def visit_unary_node(self, unary_node : UnaryNode):
+        pass
+    def visit_literal_node(self, literal_node : LiteralNode):
+        pass
+
+
 
 class TypeCheckerVisitor(Visitor):
     def __init__(self, context : Context, hierarchy : Hierarchy):
@@ -394,15 +470,16 @@ class TypeCheckerVisitor(Visitor):
         print("retorno ", value.type, value.value)
 
     def visit_attribute_node(self, attribute_node : AttributeNode):
-        if self.context.is_defined(attribute_node.id.lexeme) == False:
+        if self.context.is_defined(attribute_node.id.lexeme) == False: # variable no declarada antes
             body = attribute_node.body.accept(self)
-            if (attribute_node.type != None):
-                if (attribute_node.type.lexeme == body):
+            if (attribute_node.type != None): # si viene con tipo
+                if (attribute_node.type.lexeme == body): # si coinciden los tipos
                     self.context.define(attribute_node.id.lexeme, body)
                     return 
                 self.error_logger.add("atributo " + attribute_node.id.lexeme + " con tipo incorrecto")
                 return
-            self.context.define(attribute_node.id.lexeme, body)
+            print("attr",attribute_node.id.lexeme, body.type, body.value)
+            self.context.define(attribute_node.id.lexeme, body.type)
             return
         self.error_logger.add("atributo " + attribute_node.id.lexeme + "ya definido")
         
@@ -464,14 +541,17 @@ class TypeCheckerVisitor(Visitor):
         self.context.remove_child_context()
         return ComputedValue(value.name, None)
 
-    def visit_explicit_vector_node(self, explicit_vector_node : ExplicitVectorNode):
+    def visit_explicit_vector_node(self, explicit_vector_node : ExplicitVectorNode): # el tipo sera vector y el valor el tipo que devolveria por defecto caualquier indice
         values = []
         types = []
-        for i in explicit_vector_node.items:
-            j = i.accept(self)
-            values.append(j.value)
-            types.append(j.type)
-        return ComputedValue(Vector(types), values)
+        if len(explicit_vector_node.items) > 0:
+            type = explicit_vector_node.items[0].accept(self).type
+            for i in explicit_vector_node.items:
+                j = i.accept(self)
+                values.append(j.value)
+                types.append(j.type)
+                type = self.hierarchy.get_lca(type, j.type).name
+        return ComputedValue("Vector", type)
     
     def visit_implicit_vector_node(self, implicit_vector_node : ImplicitVectorNode):
         self.context.create_child_context()
@@ -484,8 +564,15 @@ class TypeCheckerVisitor(Visitor):
         return value
 
     def visit_destructor_node(self, destructor_node : DestructorNode):
-        pass
-
+        new = destructor_node.expr.accept(self)
+        if self.context.is_defined(destructor_node.id.lexeme) == True:
+            type = self.context.get(destructor_node.id.lexeme)
+            self.context.set(destructor_node.id.lexeme, new.type)
+            print(destructor_node.id.lexeme, (type, new.type))
+            return ComputedValue(self.hierarchy.get_lca(type, new.type).name, new.value)
+        self.error_logger.add("la variable no esta definida")
+        return ComputedValue(None, None)
+        
     def visit_block_node(self, block_node : BlockNode):
         self.context.create_child_context()
         value = "Object"
@@ -495,16 +582,43 @@ class TypeCheckerVisitor(Visitor):
         return value
 
     def visit_call_node(self, call_node : CallNode):
-        pass
+        callee = call_node.callee.accept(self)
+        if (isinstance(call_node.callee, GetNode)):
+            type = self.context.get_type(callee.type.name)
+            args = []
+            for i in call_node.args:
+                args.append(i.accept(self).type)
+            type_method = type.get_method(callee.value, args)
+            if type_method != None:
+                print(type_method.type, None)
+                return ComputedValue(type_method.type, None)
+        return ComputedValue(None, None)
 
     def visit_get_node(self, get_node : GetNode):
-        pass
+        left = get_node.left.accept(self)
+        type = self.context.get_type(left.type)
+        if self.actual_type == None:
+            if type.get_attribute(id) == None:
+                return ComputedValue(type, get_node.id.lexeme)
+            else:
+                self.error_logger.add("intentando acceder a un atributo privado")
+                return ComputedValue(None, None)
+        else:
+            if left.value == "self":
+                return ComputedValue(None, None)
+        return ComputedValue(None, None)
 
     def visit_set_node(self, set_node : SetNode):
-        pass
+        return ComputedValue(None, None)
 
     def visit_vector_set_node(self, vector_set_node : VectorSetNode):
-        pass
+        left = vector_set_node.left.accept(self)
+        if left.type == "Vector":
+            vector_set_node.index
+            vector_set_node.value
+        else:
+            self.error_logger.add("no valido vector")
+            return ComputedValue(None, None)
 
     def visit_vector_get_node(self, vector_get_node : VectorGetNode):
         left = vector_get_node.left.accept(self)
@@ -712,8 +826,14 @@ class TypeCheckerVisitor(Visitor):
                 return ComputedValue("number", int(literal_node.id.lexeme))
             case "string":
                 return ComputedValue("string", literal_node.id.lexeme)
+            case "self":
+                return ComputedValue("self", "self")
+            case "base":
+                return ComputedValue("base", "base")
             case "id":
-                return ComputedValue(self.context.is_defined(literal_node.id.lexeme), None)
+                if self.context.is_defined(literal_node.id.lexeme):
+                    return ComputedValue(self.context.get(literal_node.id.lexeme), None)
+                self.error_logger.add("variable no definida")
         return ComputedValue(None, None)
 
 
@@ -731,12 +851,16 @@ class SemanticAnalysis:
         ast.accept(typeCollectorVisitor)
         typeBuilderVisitor = TypeBuilderVisitor(context, hierarchy)
         ast.accept(typeBuilderVisitor)
+        typeFunctionVisitor = TypeFunctionVisitor(context, hierarchy)
+        ast.accept(typeFunctionVisitor)
         typeCheckerVisitor = TypeCheckerVisitor(context, hierarchy)
         ast.accept(typeCheckerVisitor)
         
         err1 = typeCollectorVisitor.error_logger
         err2 = typeBuilderVisitor.error_logger
-        err3 = typeCheckerVisitor.error_logger
+        err3 = typeFunctionVisitor.error_logger
+        err4 = typeCheckerVisitor.error_logger
         err1.log_errors()
         err2.log_errors()
         err3.log_errors()
+        err4.log_errors()
