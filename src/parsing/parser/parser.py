@@ -209,8 +209,8 @@ class Parser:
             return NewNode(call_node.callee.id, call_node.args)
         raise Exception("New-Expression must be a constructor call")
 
-    def parse(self, tokens: list[Token]) -> ParseTree:
-        return self.parsing_table.parse(tokens)
+    def parse(self, tokens: list[Token], inputStr = "") -> ParseTree:
+        return self.parsing_table.parse(tokens, inputStr)
 
     def toAst(self, tree: ParseTree):
         return self.parsing_table.convertAst(tree.root)

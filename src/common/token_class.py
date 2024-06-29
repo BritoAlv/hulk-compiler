@@ -20,3 +20,7 @@ class Token:
             + str(self.offsetLine)
             + " "
         )
+    def __eq__(self, value: object) -> bool:
+        if type(value) != Token:
+            return False
+        return self.type == value.type and self.lexeme == value.lexeme and self.line == value.line and self.offsetLine == value.offsetLine

@@ -3,19 +3,24 @@ from parsing.parser_generator_lr.grammarLR1 import GrammarLR1
 from parsing.parser_generator_lr.utils import gramophoneSyntaxParser
 
 
-inputTest = """
+gr = GrammarLR1(
+    name = "test2",
+    non_terminals=["S", "A", "B"],
+    terminals=["a", "b", "c"],
+    start_symbol="S",
+    productions={
+        "S": [["A", "a", "B", "b"]],
+        "A": [["c"]],
+        "B": [[]]
+    }
+)
+ptable = gr.BuildParsingTable(reuse=False)
+print(ptable)
 
-S -> a S b a | .
+inputStr = "cdab"
 
-"""
+tree = ptable.parse(
+    [Token(x,x, 0, i) for (i, x) in enumerate([*list(inputStr), "$"])], inputStr 
+)
 
-gr = gramophoneSyntaxParser(inputTest, "basicEnough")
-
-table = gr.BuildParsingTable(False)
-table = gr.BuildParsingTable()
-
-print(table)
-
-tree = table.parse([Token(x, x, 0,0 ) for x in "aababa$"]) # aababa 
-
-tree.root.print([0], 0, True)
+tree.root.print([], 0, False)
