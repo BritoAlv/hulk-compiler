@@ -230,5 +230,13 @@ class EnvironmentBuilder(Visitor):
                     else:
                         neighbor_type_data.methods[method].insert(1, f'{method}_{vertex}')
                 
+                # Add neighbor as a vertex descendant
+                vertex_type_data.descendants.append(neighbor)
+                
                 # Push onto stack
                 stack.append(neighbor)
+            
+            # Update vertex's ancestor descendants
+            if vertex_type_data.ancestor != None:
+                ancestor_type_data = self._environment.get_type_data(vertex_type_data.ancestor)
+                ancestor_type_data.descendants += vertex_type_data.descendants
