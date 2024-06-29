@@ -26,7 +26,20 @@ parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
-    print(a);
+type range(st:Number, ed:Number, offset : Number) {
+    st = st;
+    ed = ed;
+    offset = offset;
+    current = st - offset;
+
+    next(): Boolean => (self.current := self.current + self.offset) < self.ed;
+    m(): Number => self.current;
+}
+
+let X = new range(3, 6, 1) in while(X.next())
+{
+    print(X.m());
+};
 """
 
 inputStr = defaultHulkProgram
@@ -46,11 +59,13 @@ def lex(inputStr : str, show = False) -> list[Token]:
 def parse(inputStr : str, show = False) -> ParseTree:
     tokens = lex(inputStr)
     parser = Parser()
-    parse_tree = parser.parse(tokens)
+    parse_tree = parser.parse(tokens, inputStr)
     if show:
         print("Parse Tree:")
         parse_tree.root.print([0], 0, True)
         print("\n")
+    if parse_tree.root.value == "ERROR":
+        sys.exit(1)
     return parse_tree
 
 def ast(inputStr : str, show = False) -> ProgramNode:
@@ -66,7 +81,7 @@ def ast(inputStr : str, show = False) -> ProgramNode:
 def semantic_analysis(inputStr : str) -> ProgramNode:
     treeAst = ast(inputStr)
     sem_an = SemanticAnalysis()
-    sem_an.run(treeAst)
+    #sem_an.run(treeAst)
     return treeAst
 
 def codeGen(inputStr : str, show = False) -> str:

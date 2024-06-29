@@ -834,3 +834,19 @@ let n1 = new Node(4), n2 = new Node(6), n3 = new Node(8) in
     print("There is no need to escape this ' symbol because in Hulk it is not a special character");
 }
 """
+## 36
+"""hulk
+type range(st:Number, ed:Number, offset : Number) {
+    st = st;
+    ed = ed;
+    offset = offset;
+    current = st - offset;
+
+    next(): Boolean => (self.current := self.current + self.offset) < self.ed;
+    m(): Number => self.current;
+}
+
+let X = new range(3, 6, 1) in while(X.next())
+{
+    print(X.m());
+};
