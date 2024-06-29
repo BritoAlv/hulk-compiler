@@ -62,11 +62,11 @@ build_str:
 	jr $ra
 
 build_null:
-	li $a0 8
+	li $a0 4
     li $v0 9
     syscall
     li $t0 -1
-    sw $t0 4($v0)
+    sw $t0 ($v0)
 	jr $ra
 
 #** Printing code

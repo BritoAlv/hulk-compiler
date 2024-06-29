@@ -233,15 +233,15 @@ class Generator(Visitor):
                 offset = -(i * WORD_SIZE)
                 if i > 1:
                     code += f'''
-        jal stack_pop
-        sw $v0 {offset}($sp)
+    jal stack_pop
+    sw $v0 {offset}($sp)
 '''
                 else:
                     code += f'''
-        jal stack_pop
-        lw $t0 4($v0) # Check if null
-        beq $t0 -1 null_error
-        sw $v0 {offset}($sp)
+    jal stack_pop
+    lw $t0 ($v0) # Check if null
+    beq $t0 -1 null_error
+    sw $v0 {offset}($sp)
 '''
             
             code += f'''
@@ -327,7 +327,7 @@ class Generator(Visitor):
             code = left_result.code
             code += f'''
     jal stack_pop
-    lw $t0 4($v0) # Check if null
+    lw $t0 ($v0) # Check if null
     beq $t0 -1 null_error
     lw $s0 ($v0)
     li $s1 {type_id}
@@ -353,7 +353,7 @@ class Generator(Visitor):
         right_type = right_result.type
 
         null_check_code = '''
-    lw $t0 4($v0) # Check if null
+    lw $t0 ($v0) # Check if null
     beq $t0 -1 null_error'''
 
         code = left_result.code
@@ -789,7 +789,7 @@ class Generator(Visitor):
         if unary_node.op.type == 'not':
             code += '''
     jal stack_pop
-    lw $t0 4($v0) # Check if null
+    lw $t0 ($v0) # Check if null
     beq $t0 -1 null_error
     lw $a0 4($v0)
     li $t0 0
@@ -802,7 +802,7 @@ class Generator(Visitor):
         else:
             code += '''
     jal stack_pop
-    lw $t0 4($v0) # Check if null
+    lw $t0 ($v0) # Check if null
     beq $t0 -1 null_error
     lwc1 $f12 4($v0)
     neg.s $f12 $f12
