@@ -189,6 +189,8 @@ class Generator(Visitor):
                 else:
                     func_name = 'print_pointer'
                 func_type = 'object'
+            elif func_name == 'error':
+                func_type = 'error'
             else:
                 func_type = self._resolver.resolve_function_data(func_name).type
             
@@ -684,6 +686,9 @@ class Generator(Visitor):
         pass
     
     def visit_if_node(self, if_node: IfNode):
+        if_index = self._if_index
+        self._if_index += 1
+
         types : list[str] = []
         code = ''
         i = 0
@@ -692,7 +697,7 @@ class Generator(Visitor):
 
             if i > 0:
                 code += f'''
-    conditional_{self._if_index}_{i - 1}_{self._func_name}:
+    conditional_{if_index}_{i - 1}_{self._func_name}:
 '''
             code += condition_result.code
             code += f'''
@@ -701,33 +706,31 @@ class Generator(Visitor):
 '''
             if i < len(if_node.body) - 1:
                 code += f'''
-    bne $t0 1 conditional_{self._if_index}_{i}_{self._func_name}
+    bne $t0 1 conditional_{if_index}_{i}_{self._func_name}
 '''
             else:
                 code += f'''
-    bne $t0 1 conditional_else_{self._if_index}_{self._func_name}
+    bne $t0 1 conditional_else_{if_index}_{self._func_name}
 '''
             
             expr_result = self._generate(expr)
             code += expr_result.code
             types.append(expr_result.type)
             code += f'''
-    j conditional_end_{self._if_index}_{self._func_name}
+    j conditional_end_{if_index}_{self._func_name}
 '''
             i += 1
 
         code += f'''
-    conditional_else_{self._if_index}_{self._func_name}:
+    conditional_else_{if_index}_{self._func_name}:
 '''
         else_result = self._generate(if_node.elsebody)
         code += else_result.code
         types.append(else_result.type)
 
         code += f'''
-    conditional_end_{self._if_index}_{self._func_name}:
+    conditional_end_{if_index}_{self._func_name}:
 '''
-
-        self._if_index += 1
 
         # Check return type
         base_type = types[0]
@@ -739,6 +742,8 @@ class Generator(Visitor):
 
 
     def visit_while_node(self, while_node: WhileNode):
+        while_index = self._while_index
+        self._while_index += 1
         code = ''
         condition_result = self._generate(while_node.condition)
         code += condition_result.code
@@ -746,29 +751,29 @@ class Generator(Visitor):
     jal stack_pop
     lw $t0 4($v0)
      
-    bne $t0 1 while_null_end_{self._while_index}
-    j while_body_{self._while_index}
-    while_start_{self._while_index}:
+    bne $t0 1 while_null_end_{while_index}
+    j while_body_{while_index}
+    while_start_{while_index}:
 '''
         code += condition_result.code
         code += f'''
     jal stack_pop
     lw $t0 4($v0)
-    bne $t0 1 while_end_{self._while_index}
+    bne $t0 1 while_end_{while_index}
     jal stack_pop
-    while_body_{self._while_index}:
+    while_body_{while_index}:
 '''
         body_result = self._generate(while_node.body)
         code += body_result.code
         code += f'''
-    j while_start_{self._while_index}
-    while_null_end_{self._while_index}:
+    j while_start_{while_index}
+    while_null_end_{while_index}:
     jal build_null
     move $a0 $v0
     jal stack_push
-    while_end_{self._while_index}:
+    while_end_{while_index}:
 '''
-        self._while_index += 1
+        while_index += 1
 
         return GenerationResult(code, body_result.type)
 

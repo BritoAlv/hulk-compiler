@@ -457,4 +457,19 @@ null_error:
 	li $v0 17
 	syscall
 
+error:
+	addi $sp $sp -12
+	sw $ra 4($sp)
+
+	lw $t0 8($sp)
+	sw $t0 -4($sp)
+
+	jal print_str
+	li $a0 1
+	li $v0 17
+	syscall
+
+	lw $ra 4($sp)
+	addi $sp $sp 12
+
 # done: # Simulation code
