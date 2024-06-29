@@ -25,6 +25,7 @@ class Generator(Visitor):
         self._literal_numbers : list[str] = []
         self._if_index = 0
         self._while_index = 0
+        self._call_index = 0
 
     def generate(self, program : ProgramNode) -> str:
         result = self._generate(program)
@@ -201,7 +202,8 @@ class Generator(Visitor):
             return GenerationResult(code, func_type)
         # Method call
         else:
-            if isinstance(call_node.callee, LiteralNode) and call_node.callee.id.lexeme == 'base':
+            called_method = call_node.callee.id.lexeme
+            if isinstance(call_node.callee, LiteralNode) and called_method == 'base':
                 type_data = self._resolver.resolve_type_data(self._type_name)
                 self_offset = self._get_offset('self')
                 code = f'''
@@ -217,14 +219,13 @@ class Generator(Visitor):
             elif isinstance(call_node.callee, GetNode):
                 result = self._generate(call_node.callee)
                 type_data = self._resolver.resolve_type_data(result.type)
-                called_method = call_node.callee.id.lexeme
-
                 code = result.code
 
                 method_name = type_data.methods[called_method][0]
             else:
                 raise Exception("Functions are not a type here, cannot be called that way")
-                
+            
+            # Generate code for arguments
             for arg in call_node.args:
                 result = self._generate(arg)
                 code += result.code
@@ -243,12 +244,34 @@ class Generator(Visitor):
     beq $t0 -1 null_error
     sw $v0 {offset}($sp)
 '''
+                    
+            # Check if it's not a base() call
+            if isinstance(call_node.callee, GetNode):
+                # Dynamic method dispatch
+                for descendant in type_data.descendants:
+                    descendant_type_data = self._resolver.resolve_type_data(descendant)
+                    descendant_method_name = descendant_type_data.methods[called_method][0]
+                    code += f'''
+    # Dynamic method dispatch
+    lw $t0 ($v0)
+    li $t1 {descendant_type_data.id}
+    beq $t0 $t1 call_{descendant_method_name}{descendant}_{self._call_index}
+    j call_next_{descendant_method_name}{descendant}_{self._call_index}
+    call_{descendant_method_name}{descendant}_{self._call_index}:
+    jal {descendant_method_name}
+    move $a0 $v0
+    jal stack_push
+    j call_end_{called_method}_{self._call_index}
+    call_next_{descendant_method_name}{descendant}_{self._call_index}:
+    '''
             
             code += f'''
     jal {method_name}
     move $a0 $v0
     jal stack_push
+    call_end_{called_method}_{self._call_index}:
 '''
+            self._call_index += 1
             func_data = self._resolver.resolve_function_data(method_name)
             return GenerationResult(code, func_data.type)
     

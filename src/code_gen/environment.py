@@ -28,6 +28,7 @@ class TypeData:
         self.methods : dict[str, list[str]] = {} # Method name and it's associated assembly name
         self.inherited_offset = 1 # One word is reserved for object metadata (type in this case)
         self.ancestor : str = None
+        self.descendants : list[str] = []
 
 class Environment:
     def __init__(self) -> None:

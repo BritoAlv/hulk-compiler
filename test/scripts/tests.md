@@ -340,6 +340,37 @@ let a = new Node(10) in
 };
 ```
 
+```hulk
+type A
+{
+    casa() : object => print("A");
+}
+
+type B inherits A
+{
+    casa() : object => print("B");
+}
+
+type C inherits B
+{
+    casa() : object => print("C");
+}
+
+function Test(n : number) : A =>
+if (n < 0)
+    new C()
+elif (n < 10)
+    new B()
+else
+    new A();
+
+let a = Test(10), b = Test(5), c = Test(-10) in {
+    a.casa();
+    b.casa();
+    c.casa();
+};
+```
+
 # Not Passed
 
 ## (Not HULK valid) : Self cannot be assign to an attribute
