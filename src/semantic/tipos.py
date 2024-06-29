@@ -36,7 +36,7 @@ class Type:
         for i in self.method:
             if i.name == name and len(i.args) == len(args):
                 return i
-        return None
+        return None  
 
     def define_attribute(self, name, type):
         if self.get_attribute(name) != None:
@@ -62,6 +62,11 @@ class Method:
         self.type = return_type
         self.args = args
 
+class ContextValue:
+    def __init__(self, type, value = None) -> None:
+        self.value = value
+        self.type = type
+
 class ContextLower():
     def __init__(self, parent = None) -> None:
         self.parent = parent
@@ -77,23 +82,30 @@ class ContextLower():
                 return i
         return None
     
-    def define(self, var, type) -> bool:
+    def get(self, name):
+        return self.dict.get(name)
+
+    def define(self, var, type, value = None) -> bool:
         if self.is_defined(var):
             return False
-        self.dict[var] = type
+        self.dict[var] = ContextValue(type, value)
         return True
+    
+    def remove_define(self, var) -> bool:
+        if self.is_defined(var):
+            self.dict.pop(var)
     
     def define_func(self, name, return_type, args) -> bool:
         if self.is_defined_func(name, args) != None:
             return False
         args_type = []
-        # print(args)
         for (i, j) in args:
             args_type.append(Attribute(i.lexeme, j.lexeme if j != None else None))
         self.method.append(Method(name, return_type, args_type))
     
     def create_child_context(self):
-        return Context(self)
+        return ContextLower(self)
+        
 class Context():
     def __init__(self , parent = None) -> None:
         self.context_lower : ContextLower = ContextLower()
@@ -106,22 +118,30 @@ class Context():
         return self.context_lower.is_defined_func(func, args)
 
     def get(self, name):
-        return self.context_lower.dict[name]        
+        return self.context_lower.get(name) or self.context_lower.parent != None and self.context_lower.parent.get(name)      
+    
+    def get_func_whithout_params(self, name):
+        return self.context_lower.dict[name]    
     
     def set(self, name, type_new):
         self.context_lower.dict[name] = type_new
 
-    def define(self, var, type) -> bool:
-        return self.context_lower.define(var, type)
+    def define(self, var, type = None, value = None) -> bool:
+        return self.context_lower.define(var, type, value)
+    
+    def remove_define(self, var) -> bool:
+        return self.context_lower.remove_define(var)
     
     def define_func(self, var, return_type, args) -> bool:
         return self.context_lower.define_func(var, return_type, args)
     
     def create_child_context(self):
-        self.context = self.context_lower.create_child_context()
+        self.context_lower = self.context_lower.create_child_context()
     
     def remove_child_context(self):
-        self.context = self.context_lower.parent
+        print(self.context_lower.parent.dict, self.context_lower.dict.get('num'))
+        self.context_lower = self.context_lower.parent 
+        print(self.context_lower.parent, self.context_lower.dict)
 
     def get_type(self, type_name):
         for i in self.types:
@@ -158,6 +178,9 @@ class Hierarchy:
                 return i
         return None
     
+    def is_type(self, name):
+        return True if self.get_type(self.root, name) != None else False
+    
     def add_type(self, name, ancestor_name):
         check_name = self.get_type(self.root, name)
         if check_name != None:
@@ -185,6 +208,7 @@ class Hierarchy:
             if path.get(i.name):
                 return i
         return self.root
+    
 # construye el contexto de los tipos definidos y chequea que no hayan dos con el mismo nombre
 class TypeCollectorVisitor(Visitor):
     def __init__(self, context : Context):
@@ -289,8 +313,27 @@ class TypeBuilderVisitor(Visitor):
 
     def visit_method_node(self, method_node : MethodNode):
         if self.actual_type != None:
-            if self.actual_type.get_method(method_node.id.lexeme, len(method_node.params)) == None:
-                self.actual_type.define_method(method_node.id.lexeme, method_node.type.lexeme if method_node.type != None else "object", method_node.params)
+            if self.actual_type.get_method(method_node.id.lexeme, method_node.params) == None:
+            
+                return_type = method_node.type.lexeme if method_node.type != None else None
+                    # revisa que existe el tipo de retorno 
+                if return_type != None and self.hierarchy.is_type(return_type):
+                    dict = {}
+                    # que los parametros no se definan dos veces el mismo nombre
+                    # que no tengan tipos incorrectos
+                    for (i, j) in method_node.params :
+                        if dict.get(i.lexeme) == None:
+                            param_type = j.lexeme if j != None else None
+                            
+                            if param_type != None and self.hierarchy.is_type(param_type):
+                                dict[i.lexeme] = param_type
+                            else:
+                                self.error_logger.add("tipo de parametro incorrecto")
+                        else:
+                            self.error_logger.add("parametro ya existe metodo " + method_node.id.lexeme +  " - " + i.lexeme)
+                    self.actual_type.define_method(method_node.id.lexeme, method_node.type.lexeme if method_node.type != None else "object", method_node.params)
+                else:
+                    self.error_logger.add("tipo de retorno incorrecto")
                 return
             self.error_logger.add("metodo ya definido " + method_node.id.lexeme + " de " + self.actual_type.name)
             
@@ -305,8 +348,12 @@ class TypeBuilderVisitor(Visitor):
         for i in type_node.methods:
             if i.id.lexeme == "build":
                 args = []
-                for j in i.params:
-                    args.append((j[0].lexeme, j[1].lexeme if j[1] != None else None))
+                dict = {}
+                    # que los parametros no se definan dos veces el mismo nombre
+                    # que no tengan tipos incorrectos
+                for m in i.params:
+                    (j, k) = m 
+                    args.append((j.lexeme, k.lexeme if k != None else None))
                 if self.actual_type:
                     self.actual_type.add_args(args)
             else:
@@ -316,7 +363,24 @@ class TypeBuilderVisitor(Visitor):
     def visit_signature_node(self, signature_node : SignatureNode):
         if self.actual_type != None:
             if self.actual_type.get_method(signature_node.id.lexeme, len(signature_node.params)) == None:
-                self.actual_type.define_method(signature_node.id.lexeme, signature_node.type.lexeme if signature_node.type != None else "object", len(signature_node.params))
+                return_type = signature_node.type.lexeme if signature_node.type != None else None
+                # revisa que existe el tipo de retorno 
+                if return_type != None and self.hierarchy.is_type(return_type):
+                    dict = {}
+                    # que los parametros no se definan dos veces el mismo nombre
+                    # que no tengan tipos incorrectos
+                    for (i, j) in signature_node.params :
+                        if dict.get(i.lexeme) == None:
+                            param_type = j.lexeme if j != None else None
+                            if param_type != None and self.hierarchy.is_type(param_type):
+                                dict[i.lexeme] = param_type
+                            else:
+                                self.error_logger.add("tipo de parametro incorrecto de signature " + signature_node.id.lexeme)
+                        else:
+                            self.error_logger.add("parametro ya existe de signature " + signature_node.id.lexeme)
+                    self.actual_type.define_method(signature_node.id.lexeme, signature_node.type.lexeme if signature_node.type != None else "object", signature_node.params)
+                else:
+                    self.error_logger.add("tipo de retorno incorrecto de signature " + signature_node.id.lexeme)
                 return
                 
             self.error_logger.add("metodo ya definido " + signature_node.id.lexeme + " de " + self.actual_type.name)
@@ -407,11 +471,40 @@ class TypeFunctionVisitor(Visitor):
     def visit_method_node(self, method_node : MethodNode):
         id = method_node.id.lexeme
         args = method_node.params
-        ret = method_node.type
-        if (self.context.is_defined_func(id, args)):
-            self.error_logger.add("funcion " + id + " ya definida")
+        ret = method_node.type.lexeme if method_node.type != None else "object"
+
+        if (self.context.is_defined_func(id, args)) == None:
+            return_type = method_node.type.lexeme if method_node.type != None else None
+            # revisa que existe el tipo de retorno 
+            if return_type != None and self.hierarchy.is_type(return_type):
+                dict = {}
+                # que los parametros no se definan dos veces el mismo nombre
+                # que no tengan tipos incorrectos
+                params = []
+                for (i, j) in method_node.params:
+                    if dict.get(i.lexeme) == None:
+                        param_type = j.lexeme if j != None else None
+                        if param_type != None and self.hierarchy.is_type(param_type):
+                            dict[i.lexeme] = param_type
+                            params.append((i.lexeme, param_type))
+                        else:
+                            self.error_logger.add("tipo de parametro incorrecto de function " + method_node.id.lexeme)
+                    else:
+                        self.error_logger.add("parametro ya existe de function " + method_node.id.lexeme)
+            
+                self.context.define_func(id, ret, args)
+                #revisamos el cuerpo de la funcion
+                self.context.create_child_context()
+                for i in params:
+                    self.context.define(i[0], i[1])
+                # method_node.body.accept(self)
+                self.context.remove_child_context()
+            else:
+                self.error_logger.add("tipo de retorno incorrecto de function " + method_node.id.lexeme)
             return
-        self.context.define_func(id, ret, args)
+            
+        self.error_logger.add("function ya definido " + method_node.id.lexeme )
+
     def visit_type_node(self, type_node : TypeNode):
         pass
     def visit_signature_node(self, signature_node : SignatureNode):
@@ -470,24 +563,42 @@ class TypeCheckerVisitor(Visitor):
         print("retorno ", value.type, value.value)
 
     def visit_attribute_node(self, attribute_node : AttributeNode):
-        if self.context.is_defined(attribute_node.id.lexeme) == False: # variable no declarada antes
+        id = attribute_node.id.lexeme
+        if self.actual_type != None:
+            id = 'self.' + id
+        if self.context.is_defined(id) == False: # variable no declarada antes
             body = attribute_node.body.accept(self)
             if (attribute_node.type != None): # si viene con tipo
                 if (attribute_node.type.lexeme == body): # si coinciden los tipos
-                    self.context.define(attribute_node.id.lexeme, body)
+                    self.context.define(id, body.type, body.value)
                     return 
-                self.error_logger.add("atributo " + attribute_node.id.lexeme + " con tipo incorrecto")
+                self.error_logger.add("atributo " + id + " con tipo incorrecto")
                 return
-            print("attr",attribute_node.id.lexeme, body.type, body.value)
-            self.context.define(attribute_node.id.lexeme, body.type)
+            self.context.define(id, body.type, body.value)
             return
-        self.error_logger.add("atributo " + attribute_node.id.lexeme + "ya definido")
+        self.error_logger.add("atributo " + id + " ya definido")
         
     def visit_method_node(self, method_node : MethodNode):
         return method_node.body.accept(self)
 
     def visit_type_node(self, type_node : TypeNode):
-        pass
+        last_type = self.actual_type
+        self.actual_type = self.context.get_type(type_node.id.lexeme) 
+        self.context.create_child_context()
+        self.context.define("self")
+        for i in type_node.methods:
+            if i.id.lexeme == "build":
+                args = []
+                for j in i.params:
+                    self.context.define(j[0].lexeme, j[1].lexeme if j[1] != None else None)
+                for j in i.body.exprs:
+                    j.accept(self)
+                for j in i.params:
+                    self.context.remove_define(j[0].lexeme)
+            else:
+                i.accept(self)
+        self.context.remove_child_context()
+        self.actual_type = last_type
 
     def visit_signature_node(self, signature_node : SignatureNode):
         pass
@@ -566,16 +677,15 @@ class TypeCheckerVisitor(Visitor):
     def visit_destructor_node(self, destructor_node : DestructorNode):
         new = destructor_node.expr.accept(self)
         if self.context.is_defined(destructor_node.id.lexeme) == True:
-            type = self.context.get(destructor_node.id.lexeme)
+            type = self.context.get(destructor_node.id.lexeme).type
             self.context.set(destructor_node.id.lexeme, new.type)
-            print(destructor_node.id.lexeme, (type, new.type))
             return ComputedValue(self.hierarchy.get_lca(type, new.type).name, new.value)
         self.error_logger.add("la variable no esta definida")
         return ComputedValue(None, None)
         
     def visit_block_node(self, block_node : BlockNode):
         self.context.create_child_context()
-        value = "Object"
+        value = ComputedValue(None, None)
         for i in block_node.exprs:
            value = i.accept(self)
         self.context.remove_child_context()
@@ -590,8 +700,8 @@ class TypeCheckerVisitor(Visitor):
                 args.append(i.accept(self).type)
             type_method = type.get_method(callee.value, args)
             if type_method != None:
-                print(type_method.type, None)
                 return ComputedValue(type_method.type, None)
+        self.error_logger.add("funcion no definida")
         return ComputedValue(None, None)
 
     def visit_get_node(self, get_node : GetNode):
@@ -817,23 +927,25 @@ class TypeCheckerVisitor(Visitor):
         return ComputedValue(type, value)
 
     def visit_literal_node(self, literal_node : LiteralNode):
+        id = literal_node.id.lexeme
         match literal_node.id.type:
             case "false":
-                return ComputedValue("bolean", literal_node.id.lexeme)
+                return ComputedValue("bolean", id)
             case "true":
-                return ComputedValue("bolean", literal_node.id.lexeme)
+                return ComputedValue("bolean", id)
             case "number":
-                return ComputedValue("number", int(literal_node.id.lexeme))
+                return ComputedValue("number", int(id))
             case "string":
-                return ComputedValue("string", literal_node.id.lexeme)
+                return ComputedValue("string", id)
             case "self":
                 return ComputedValue("self", "self")
             case "base":
                 return ComputedValue("base", "base")
             case "id":
-                if self.context.is_defined(literal_node.id.lexeme):
-                    return ComputedValue(self.context.get(literal_node.id.lexeme), None)
-                self.error_logger.add("variable no definida")
+                if self.context.is_defined(id):
+                    var = self.context.get(id)
+                    return ComputedValue(var.type, var.value)
+                self.error_logger.add("variable no definida " + id)
         return ComputedValue(None, None)
 
 
