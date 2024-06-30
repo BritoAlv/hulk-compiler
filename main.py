@@ -26,24 +26,10 @@ parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
-type range(st:Number, ed:Number, offset : Number) {
-    st = st;
-    ed = ed;
-    offset = offset;
-    current = st - offset;
-
-    next(): Boolean => (self.current := self.current + self.offset) < self.ed;
-    m(): Number => self.current;
-}
-
-let X = new range(3, 6, 1) in while(X.next())
-{
-    print(X.m());
-};
+print(2a + 2);
 """
 
 inputStr = defaultHulkProgram
-
 
 def lex(inputStr : str, show = False) -> list[Token]:
     tokens = hulk_lexer.scanTokens(inputStr)
@@ -131,18 +117,16 @@ def run(inputStr : str):
         r'\(spim\) '
     )
 
+    # Initialize a list to store output lines
+    spim_output = []
+
     try:
-        # Start the SPIM process
-        spim = pexpect.spawn('spim')
+        spim = pexpect.spawn("spim")
+        spim.expect_exact('(spim) ')
 
-        # Wait for the SPIM prompt
-        spim.expect(startup_regex.pattern)
-
-        # Load the first file
         spim.sendline(f'load "{file1_name}"')
         spim.expect_exact('(spim) ')
 
-        # Load the second file
         spim.sendline(f'load "{file2_name}"')
         spim.expect_exact('(spim) ')
 
@@ -150,9 +134,17 @@ def run(inputStr : str):
         spim.sendline(f'load "{file3_name}"')
         spim.expect_exact('(spim) ')
 
-        spim.sendline(f'run')
-        spim.sendline(f'ex')
-        spim.interact()
+        # Run the SPIM process and capture its output
+        spim.sendline('run')
+        spim.expect_exact('(spim) ')
+        spim_output.append(spim.before.decode('utf-8'))  # Decode and store the output
+
+        # Continue with the rest of the commands
+        spim.sendline('ex')
+        #spim.interact()
+        
+        # Print the captured output
+        print(spim_output[0][5:])
         
     except pexpect.exceptions.ExceptionPexpect as e:
         print(f"Error running SPIM: {e}")
@@ -165,7 +157,7 @@ else:
     args = parser.parse_args()
 
     # Use the input argument
-    # inputStr = sys.stdin.read().strip()
+    inputStr = sys.stdin.read().strip()
 
     if inputStr == None or inputStr == "":
         inputStr = defaultHulkProgram

@@ -1,0 +1,12 @@
+There was a parsing error :
+Near error on line 5, $:
+3     get_num() => self.num;
+4 }
+
+5 print(3^(new Num()).get_num())
+5                               ^
+Trying to recovery from error
+----------------
+Seq: 
+insert semicolon
+----------------
