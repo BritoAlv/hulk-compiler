@@ -1,0 +1,6 @@
+let a = "Thomas", a = "John" in 
+{
+    let a = "Shelby" in print(a);
+    let b = a @@ "McArthur" in print(b);
+    print(a);
+};

@@ -1,0 +1,6 @@
+type Num
+{
+    num = 4;
+    get_num() => self.num;
+}
+print(3^(new Num()).get_num())

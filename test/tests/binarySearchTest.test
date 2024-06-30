@@ -1,0 +1,28 @@
+function first_square(z : Number)
+{
+    let len = z, squares = [x^2 || x in range(1, len+1, 1)], st = 0, ed = len - 1, middle = 0 
+        in {
+            while(ed - st > 0)
+            {
+                middle := st + (ed - st)/2;
+                if (squares[middle] >= z)
+                {
+                    ed := middle;
+                }
+                else
+                {
+                    st := middle + 1;
+                };
+            };
+            if (ed - 1 >= st & squares[ed-1] >= z)
+            {
+                ed := ed - 1; 
+            }
+            else
+            {
+                ed := ed;
+            };
+            squares[ed];    
+        };
+};
+print(first_square(10));
