@@ -20,20 +20,23 @@ parser.add_argument('-r', '--run', action='store_true', help='Run the compiled a
 defaultHulkProgram = """
         protocol Node {
             eval(node: number, valor: number) : number;
-        }
+        } 
         type Perro(color : string, edad: number)
         {
             color = color;
             edad = edad;
-            comer = 13;
-            Ladrar(a: number) : Vector => [12];
+            comer = h(1);
+            son = new Perro("31", 4);
+            Ladrar(a: number) : Vector {
+                [12];
+            };
             Ladrar(a: number, b : string, ba : number) : Vector => [12];
         }
         function h(num: number) : number =>
             43;  
         let a = [1,2,3], b = 3, c = new Perro("ds", 3) in 
             {
-              b:= 3; 
+              b := 3; 
               a := c.Ladrar(1);       
             };
         """

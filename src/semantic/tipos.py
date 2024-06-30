@@ -37,6 +37,12 @@ class Type:
             if i.name == name and len(i.args) == len(args):
                 return i
         return None  
+    
+    def get_method_whithout_params(self, name):
+        for i in self.method:
+            if i.name == name:
+                return i
+        return None     
 
     def define_attribute(self, name, type):
         if self.get_attribute(name) != None:
@@ -80,8 +86,14 @@ class ContextLower():
         for i in self.method:
             if i.name == name and len(i.args) == len(args):
                 return i
-        return None
+        return self.parent.is_defined_func(name, args) if self.parent != None else None
     
+    def is_defined_func_whithout_params(self, name) -> bool:
+        print(self.method, name, (self.parent != None and self.parent.is_defined_func_whithout_params(name)))
+        for i in self.method:
+            if i.name == name:
+                return True
+        return (self.parent != None and self.parent.is_defined_func_whithout_params(name))
     def get(self, name):
         return self.dict.get(name)
 
@@ -117,11 +129,12 @@ class Context():
     def is_defined_func(self, func, args) -> bool:
         return self.context_lower.is_defined_func(func, args)
 
+    def is_defined_func_whithout_params(self, func) -> bool:
+        return self.context_lower.is_defined_func_whithout_params(func)
+
+
     def get(self, name):
         return self.context_lower.get(name) or self.context_lower.parent != None and self.context_lower.parent.get(name)      
-    
-    def get_func_whithout_params(self, name):
-        return self.context_lower.dict[name]    
     
     def set(self, name, type_new):
         self.context_lower.dict[name] = type_new
@@ -139,9 +152,7 @@ class Context():
         self.context_lower = self.context_lower.create_child_context()
     
     def remove_child_context(self):
-        print(self.context_lower.parent.dict, self.context_lower.dict.get('num'))
         self.context_lower = self.context_lower.parent 
-        print(self.context_lower.parent, self.context_lower.dict)
 
     def get_type(self, type_name):
         for i in self.types:
@@ -554,7 +565,7 @@ class TypeCheckerVisitor(Visitor):
         self.actual_type = None
         self.hierarchy = hierarchy
         self.error_logger = ErrorLogger()
-
+        self.is_call_node = False # pq no se si un call node deriva en literal como tratar el literal como variable o como metodo
 
     def visit_program_node(self, program_node : ProgramNode):
         value = ""
@@ -694,31 +705,55 @@ class TypeCheckerVisitor(Visitor):
     def visit_call_node(self, call_node : CallNode):
         callee = call_node.callee.accept(self)
         if (isinstance(call_node.callee, GetNode)):
-            type = self.context.get_type(callee.type.name)
+            self.is_call_node = True
+            type = self.context.get_type(callee.type)
             args = []
             for i in call_node.args:
                 args.append(i.accept(self).type)
             type_method = type.get_method(callee.value, args)
             if type_method != None:
                 return ComputedValue(type_method.type, None)
+            self.is_call_node = False
         self.error_logger.add("funcion no definida")
         return ComputedValue(None, None)
 
     def visit_get_node(self, get_node : GetNode):
         left = get_node.left.accept(self)
         type = self.context.get_type(left.type)
+        id = get_node.id.lexeme
         if self.actual_type == None:
-            if type.get_attribute(id) == None:
-                return ComputedValue(type, get_node.id.lexeme)
+            if type == None: 
+                self.error_logger.add("tipo  no existe")
+                return ComputedValue(None, None)
+            if type.get_method_whithout_params(id) != None:
+                return ComputedValue(type.name, id)
             else:
-                self.error_logger.add("intentando acceder a un atributo privado")
+                self.error_logger.add("intentando acceder a un atributo privado " + id)
                 return ComputedValue(None, None)
         else:
             if left.value == "self":
+                attr = type.get_attribute(id)
+                if attr != None:
+                    return ComputedValue(attr.type, None)
                 return ComputedValue(None, None)
         return ComputedValue(None, None)
 
     def visit_set_node(self, set_node : SetNode):
+        left = set_node.left.accept(self)
+        type = self.context.get_type(left.type)
+        if self.actual_type == None:
+            if type == None:
+                self.error_logger.add("tipo  no existe")
+                return ComputedValue(None, None)
+            
+            self.error_logger.add("intentando acceder a un atributo privado")
+            return ComputedValue(None, None)
+        else:
+            if left.value == "self":
+                attr = type.get_attribute(set_node.id.lexeme)
+                if attr != None:
+                    return ComputedValue(attr.type, None)
+                return ComputedValue(None, None)
         return ComputedValue(None, None)
 
     def visit_vector_set_node(self, vector_set_node : VectorSetNode):
@@ -749,16 +784,18 @@ class TypeCheckerVisitor(Visitor):
         type = self.context.get_type(new_node.id.lexeme) 
         if type != None:
             args = type.args
-            mk = False
+            mk = 0
             for (i, j) in enumerate(new_node.args, 0):
                 arg_type = j.accept(self)
+                mk = i 
                 if i < len(args) and args[i].type != arg_type.type:
                     self.error_logger.add("argumentos incorrecto de tipo " + args[i].type + " " + new_node.id.lexeme)
                     continue
                 if i >= len(args):
                     self.error_logger.add("argumentos de mas " + new_node.id.lexeme)
                     continue
-                    
+            if i < len(args) - 1:
+                self.error_logger.add("argumentos de menos " + new_node.id.lexeme)
             return ComputedValue(type.name)
         self.error_logger.add("clase no definida " + new_node.id.lexeme)
         return ComputedValue("object")
@@ -893,6 +930,18 @@ class TypeCheckerVisitor(Visitor):
                     value = None
                     type = None
             
+            case "is":
+                print(left, right)
+
+            case "as":
+                print(left, right)
+
+            case "@":
+                print(left, right)
+
+            case "@@":
+                print(left, right)
+
         value = ComputedValue(type, value)
         if msg != "":
             self.error_logger.add("inconsistencia de tipos en op binaria")
@@ -942,9 +991,13 @@ class TypeCheckerVisitor(Visitor):
             case "base":
                 return ComputedValue("base", "base")
             case "id":
-                if self.context.is_defined(id):
+                if self.context.is_defined(id) and self.is_call_node == False:
                     var = self.context.get(id)
                     return ComputedValue(var.type, var.value)
+                if self.context.is_defined_func_whithout_params(id) != None and self.is_call_node == True:
+                    var = self.context.get(id)
+                    return ComputedValue(None, id)
+                 
                 self.error_logger.add("variable no definida " + id)
         return ComputedValue(None, None)
 
