@@ -89,7 +89,6 @@ class ContextLower():
         return self.parent.is_defined_func(name, args) if self.parent != None else None
     
     def is_defined_func_whithout_params(self, name) -> bool:
-        print(self.method, name, (self.parent != None and self.parent.is_defined_func_whithout_params(name)))
         for i in self.method:
             if i.name == name:
                 return True
@@ -114,7 +113,7 @@ class ContextLower():
         for (i, j) in args:
             args_type.append(Attribute(i.lexeme, j.lexeme if j != None else None))
         self.method.append(Method(name, return_type, args_type))
-    
+
     def create_child_context(self):
         return ContextLower(self)
         
@@ -182,6 +181,8 @@ class Hierarchy:
                                          NodeClass("Iterable", [NodeClass("Vector")])])
 
     def get_type(self, actual: NodeClass, name):
+        if actual == None:
+            return None
         if (actual.name == name):
             return actual
         for i in actual.sons:
@@ -198,7 +199,7 @@ class Hierarchy:
             return None
         ancestor = self.get_type(self.root, ancestor_name)
         if ancestor != None:
-            ancestor.sons.append(name)
+            ancestor.sons.append(NodeClass(name, parent=ancestor))
     
     def get_ancestors(self, actual: NodeClass, name):
         if (actual.name == name):
@@ -344,7 +345,7 @@ class TypeBuilderVisitor(Visitor):
                             self.error_logger.add("parametro ya existe metodo " + method_node.id.lexeme +  " - " + i.lexeme)
                     self.actual_type.define_method(method_node.id.lexeme, method_node.type.lexeme if method_node.type != None else "object", method_node.params)
                 else:
-                    self.error_logger.add("tipo de retorno incorrecto")
+                    self.error_logger.add("tipo de retorno incorrecto metodo en build")
                 return
             self.error_logger.add("metodo ya definido " + method_node.id.lexeme + " de " + self.actual_type.name)
             
@@ -356,6 +357,8 @@ class TypeBuilderVisitor(Visitor):
             if ancestor_type == False:
                 self.error_logger.add("clase herada incorrectamente")
             self.hierarchy.add_type(type_node.id.lexeme, type_node.ancestor_id.lexeme)
+        else:
+            self.hierarchy.add_type(type_node.id.lexeme, "object")
         for i in type_node.methods:
             if i.id.lexeme == "build":
                 args = []
@@ -404,7 +407,8 @@ class TypeBuilderVisitor(Visitor):
             if ancestor_type == False:
                 self.error_logger.add("clase herada incorrectamente")
             self.hierarchy.add_type(protocol_node.id.lexeme, protocol_node.ancestor_node.lexeme)
-        
+        else:
+            self.hierarchy.add_type(protocol_node.id.lexeme, "object")
         for i in protocol_node.signatures:
             i.accept(self)
             
@@ -597,6 +601,8 @@ class TypeCheckerVisitor(Visitor):
         self.actual_type = self.context.get_type(type_node.id.lexeme) 
         self.context.create_child_context()
         self.context.define("self")
+        for i in self.actual_type.method:
+            self.context.context_lower.method.append(Method("self." + i.name, i.type, i.args))
         for i in type_node.methods:
             if i.id.lexeme == "build":
                 args = []
@@ -703,17 +709,45 @@ class TypeCheckerVisitor(Visitor):
         return value
 
     def visit_call_node(self, call_node : CallNode):
-        callee = call_node.callee.accept(self)
+        args = []
+        for i in call_node.args:
+            args.append(i.accept(self).type)
+
+        if (isinstance(call_node.callee, LiteralNode)):
+            self.is_call_node = True
+            callee = call_node.callee.accept(self)
+            self.is_call_node = False
+            method = self.context.is_defined_func(callee.value, args)
+            if self.context.is_defined_func(callee.value, args) != None:
+                j = -1
+                for i in method.args:
+                    arg_type = i.type
+                    j += 1
+                    if j < len(args) and args[j] != arg_type:
+                        self.error_logger.add("argumentos incorrecto de tipo " + args[j] + " " + method.name)
+                        continue
+                    if j >= len(args):
+                        self.error_logger.add("argumentos de mas " +  method.name)
+                        continue
+                if j < len(args) - 1:
+                    self.error_logger.add("argumentos de menos " +  method.name)
+                    return ComputedValue(None, None)
+                return ComputedValue(method.type, None)
+            else:
+                self.error_logger.add("intento de usar funcion no definida")
+                return ComputedValue(None, None)
+            
         if (isinstance(call_node.callee, GetNode)):
             self.is_call_node = True
+            callee = call_node.callee.accept(self)
+            self.is_call_node = False
             type = self.context.get_type(callee.type)
-            args = []
-            for i in call_node.args:
-                args.append(i.accept(self).type)
+            if type == None:
+                self.error_logger.add("tipo de llamada no exite")
+                return ComputedValue(None, None)
             type_method = type.get_method(callee.value, args)
             if type_method != None:
                 return ComputedValue(type_method.type, None)
-            self.is_call_node = False
         self.error_logger.add("funcion no definida")
         return ComputedValue(None, None)
 
@@ -721,6 +755,7 @@ class TypeCheckerVisitor(Visitor):
         left = get_node.left.accept(self)
         type = self.context.get_type(left.type)
         id = get_node.id.lexeme
+        print(left.type, id)
         if self.actual_type == None:
             if type == None: 
                 self.error_logger.add("tipo  no existe")
@@ -732,10 +767,18 @@ class TypeCheckerVisitor(Visitor):
                 return ComputedValue(None, None)
         else:
             if left.value == "self":
-                attr = type.get_attribute(id)
-                if attr != None:
-                    return ComputedValue(attr.type, None)
-                return ComputedValue(None, None)
+                if self.is_call_node == False:
+                    attr = self.context.get(left.value +"." + id)
+                    if attr != None:
+                        return ComputedValue(attr.type, None)
+                    self.error_logger.add("tipo self no existe en la clase")
+                    return ComputedValue(None, None)
+                else:
+                    attr = self.context.is_defined_func_whithout_params(left.value +"." + id)
+                    if attr != None:
+                        return ComputedValue(self.actual_type.name, id)
+                    self.error_logger.add("tipo self no existe en la clase")
+        self.error_logger.add("get node fallo")
         return ComputedValue(None, None)
 
     def visit_set_node(self, set_node : SetNode):
@@ -994,7 +1037,8 @@ class TypeCheckerVisitor(Visitor):
                 if self.context.is_defined(id) and self.is_call_node == False:
                     var = self.context.get(id)
                     return ComputedValue(var.type, var.value)
-                if self.context.is_defined_func_whithout_params(id) != None and self.is_call_node == True:
+                # print(id, self.context.is_defined_func_whithout_params(id), self.is_call_node)
+                if self.context.is_defined_func_whithout_params(id) == True and self.is_call_node == True:
                     var = self.context.get(id)
                     return ComputedValue(None, id)
                  
