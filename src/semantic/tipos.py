@@ -1,3 +1,4 @@
+from crypt import methods
 from common.ErrorLogger.ErrorLogger import ErrorLogger
 from common.ast_nodes.expressions import *
 from common.ast_nodes.expressions import VectorGetNode
@@ -356,7 +357,10 @@ class TypeBuilderVisitor(Visitor):
             ancestor_type = self.context.get_type(type_node.ancestor_id.lexeme)
             if ancestor_type == False:
                 self.error_logger.add("clase herada incorrectamente")
-            self.hierarchy.add_type(type_node.id.lexeme, type_node.ancestor_id.lexeme)
+            else: 
+                print(type_node.id.lexeme, type_node.ancestor_id.lexeme)
+                self.hierarchy.add_type(type_node.id.lexeme, type_node.ancestor_id.lexeme)
+                # print(self.hierarchy.get_type(self.hierarchy.root, type_node.id.lexeme).name)
         else:
             self.hierarchy.add_type(type_node.id.lexeme, "object")
         for i in type_node.methods:
@@ -569,7 +573,9 @@ class TypeCheckerVisitor(Visitor):
         self.actual_type = None
         self.hierarchy = hierarchy
         self.error_logger = ErrorLogger()
+        self.queue_call = []
         self.is_call_node = False # pq no se si un call node deriva en literal como tratar el literal como variable o como metodo
+        self.is_use_self = False # self.Ladrar(1).Ladrar en este caso hace falta saber que ya se uso el self
 
     def visit_program_node(self, program_node : ProgramNode):
         value = ""
@@ -741,6 +747,7 @@ class TypeCheckerVisitor(Visitor):
             self.is_call_node = True
             callee = call_node.callee.accept(self)
             self.is_call_node = False
+            self.is_use_self = False
             type = self.context.get_type(callee.type)
             if type == None:
                 self.error_logger.add("tipo de llamada no exite")
@@ -767,6 +774,7 @@ class TypeCheckerVisitor(Visitor):
                 return ComputedValue(None, None)
         else:
             if left.value == "self":
+                self.queue_call.append(id)
                 if self.is_call_node == False:
                     attr = self.context.get(left.value +"." + id)
                     if attr != None:
@@ -774,10 +782,20 @@ class TypeCheckerVisitor(Visitor):
                     self.error_logger.add("tipo self no existe en la clase")
                     return ComputedValue(None, None)
                 else:
-                    attr = self.context.is_defined_func_whithout_params(left.value +"." + id)
-                    if attr != None:
+                    methods = self.context.is_defined_func_whithout_params(left.value +"." + id)
+                    if methods != None:
                         return ComputedValue(self.actual_type.name, id)
                     self.error_logger.add("tipo self no existe en la clase")
+            else:
+                print(type.name, type.get_method_whithout_params(id))
+                if type == None: 
+                    self.error_logger.add("tipo  no existe")
+                    return ComputedValue(None, None)
+                if type.get_method_whithout_params(id) != None:
+                    return ComputedValue(type.name, id)
+                else:
+                    self.error_logger.add("intentando acceder a un atributo privado " + id)
+                    return ComputedValue(None, None)
         self.error_logger.add("get node fallo")
         return ComputedValue(None, None)
 
@@ -793,9 +811,10 @@ class TypeCheckerVisitor(Visitor):
             return ComputedValue(None, None)
         else:
             if left.value == "self":
-                attr = type.get_attribute(set_node.id.lexeme)
+                attr = self.context.get(left.value +"." + set_node.id.lexeme)
                 if attr != None:
                     return ComputedValue(attr.type, None)
+                self.error_logger.add("tipo self no existe en la clase") 
                 return ComputedValue(None, None)
         return ComputedValue(None, None)
 
@@ -1030,6 +1049,7 @@ class TypeCheckerVisitor(Visitor):
             case "string":
                 return ComputedValue("string", id)
             case "self":
+                self.queue_call.append("self")
                 return ComputedValue("self", "self")
             case "base":
                 return ComputedValue("base", "base")

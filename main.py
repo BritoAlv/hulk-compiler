@@ -21,11 +21,12 @@ defaultHulkProgram = """
         protocol Node {
             eval(node: number, valor: number) : number;
         } 
-        type Perro(color : string, edad: number)
+        type Perro(color : string, edad: number) 
         {
             color = color;
             edad = edad;
             comer = self.Ladrar(1).Ladrar;
+            eat = self.Ladrar(1);
             son = new Perro("31", 4);
             Ladrar(a: number) : Perro {
                 self.son;
