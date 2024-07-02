@@ -86,8 +86,6 @@ class EnvironmentBuilder(Visitor):
             
             if var_name in self._context.variables:
                 continue
-            if var_name in function_data.params:
-                raise Exception("Variable is already used as a parameter name")
             
             self._context.variables[var_name] = VarData(self._var_index)
             self._var_index += 1

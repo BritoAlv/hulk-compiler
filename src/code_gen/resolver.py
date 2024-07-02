@@ -31,9 +31,6 @@ class Resolver:
 
 
     def resolve_var_data(self, var_name : str) -> VarData:
-        if var_name in self._params:
-            return self._params[var_name]
-        
         if var_name in self._context.variables:
             return self._context.variables[var_name]
         
@@ -43,6 +40,9 @@ class Resolver:
                 return temp_context.variables[var_name]
 
             temp_context = temp_context.parent
+
+        if var_name in self._params:
+            return self._params[var_name]
 
         raise Exception("Variable was not declared")
     
