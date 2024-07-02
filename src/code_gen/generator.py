@@ -1,3 +1,4 @@
+from code_gen.environment import BOOL_TYPE_ID, NUMBER_TYPE_ID, STR_TYPE_ID
 from code_gen.resolver import Resolver
 from common.ast_nodes.base import Statement
 from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, NewNode, SetNode, UnaryNode, VectorGetNode, VectorSetNode, WhileNode
@@ -24,10 +25,13 @@ class Generator(Visitor):
 
         self._literal_strings : list[str] = []
         self._literal_numbers : list[str] = []
+
         self._if_index = 0
         self._logical_index = 0
         self._while_index = 0
         self._call_index = 0
+        self._print_index = 0
+        self._equality_index = 0
 
     def generate(self, program : ProgramNode) -> str:
         result = self._generate(program)
@@ -181,16 +185,37 @@ class Generator(Visitor):
 
             # Handle print particular case
             if func_name == 'print':
-                arg_type = arg_types[0]
-                if arg_type == 'number':
-                    func_name = 'print_number'
-                elif arg_type == 'bool':
-                    func_name = 'print_bool'
-                elif arg_type == 'string':
-                    func_name = 'print_str'
-                else:
-                    func_name = 'print_pointer'
-                func_type = 'object'
+                code += f'''
+    lw $t0 ($v0)
+    li $t1 {BOOL_TYPE_ID}
+    beq $t0 $t1 go_print_bool_{self._print_index}
+    li $t1 {NUMBER_TYPE_ID}
+    beq $t0 $t1 go_print_number_{self._print_index}
+    li $t1 {STR_TYPE_ID}
+    beq $t0 $t1 go_print_str_{self._print_index}
+    j go_print_pointer_{self._print_index}
+
+    go_print_bool_{self._print_index}:
+    jal print_bool
+    j go_print_end_{self._print_index}
+
+    go_print_number_{self._print_index}:
+    jal print_number
+    j go_print_end_{self._print_index}
+
+    go_print_str_{self._print_index}:
+    jal print_str
+    j go_print_end_{self._print_index}
+
+    go_print_pointer_{self._print_index}:
+    jal print_pointer
+    j go_print_end_{self._print_index}
+    go_print_end_{self._print_index}:
+    move $a0 $v0
+    jal stack_push
+'''
+                self._print_index += 1
+                return GenerationResult(code, 'object')
             elif func_name == 'error':
                 func_type = 'error'
             else:
@@ -524,45 +549,50 @@ class Generator(Visitor):
             return GenerationResult(code, 'bool')
         # DoubleEqual
         elif binary_node.op.type == 'doubleEqual':
-            if left_type == 'number':
-                code +='''
-    li $a0 0
-    li $t0 1
-    c.eq.s $f22 $f20
-    movt $a0 $t0 0
-    jal build_bool
-    move $a0 $v0
-    jal stack_push
-                '''
-            else:
-                code += '''
+            code += f'''
+    lw $t0 ($s3)
+    lw $t1 ($s2)
+    bne $t0 $t1 equality_false_{self._equality_index}
+
     seq $s0 $s0 $s1
     move $a0 $s0
     jal build_bool
     move $a0 $v0
     jal stack_push
-'''
-            return GenerationResult(code, 'bool')
-        # NotEqual
-        elif binary_node.op.type == 'notEqual':
-            if left_type == 'number':
-                code +='''
-    li $a0 1
-    c.eq.s $f22 $f20
-    movt $a0 $zero 0
+    j equality_end_{self._equality_index}
+
+    equality_false_{self._equality_index}:
+    li $a0 0
     jal build_bool
     move $a0 $v0
     jal stack_push
-            '''
-            else:
-                code +='''
+    equality_end_{self._equality_index}:
+'''
+            self._equality_index += 1
+            return GenerationResult(code, 'bool')
+        # NotEqual
+        elif binary_node.op.type == 'notEqual':
+            code += f'''
+    lw $t0 ($s3)
+    lw $t1 ($s2)
+    bne $t0 $t1 equality_true_{self._equality_index}
+
     seq $s0 $s0 $s1
     seq $s0 $s0 0
     move $a0 $s0
     jal build_bool
     move $a0 $v0
     jal stack_push
+    j equality_end_{self._equality_index}
+
+    equality_true_{self._equality_index}:
+    li $a0 1
+    jal build_bool
+    move $a0 $v0
+    jal stack_push
+    equality_end_{self._equality_index}:
 '''
+            self._equality_index += 1
             return GenerationResult(code, 'bool')
         # String concatenation
         elif binary_node.op.type == 'at' or binary_node.op.type == 'doubleAt':
