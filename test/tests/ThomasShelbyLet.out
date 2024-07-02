@@ -1,0 +1,12 @@
+Exception occurred at PC=0x0040008c
+  Bad address in data/stack read: 0x00000000
+  Exception 7  [Bad data address]  occurred and ignored
+Exception occurred at PC=0x004000a0
+  Bad address in data/stack read: 0x00000004
+  Exception 7  [Bad data address]  occurred and ignored
+Exception occurred at PC=0x004000a4
+  Bad address in data/stack read: 0x00000004
+  Exception 7  [Bad data address]  occurred and ignored
+0 Shelby
+Thomas
+

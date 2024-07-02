@@ -1,0 +1,14 @@
+type range(st:Number, ed:Number, offset : Number) {
+    st = st;
+    ed = ed;
+    offset = offset;
+    current = st - offset;
+
+    next(): Boolean => (self.current := self.current + self.offset) < self.ed;
+    m(): Number => self.current;
+}
+
+let X = new range(3, 6, 1) in while(X.next())
+{
+    print(X.m());
+};

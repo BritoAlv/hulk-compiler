@@ -1,0 +1,1 @@
+print(print(2)); # Prints pointer address

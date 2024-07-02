@@ -26,11 +26,16 @@ parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
-    print(a);
+
+type Perro
+{
+    Parir() => new Perro();
+    nieto = self.Parir().Parir();
+}
+3;
 """
 
 inputStr = defaultHulkProgram
-
 
 def lex(inputStr : str, show = False) -> list[Token]:
     tokens = hulk_lexer.scanTokens(inputStr)
@@ -46,11 +51,13 @@ def lex(inputStr : str, show = False) -> list[Token]:
 def parse(inputStr : str, show = False) -> ParseTree:
     tokens = lex(inputStr)
     parser = Parser()
-    parse_tree = parser.parse(tokens)
+    parse_tree = parser.parse(tokens, inputStr)
     if show:
         print("Parse Tree:")
         parse_tree.root.print([0], 0, True)
         print("\n")
+    if parse_tree.root.value == "ERROR":
+        sys.exit(1)
     return parse_tree
 
 def ast(inputStr : str, show = False) -> ProgramNode:
@@ -66,7 +73,7 @@ def ast(inputStr : str, show = False) -> ProgramNode:
 def semantic_analysis(inputStr : str) -> ProgramNode:
     treeAst = ast(inputStr)
     sem_an = SemanticAnalysis()
-    sem_an.run(treeAst)
+    #sem_an.run(treeAst)
     return treeAst
 
 def codeGen(inputStr : str, show = False) -> str:
@@ -116,18 +123,16 @@ def run(inputStr : str):
         r'\(spim\) '
     )
 
+    # Initialize a list to store output lines
+    spim_output = []
+
     try:
-        # Start the SPIM process
-        spim = pexpect.spawn('spim')
+        spim = pexpect.spawn("spim")
+        spim.expect_exact('(spim) ')
 
-        # Wait for the SPIM prompt
-        spim.expect(startup_regex.pattern)
-
-        # Load the first file
         spim.sendline(f'load "{file1_name}"')
         spim.expect_exact('(spim) ')
 
-        # Load the second file
         spim.sendline(f'load "{file2_name}"')
         spim.expect_exact('(spim) ')
 
@@ -135,9 +140,17 @@ def run(inputStr : str):
         spim.sendline(f'load "{file3_name}"')
         spim.expect_exact('(spim) ')
 
-        spim.sendline(f'run')
-        spim.sendline(f'ex')
-        spim.interact()
+        # Run the SPIM process and capture its output
+        spim.sendline('run')
+        spim.expect_exact('(spim) ')
+        spim_output.append(spim.before.decode('utf-8'))  # Decode and store the output
+
+        # Continue with the rest of the commands
+        spim.sendline('ex')
+        #spim.interact()
+        
+        # Print the captured output
+        print(spim_output[0][5:])
         
     except pexpect.exceptions.ExceptionPexpect as e:
         print(f"Error running SPIM: {e}")
@@ -171,4 +184,7 @@ else:
         codeGen(inputStr, True)
 
     if args.run:
-        run(inputStr)
+        try:
+            run(inputStr)
+        except:
+            sys.exit(1)

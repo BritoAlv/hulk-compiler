@@ -1,0 +1,11 @@
+type Range(start : number, end : number, offset : number) {
+    start = start;
+    end = end;
+    current = start - offset;
+    offset = offset;
+
+    next(): bool => (self.current := self.current + self.offset) < self.end ;
+    current(): number => self.current;
+}
+
+for (n in new Range(1, 10, 1)) print(n);

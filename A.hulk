@@ -184,20 +184,3 @@ type C inherits A {
 #    let x : Hashable = new Person() in print(x.hash());
 #    let x : Hashable = new Point(0,0) in print(x.hash()); # error
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

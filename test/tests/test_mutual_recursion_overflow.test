@@ -1,0 +1,3 @@
+function g(x) => f(x);
+function f(x) => g(x);
+print("Semantic should work but code don't");

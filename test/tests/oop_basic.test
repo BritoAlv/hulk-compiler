@@ -1,0 +1,7 @@
+type Person
+{
+    message = "Hi";
+    greet() => print(self.message);
+}
+
+(new Person()).greet();
