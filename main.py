@@ -27,43 +27,16 @@ parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
-type Range(start : number, end : number, offset : number) {
-    start = start;
-    end = end;
-    current = start - offset;
-    offset = offset;
-
-    next(): bool => (self.current := self.current + self.offset) < self.end ;
-    current(): number => self.current;
+protocol Node{
+    eval(a: number): number;
 }
-
-function range(s : number, e : number) : Range => new Range(s, e, 1);
-
-function fibonacci(n : number) : number => 
-let index = 0, next = 1, current = 1, temp = next, condition = true in 
-    while(condition)
-        if (index == n)
-        {
-            condition := false;
-            current;
-        }
-        else
-        {
-            index := index + 1;
-            temp := next;
-            next := next + current;
-            current := temp;
-        };
-
-let a = [fibonacci(i) || i in range(0, 21)] in
+type Perro(color : string, edad: number)
 {
-    for(i in a) print(i as number);
-    
-    for(i in range(0, 11))
-        a[i] := 0;
-
-    for(i in a) print(i as number);
-};
+    color = color;
+    edad = edad;
+    Ladrar(a: number, af: string) : number => print("Wolf" @ "Wolf");
+}
+[323];
 """
 
 inputStr = defaultHulkProgram
@@ -104,7 +77,7 @@ def ast(inputStr : str, show = False) -> ProgramNode:
 def semantic_analysis(inputStr : str) -> ProgramNode:
     treeAst = ast(inputStr)
     sem_an = SemanticAnalysis()
-    #sem_an.run(treeAst)
+    sem_an.run(treeAst)
     return treeAst
 
 def codeGen(inputStr : str, show = False) -> str:

@@ -303,7 +303,7 @@ class TypeBuilderVisitor(Visitor):
     def visit_signature_node(self, signature_node : SignatureNode):
         if self.actual_type != None:
             if self.actual_type.get_method(signature_node.id.lexeme, len(signature_node.params)) == None:
-                self.actual_type.define_method(signature_node.id.lexeme, signature_node.type.lexeme if signature_node.type != None else "object", len(signature_node.params))
+                self.actual_type.define_method(signature_node.id.lexeme, signature_node.type.lexeme if signature_node.type != None else "object", signature_node.params)
                 return
                 
             self.error_logger.add("metodo ya definido " + signature_node.id.lexeme + " de " + self.actual_type.name)
