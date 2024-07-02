@@ -1,0 +1,21 @@
+type Knight inherits Person {
+    name() : string => "Sir" @@ base();
+}
+
+type Person(firstname : string, lastname : string) {
+    firstname = firstname;
+    lastname = lastname;
+    ada = 43;
+    name() : string => self.firstname @@ self.lastname;
+    hash() : number {
+        self.ada;
+    };
+}
+
+let phil = new Knight("Phil", "Collins"), thomas = new Person("Thomas", "Shelby") in 
+{
+    print(phil.name());
+    print(thomas.name());
+    print(phil.hash());
+    print(thomas.hash());
+};

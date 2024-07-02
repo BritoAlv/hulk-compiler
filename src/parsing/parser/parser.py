@@ -186,7 +186,6 @@ class Parser:
                 lambda s: VectorGetNode(s[1], s[3]),
                 lambda s: LiteralNode(s[1].token),
                 lambda s: LiteralNode(s[1].token),
-                lambda s: LiteralNode(s[1].token),
                 lambda s: s[2],
             ],
             "ArgList": [lambda s: [s[1]] + s[2], lambda s: []],
@@ -209,8 +208,8 @@ class Parser:
             return NewNode(call_node.callee.id, call_node.args)
         raise Exception("New-Expression must be a constructor call")
 
-    def parse(self, tokens: list[Token]) -> ParseTree:
-        return self.parsing_table.parse(tokens)
+    def parse(self, tokens: list[Token], inputStr = "") -> ParseTree:
+        return self.parsing_table.parse(tokens, inputStr)
 
     def toAst(self, tree: ParseTree):
         return self.parsing_table.convertAst(tree.root)

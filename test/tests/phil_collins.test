@@ -1,0 +1,3 @@
+{ 
+    let p = new Knight("Phil", "Collins") in print(p.name());
+};

@@ -6,21 +6,33 @@ from common.visitor import Visitor
 
 class EnvironmentBuilder(Visitor):
     def __init__(self) -> None:
-        self._environment : Environment = None
+        self._environment : Environment
+        self._context : Context
+
+        self._var_index : int
+        self._type_index : int
+
+        self._func_name : str
+        self._type_name : str
+        self._in_type : bool
+
+        self._type_graph : Graph
+        self._root_types : list[str]
+
+    def build(self, environment : Environment, program: ProgramNode) -> Environment:
+        self._environment = environment
         self._context : Context = None
 
         self._var_index : int = 0
         self._type_index : int = OBJ_TYPE_ID + 1
 
-        self._func_name : str
-        self._type_name : str
+        self._func_name : str = None
+        self._type_name : str = None
         self._in_type = False
 
         self._type_graph = Graph()
         self._root_types : list[str] = []
 
-    def build(self, program: ProgramNode) -> Environment:
-        self._environment = Environment()
         self._build(program)
 
         self._handle_inheritance()
@@ -230,5 +242,13 @@ class EnvironmentBuilder(Visitor):
                     else:
                         neighbor_type_data.methods[method].insert(1, f'{method}_{vertex}')
                 
+                # Add neighbor as a vertex descendant
+                vertex_type_data.descendants.append(neighbor)
+                
                 # Push onto stack
                 stack.append(neighbor)
+            
+            # Update vertex's ancestor descendants
+            if vertex_type_data.ancestor != None:
+                ancestor_type_data = self._environment.get_type_data(vertex_type_data.ancestor)
+                ancestor_type_data.descendants += vertex_type_data.descendants

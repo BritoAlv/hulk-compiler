@@ -1,0 +1,31 @@
+type Range(start : number, end : number, offset : number) {
+    start = start;
+    end = end;
+    current = start - offset;
+    offset = offset;
+
+    next(): bool => (self.current := self.current + self.offset) < self.end ;
+    current(): number => self.current;
+}
+
+let interval = new Range(1, 5, 1) in 
+{
+    print(interval.next());
+    print(interval.current());
+    print(interval.next());
+    print(interval.current());
+    print(interval.next());
+    print(interval.current());
+    print(interval.next());
+    print(interval.current());
+    print(interval.next());
+    print(interval.current());
+    print(interval.next());
+    print(interval.current());
+};
+
+
+
+let i = 0 in
+while (i < 10) 
+    print(i := i + 1);

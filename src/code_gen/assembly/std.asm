@@ -22,6 +22,7 @@ one: .float 1.0
 .globl build_str
 .globl build_null
 .globl null_error
+.globl error
 # .globl done # Simulation code
 
 #** Constructors
@@ -62,11 +63,11 @@ build_str:
 	jr $ra
 
 build_null:
-	li $a0 8
+	li $a0 4
     li $v0 9
     syscall
     li $t0 -1
-    sw $t0 4($v0)
+    sw $t0 ($v0)
 	jr $ra
 
 #** Printing code
@@ -456,5 +457,20 @@ null_error:
 	li $a0 1
 	li $v0 17
 	syscall
+
+error:
+	addi $sp $sp -12
+	sw $ra 4($sp)
+
+	lw $t0 8($sp)
+	sw $t0 -4($sp)
+
+	jal print_str
+	li $a0 1
+	li $v0 17
+	syscall
+
+	lw $ra 4($sp)
+	addi $sp $sp 12
 
 # done: # Simulation code

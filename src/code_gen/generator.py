@@ -2,6 +2,7 @@ from code_gen.resolver import Resolver
 from common.ast_nodes.base import Statement
 from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, NewNode, SetNode, UnaryNode, VectorGetNode, VectorSetNode, WhileNode
 from common.ast_nodes.statements import AttributeNode, MethodNode, ProgramNode, ProtocolNode, SignatureNode, TypeNode
+from common.token_class import Token
 from common.visitor import Visitor
 
 
@@ -24,7 +25,9 @@ class Generator(Visitor):
         self._literal_strings : list[str] = []
         self._literal_numbers : list[str] = []
         self._if_index = 0
+        self._logical_index = 0
         self._while_index = 0
+        self._call_index = 0
 
     def generate(self, program : ProgramNode) -> str:
         result = self._generate(program)
@@ -188,6 +191,8 @@ class Generator(Visitor):
                 else:
                     func_name = 'print_pointer'
                 func_type = 'object'
+            elif func_name == 'error':
+                func_type = 'error'
             else:
                 func_type = self._resolver.resolve_function_data(func_name).type
             
@@ -201,7 +206,8 @@ class Generator(Visitor):
             return GenerationResult(code, func_type)
         # Method call
         else:
-            if isinstance(call_node.callee, LiteralNode) and call_node.callee.id.lexeme == 'base':
+            called_method = call_node.callee.id.lexeme
+            if isinstance(call_node.callee, LiteralNode) and called_method == 'base':
                 type_data = self._resolver.resolve_type_data(self._type_name)
                 self_offset = self._get_offset('self')
                 code = f'''
@@ -217,14 +223,13 @@ class Generator(Visitor):
             elif isinstance(call_node.callee, GetNode):
                 result = self._generate(call_node.callee)
                 type_data = self._resolver.resolve_type_data(result.type)
-                called_method = call_node.callee.id.lexeme
-
                 code = result.code
 
                 method_name = type_data.methods[called_method][0]
             else:
                 raise Exception("Functions are not a type here, cannot be called that way")
-                
+            
+            # Generate code for arguments
             for arg in call_node.args:
                 result = self._generate(arg)
                 code += result.code
@@ -233,22 +238,44 @@ class Generator(Visitor):
                 offset = -(i * WORD_SIZE)
                 if i > 1:
                     code += f'''
-        jal stack_pop
-        sw $v0 {offset}($sp)
+    jal stack_pop
+    sw $v0 {offset}($sp)
 '''
                 else:
                     code += f'''
-        jal stack_pop
-        lw $t0 4($v0) # Check if null
-        beq $t0 -1 null_error
-        sw $v0 {offset}($sp)
+    jal stack_pop
+    lw $t0 ($v0) # Check if null
+    beq $t0 -1 null_error
+    sw $v0 {offset}($sp)
 '''
+                    
+            # Check if it's not a base() call
+            if isinstance(call_node.callee, GetNode):
+                # Dynamic method dispatch
+                for descendant in type_data.descendants:
+                    descendant_type_data = self._resolver.resolve_type_data(descendant)
+                    descendant_method_name = descendant_type_data.methods[called_method][0]
+                    code += f'''
+    # Dynamic method dispatch
+    lw $t0 ($v0)
+    li $t1 {descendant_type_data.id}
+    beq $t0 $t1 call_{descendant_method_name}{descendant}_{self._call_index}
+    j call_next_{descendant_method_name}{descendant}_{self._call_index}
+    call_{descendant_method_name}{descendant}_{self._call_index}:
+    jal {descendant_method_name}
+    move $a0 $v0
+    jal stack_push
+    j call_end_{called_method}_{self._call_index}
+    call_next_{descendant_method_name}{descendant}_{self._call_index}:
+    '''
             
             code += f'''
     jal {method_name}
     move $a0 $v0
     jal stack_push
+    call_end_{called_method}_{self._call_index}:
 '''
+            self._call_index += 1
             func_data = self._resolver.resolve_function_data(method_name)
             return GenerationResult(code, func_data.type)
     
@@ -309,13 +336,13 @@ class Generator(Visitor):
     jal stack_push
 '''
             return GenerationResult(code, 'bool')
-        elif literal_node.id.type == 'self':
-            offset = self._get_offset('self')
+        elif literal_node.id.type == 'null':
             code = f'''
-    lw $a0 {offset}($sp)
+    jal build_null
+    move $a0 $v0
     jal stack_push
 '''
-            return GenerationResult(code, self._type_name)
+            return GenerationResult(code, 'object')
         
     def visit_binary_node(self, binary_node: BinaryNode):
         left_result = self._generate(binary_node.left)
@@ -327,7 +354,7 @@ class Generator(Visitor):
             code = left_result.code
             code += f'''
     jal stack_pop
-    lw $t0 4($v0) # Check if null
+    lw $t0 ($v0) # Check if null
     beq $t0 -1 null_error
     lw $s0 ($v0)
     li $s1 {type_id}
@@ -353,7 +380,7 @@ class Generator(Visitor):
         right_type = right_result.type
 
         null_check_code = '''
-    lw $t0 4($v0) # Check if null
+    lw $t0 ($v0) # Check if null
     beq $t0 -1 null_error'''
 
         code = left_result.code
@@ -415,38 +442,39 @@ class Generator(Visitor):
         # Logical And and Or
         elif binary_node.op.type == 'and' or binary_node.op.type == 'or':
             if binary_node.op.type == 'and':
-                code +='''
+                code += f'''
     add $s0 $s0 $s1
-    beq $s0 2 and_true
+    beq $s0 2 and_true_{self._logical_index}
     li $a0 0
     jal build_bool
     move $a0 $v0
     jal stack_push
-    j and_end
-    and_true:
+    j and_end_{self._logical_index}
+    and_true_{self._logical_index}:
     li $a0 1
     jal build_bool
     move $a0 $v0
     jal stack_push
-    and_end:
+    and_end_{self._logical_index}:
             '''
             else:    
-                code += '''
+                code += f'''
     add $s0 $s0 $s1
     sgt $s0 $s0 $zero
-    beq $s0 1 or_true
+    beq $s0 1 or_true_{self._logical_index}
     li $a0 0
     jal build_bool
     move $a0 $v0
     jal stack_push
-    j or_end
-    or_true:
+    j or_end_{self._logical_index}
+    or_true_{self._logical_index}:
     li $a0 1
     jal build_bool
     move $a0 $v0
     jal stack_push
-    or_end:
+    or_end_{self._logical_index}:
 '''
+            self._logical_index += 1
             return GenerationResult(code, 'bool')
         # GreaterThan
         elif binary_node.op.type == 'greater':
@@ -661,6 +689,9 @@ class Generator(Visitor):
         pass
     
     def visit_if_node(self, if_node: IfNode):
+        if_index = self._if_index
+        self._if_index += 1
+
         types : list[str] = []
         code = ''
         i = 0
@@ -669,7 +700,7 @@ class Generator(Visitor):
 
             if i > 0:
                 code += f'''
-    conditional_{self._if_index}_{i - 1}_{self._func_name}:
+    conditional_{if_index}_{i - 1}_{self._func_name}:
 '''
             code += condition_result.code
             code += f'''
@@ -678,33 +709,31 @@ class Generator(Visitor):
 '''
             if i < len(if_node.body) - 1:
                 code += f'''
-    bne $t0 1 conditional_{self._if_index}_{i}_{self._func_name}
+    bne $t0 1 conditional_{if_index}_{i}_{self._func_name}
 '''
             else:
                 code += f'''
-    bne $t0 1 conditional_else_{self._if_index}_{self._func_name}
+    bne $t0 1 conditional_else_{if_index}_{self._func_name}
 '''
             
             expr_result = self._generate(expr)
             code += expr_result.code
             types.append(expr_result.type)
             code += f'''
-    j conditional_end_{self._if_index}_{self._func_name}
+    j conditional_end_{if_index}_{self._func_name}
 '''
             i += 1
 
         code += f'''
-    conditional_else_{self._if_index}_{self._func_name}:
+    conditional_else_{if_index}_{self._func_name}:
 '''
         else_result = self._generate(if_node.elsebody)
         code += else_result.code
         types.append(else_result.type)
 
         code += f'''
-    conditional_end_{self._if_index}_{self._func_name}:
+    conditional_end_{if_index}_{self._func_name}:
 '''
-
-        self._if_index += 1
 
         # Check return type
         base_type = types[0]
@@ -716,6 +745,8 @@ class Generator(Visitor):
 
 
     def visit_while_node(self, while_node: WhileNode):
+        while_index = self._while_index
+        self._while_index += 1
         code = ''
         condition_result = self._generate(while_node.condition)
         code += condition_result.code
@@ -723,29 +754,29 @@ class Generator(Visitor):
     jal stack_pop
     lw $t0 4($v0)
      
-    bne $t0 1 while_null_end_{self._while_index}
-    j while_body_{self._while_index}
-    while_start_{self._while_index}:
+    bne $t0 1 while_null_end_{while_index}
+    j while_body_{while_index}
+    while_start_{while_index}:
 '''
         code += condition_result.code
         code += f'''
     jal stack_pop
     lw $t0 4($v0)
-    bne $t0 1 while_end_{self._while_index}
+    bne $t0 1 while_end_{while_index}
     jal stack_pop
-    while_body_{self._while_index}:
+    while_body_{while_index}:
 '''
         body_result = self._generate(while_node.body)
         code += body_result.code
         code += f'''
-    j while_start_{self._while_index}
-    while_null_end_{self._while_index}:
+    j while_start_{while_index}
+    while_null_end_{while_index}:
     jal build_null
     move $a0 $v0
     jal stack_push
-    while_end_{self._while_index}:
+    while_end_{while_index}:
 '''
-        self._while_index += 1
+        while_index += 1
 
         return GenerationResult(code, body_result.type)
 
@@ -789,7 +820,7 @@ class Generator(Visitor):
         if unary_node.op.type == 'not':
             code += '''
     jal stack_pop
-    lw $t0 4($v0) # Check if null
+    lw $t0 ($v0) # Check if null
     beq $t0 -1 null_error
     lw $a0 4($v0)
     li $t0 0
@@ -802,7 +833,7 @@ class Generator(Visitor):
         else:
             code += '''
     jal stack_pop
-    lw $t0 4($v0) # Check if null
+    lw $t0 ($v0) # Check if null
     beq $t0 -1 null_error
     lwc1 $f12 4($v0)
     neg.s $f12 $f12
@@ -852,7 +883,14 @@ class Generator(Visitor):
         pass
 
     def visit_vector_get_node(self, vector_get_node: VectorGetNode):
-        pass
+        node = CallNode(
+            GetNode(
+                vector_get_node.left,
+                Token('id', 'element')
+            ),
+            [vector_get_node.index]
+        )
+        return self._generate(node)
 
     def visit_vector_set_node(self, vector_set_node: VectorSetNode):
         pass

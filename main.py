@@ -1,14 +1,21 @@
 import argparse
+from os import mkdir
+import pickle
 import sys
 
 from code_gen.constructor_builder import ConstructorBuilder
 from code_gen.environment_builder import EnvironmentBuilder
 from code_gen.generator import Generator
 from code_gen.resolver import Resolver
+from common.ast_nodes.statements import ProgramNode
+from common.parse_nodes.parse_tree import ParseTree
 from common.printer import TreePrinter
+from common.token_class import Token
 from lexing.lexer.main import *
 from parsing.parser.parser import Parser
 from semantic.tipos import SemanticAnalysis
+import re
+import pexpect
 
 # Set up argument parsing
 parser = argparse.ArgumentParser(description='Hulk Compiler')
@@ -20,32 +27,24 @@ parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
-        protocol Node {
-            eval(node: number, valor: number) : number;
-        } 
-        type Perro(color : string, edad: number) inherits Node 
-        {
-            color = color;
-            edad = 1;
-            comer = 1;
-            son = new Perro("31", 4);
-            Ladrar(a: number) : Perro {
-                new Perro("1", 1);
-            };
-            Ladrar(a: number, b : string, ba : number) : Vector => [12];
-        }
-        function h(num: number) : Perro =>
-            new Perro("31", 4);  
-        let a = [1,2,3], b = 3, c = new Perro("ds", 3) in 
-            {
-              b := 3; 
-              c.Ladrar(1);       
-            };
-        """
+protocol Node{
+    eval(a: number): number;
+}
+function h(s: string): Perro {
+let i = new Perro("3", 3) in i;
+}
+type Perro(color : string, edad: number)
+{
+    color = color;
+    edad = edad;
+    Ladrar(a: number, af: string) : number => 1;
+}
+1;
+"""
 
 inputStr = defaultHulkProgram
 
-def codeGen(inputStr : str):
+def lex(inputStr : str, show = False) -> list[Token]:
     tokens = hulk_lexer.scanTokens(inputStr)
     if hulk_lexer.report(inputStr) :
         sys.exit(1)
@@ -59,7 +58,18 @@ def codeGen(inputStr : str):
 def parse(inputStr : str, show = False) -> Parser:
     tokens = lex(inputStr)
     parser = Parser()
-    parse_tree = parser.parse(tokens)
+    parse_tree = parser.parse(tokens, inputStr)
+    if show:
+        print("Parse Tree:")
+        parse_tree.root.print([0], 0, True)
+        print("\n")
+    if parse_tree.root.value == "ERROR":
+        sys.exit(1)
+    return parse_tree
+
+def ast(inputStr : str, show = False) -> ProgramNode:
+    parse_tree = parse(inputStr)
+    parser = Parser()
     ast = parser.toAst(parse_tree)
     if show:
         print("AST:")
@@ -70,87 +80,136 @@ def parse(inputStr : str, show = False) -> Parser:
 def semantic_analysis(inputStr : str) :
     treeAst = ast(inputStr)
     sem_an = SemanticAnalysis()
-    #sem_an.run(treeAst)
+    sem_an.run(treeAst)
     return treeAst
 
 def codeGen(inputStr : str, show = False) -> str:
     ast = semantic_analysis(inputStr)
     constructor_builder = ConstructorBuilder()
     constructor_builder.build(ast)
+
+    # Load standard environment
+    with open('src/code_gen/assembly/environment.pkl', 'rb') as file:
+        environment = pickle.load(file)
     environment_builder = EnvironmentBuilder()
-    environment = environment_builder.build(ast)
+    environment_builder.build(environment, ast)
+    
+    # environment._functions.pop('main')
+    # with open('environment.pkl', 'wb') as file:
+    #     pickle.dump(environment, file)
+    
     resolver = Resolver(environment)
     generator = Generator(resolver)
-    print("Generated Code:")
-    print(generator.generate(ast))
-    print("\n")
-
-def lex(inputStr : str):
-    tokens = hulk_lexer.scanTokens(inputStr)
-    print("Tokens:")
-    for token in tokens:
-        print(token)
-    print("\n")
-
-def parse(inputStr : str):
-    tokens = hulk_lexer.scanTokens(inputStr)
-    parser = Parser()
-    parse_tree = parser.parse(tokens)
-    print("Parse Tree:")
-    parse_tree.root.print([0], 0, True)
-    print("\n")
-
-def ast(inputStr : str):
-    tokens = hulk_lexer.scanTokens(inputStr)
-    parser = Parser()
-    parse_tree = parser.parse(tokens)
-    ast = parser.toAst(parse_tree)
-    print("AST:")
-    print(ast.accept(TreePrinter()))
-    print("\n")
-
-def semantic_analysis(inputStr : str):
-    tokens = hulk_lexer.scanTokens(inputStr)
-    parser = Parser()
-    parse_tree = parser.parse(tokens)
-    ast = parser.toAst(parse_tree)
+    if show:
+        print("Generated Code:")
+        print(generator.generate(ast))
+        print("\n")
+    return generator.generate(ast)
     
-    sem_an = SemanticAnalysis()
-    sem_an.run(ast)
-
 def run(inputStr : str):
-    # run the assembly code somehow
-    pass
+    assembly = codeGen(inputStr)
+
+    # Paths of assembly files
+    file1_name = '.bin/main.asm'
+    file2_name = '.bin/std.asm'
+    file3_name = '.bin/stack.asm'
+    file4_name = '.bin/vector.asm'
+
+    try:
+        mkdir('.bin/')
+    except:
+        pass
+
+    with open('src/code_gen/assembly/std.asm', 'r') as source:
+        with open(file2_name, 'w') as target:
+            target.write(source.read())
+
+    with open('src/code_gen/assembly/stack.asm', 'r') as source:
+        with open(file3_name, 'w') as target:
+            target.write(source.read())
+    
+    with open('src/code_gen/assembly/vector.asm', 'r') as source:
+        with open(file4_name, 'w') as target:
+            target.write(source.read())
+
+    with open(file1_name, 'w') as file:
+        file.write(assembly)
+
+    startup_regex = re.compile(
+        r'SPIM Version \d+\.\d+ of \w+ \d+, \d+\r\n'
+        r'Copyright \d+-\d+, James R\. Larus\.\r\n'
+        r'All Rights Reserved\.\r\n'
+        r'See the file README for a full copyright notice\.\r\n'
+        r'Loaded: /usr/lib/spim/exceptions\.s\r\n'
+        r'\(spim\) '
+    )
+
+    # Initialize a list to store output lines
+    spim_output = []
+
+    try:
+        spim = pexpect.spawn("spim")
+        spim.expect_exact('(spim) ')
+
+        spim.sendline(f'load "{file1_name}"')
+        spim.expect_exact('(spim) ')
+
+        spim.sendline(f'load "{file2_name}"')
+        spim.expect_exact('(spim) ')
+
+        # Load the third file
+        spim.sendline(f'load "{file3_name}"')
+        spim.expect_exact('(spim) ')
+
+        # Load the third file
+        spim.sendline(f'load "{file4_name}"')
+        spim.expect_exact('(spim) ')
+
+        # Run the SPIM process and capture its output
+        spim.sendline('run')
+        spim.expect_exact('(spim) ')
+        spim_output.append(spim.before.decode('utf-8'))  # Decode and store the output
+
+        # Continue with the rest of the commands
+        spim.sendline('ex')
+        #spim.interact()
+        
+        # Print the captured output
+        print(spim_output[0][5:])
+        
+    except pexpect.exceptions.ExceptionPexpect as e:
+        print(f"Error running SPIM: {e}")
 
 if len(sys.argv) == 1:
-    ast(inputStr)
-    print(inputStr)
-    semantic_analysis(inputStr)
+    run(inputStr)
     sys.exit(0)
-    
-# Parse arguments
-args = parser.parse_args()
+else:    
+    # Parse arguments
+    args = parser.parse_args()
 
-# Use the input argument
-inputStr = sys.stdin.read().strip()
+    # Use the input argument
+    # inputStr = sys.stdin.read().strip()
 
-if inputStr == None or inputStr == "":
-    inputStr = defaultHulkProgram
+    if inputStr == None or inputStr == "":
+        inputStr = defaultHulkProgram
 
-if args.lex:
-    lex(inputStr)
+    if args.lex:
+        lex(inputStr, True)
 
-if args.parse:
-    parse(inputStr)
+    if args.parse:
+        parse(inputStr, True)
 
-if args.ast:
-    ast(inputStr)
+    if args.ast:
+        ast(inputStr, True)
 
-if args.semantic_analysis:
-    semanticAnalysis(inputStr)
+    if args.semantic_analysis:
+        semantic_analysis(inputStr)
 
-if args.codegen:
-    codeGen(inputStr)
+    if args.codegen:
+        codeGen(inputStr, True)
 
     if args.run:
-        run(inputStr)
+        try:
+            run(inputStr)
+        except:
+            sys.exit(1)

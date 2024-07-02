@@ -1,0 +1,17 @@
+function fibonacci(n : number) : number => 
+let index = 0, next = 1, current = 1, temp = next, condition = true in 
+    while(condition)
+        if (index == n)
+        {
+            condition := false;
+            current;
+        }
+        else
+        {
+            index := index + 1;
+            temp := next;
+            next := next + current;
+            current := temp;
+        };
+
+print(fibonacci(40));

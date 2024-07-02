@@ -62,9 +62,8 @@ class Resolver:
             return 'object'
 
         type_data_1 = self._environment.get_type_data(type_1)
-        type_data_2 = self._environment.get_type_data(type_2)
 
-        if type_1 == type_data_2.ancestor:
+        if type_2 in type_data_1.descendants:
             return type_1
         
         if type_data_1.ancestor == None:

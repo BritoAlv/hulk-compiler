@@ -34,7 +34,7 @@ class Type:
     
     def get_method(self, name, args):
         for i in self.method:
-            if i.name == name and len(i.args) == len(args):
+            if i.name == name :
                 return i
         return None  
     
@@ -84,7 +84,7 @@ class ContextLower():
     
     def is_defined_func(self, name, args) -> bool:
         for i in self.method:
-            if i.name == name and len(i.args) == len(args):
+            if i.name == name:
                 return i
         return self.parent.is_defined_func(name, args) if self.parent != None else None
     
@@ -93,6 +93,7 @@ class ContextLower():
             if i.name == name:
                 return True
         return (self.parent != None and self.parent.is_defined_func_whithout_params(name))
+    
     def get(self, name):
         return self.dict.get(name)
 
@@ -377,6 +378,7 @@ class TypeBuilderVisitor(Visitor):
     def visit_signature_node(self, signature_node : SignatureNode):
         if self.actual_type != None:
             if self.actual_type.get_method(signature_node.id.lexeme, len(signature_node.params)) == None:
+                self.actual_type.define_method(signature_node.id.lexeme, signature_node.type.lexeme if signature_node.type != None else "object", signature_node.params)
                 return_type = signature_node.type.lexeme if signature_node.type != None else None
                 # revisa que existe el tipo de retorno 
                 if return_type != None and self.hierarchy.is_type(return_type):
@@ -576,7 +578,6 @@ class TypeCheckerVisitor(Visitor):
         value = ""
         for i in program_node.decls:
             value = i.accept(self)
-        print("retorno ", value.type, value.value)
 
     def visit_attribute_node(self, attribute_node : AttributeNode):
         id = attribute_node.id.lexeme
@@ -595,7 +596,20 @@ class TypeCheckerVisitor(Visitor):
         self.error_logger.add("atributo " + id + " ya definido")
         
     def visit_method_node(self, method_node : MethodNode):
-        return method_node.body.accept(self)
+        ret = method_node.body.accept(self)
+        if method_node.id.lexeme == "main":
+            return ret
+        if ret != None:
+            type_func = None
+            if self.actual_type == None:
+                type_func = self.context.is_defined_func(method_node.id.lexeme, [])
+            else:
+                type_func = self.actual_type.get_method(method_node.id.lexeme, [])
+            if type_func != None:
+                if (self.hierarchy.get_lca(ret.type, type_func.type).name) == type_func.type:
+                    return ret
+        self.error_logger.add("metodo no cumple " + method_node.id.lexeme + " retorno con el tipo establecido")
+        return ComputedValue(None, None)
 
     def visit_type_node(self, type_node : TypeNode):
         last_type = self.actual_type
@@ -606,7 +620,7 @@ class TypeCheckerVisitor(Visitor):
 
         # necesita revisar que el tipo implementa todos los metodos de su protocolo
         ancient = self.hierarchy.get_type(self.hierarchy.root, self.actual_type.name).parent
-        if (ancient != None):
+        if (ancient != None and ancient.name != "object"):
             methods_ancient = self.context.get_type(ancient.name).method 
             for i in methods_ancient:
                 mk = False
@@ -730,7 +744,7 @@ class TypeCheckerVisitor(Visitor):
                 for i in method.args:
                     arg_type = i.type
                     j += 1
-                    if j < len(args) and args[j] != arg_type:
+                    if j < len(args) and self.hierarchy.get_lca(args[j],arg_type).name != arg_type:
                         self.error_logger.add("argumentos incorrecto de tipo " + args[j] + " " + method.name)
                         continue
                     if j >= len(args):
@@ -753,7 +767,6 @@ class TypeCheckerVisitor(Visitor):
             self.is_call_node = False
             self.is_use_self = False
             type = self.context.get_type(callee.type)
-            print("call ", callee.type, type)
             if type == None:
                 self.error_logger.add("tipo de llamada no exite")
                 self.queue_call.pop()
@@ -772,7 +785,6 @@ class TypeCheckerVisitor(Visitor):
         type = self.context.get_type(left.type)
         id = get_node.id.lexeme
         if self.actual_type == None:
-            print(get_node.left.id.lexeme, left.type, type, id)
             if type == None: 
                 self.error_logger.add("tipo  no existe")
                 self.queue_call.pop()
@@ -1043,12 +1055,23 @@ class TypeCheckerVisitor(Visitor):
                 if (self.hierarchy.is_type(right.type)) == None:
                     self.error_logger.add("en el is no hay tipo existe")
                     return ComputedValue(None, None)
-                return ComputedValue(left.type == right.type)
+                return ComputedValue("boolean", None)
 
             case "as":
                 left = binary_node.left.accept(self)
                 right = binary_node.right.accept(self)
+                left = binary_node.left.accept(self)
+                if isinstance(binary_node.right, LiteralNode) == False:
+                    self.error_logger.add("no viene un tipo en el as")
+                    return ComputedValue(None, None)
+                self.queue_call.append("as")
+                right = binary_node.right.accept(self)
+                self.queue_call.pop()
 
+                if self.hierarchy.get_lca(left.type, right.type).name == right.type:
+                    self.error_logger.add("en el as no hay tipo existe")
+                    return ComputedValue(None, None)
+                return ComputedValue(left.type == right.type)
             case "@":
                 left = binary_node.left.accept(self)
                 right = binary_node.right.accept(self)
@@ -1127,9 +1150,8 @@ class TypeCheckerVisitor(Visitor):
             case "base":
                 return ComputedValue("base", "base")
             case "id":
-                if len(self.queue_call) > 0 and self.queue_call[len(self.queue_call) - 1] == "is":
+                if len(self.queue_call) > 0 and (self.queue_call[len(self.queue_call) - 1] == "is" or self.queue_call[len(self.queue_call) - 1] == "as"):
                     return ComputedValue(id, id)
-                print(id, self.context.is_defined(id), self.is_call_node == False)
                 if self.context.is_defined(id) and self.is_call_node == False:
                     var = self.context.get(id)
                     return ComputedValue(var.type, var.value)
@@ -1150,12 +1172,7 @@ class SemanticAnalysis:
     def run(self, ast):
         context = Context()
         hierarchy = Hierarchy()
-        context.create_type("object")
-        context.create_type("number")
-        context.create_type("string")
-        context.create_type("boolean")
-        context.create_type("Vector")
-        context.create_type("Iterable")
+        context.define_func("print", "object", [(Token("object", "name"), Token("object", "object"))])
 
         typeCollectorVisitor = TypeCollectorVisitor(context)
         ast.accept(typeCollectorVisitor)

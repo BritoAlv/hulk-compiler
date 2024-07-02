@@ -185,19 +185,11 @@ type C inherits A {
 #    let x : Hashable = new Point(0,0) in print(x.hash()); # error
 }
 
+let vec = new Vector() in 
+{
+    vec.append()
+    vec;
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+v[0] = 1
+v.set(0, 1)

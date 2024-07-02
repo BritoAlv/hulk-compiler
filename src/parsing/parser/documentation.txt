@@ -20,7 +20,7 @@ AttributeDecl -> Assignment  semicolon .
 MethodDecl -> id lparen ParamList rparen OptType FuncBody .
 ParamList -> id OptType ParamTail | .
 ParamTail -> comma id OptType ParamTail | .
-FuncBody -> arrow Expr semicolon | FunnyBlock .
+FuncBody -> arrow Expr semicolon | BlockExpr .
 
 Assignment -> id OptType equal Expr .
 OptType -> colon id | .
@@ -72,7 +72,7 @@ Unary -> minus Primary | not Primary | Primary.
 
 Primary -> false | true | number | string | CallList .
 
-CallList -> CallList dot id | CallList lparen ArgList rparen | CallList lbracket Expr rbracket | self | base | id | lparen Expr rparen .
+CallList -> CallList dot id | CallList lparen ArgList rparen | CallList lbracket Expr rbracket | null | id | lparen Expr rparen .
 
 ArgList -> Expr ArgTail | .
 

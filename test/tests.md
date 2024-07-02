@@ -1,8 +1,4 @@
-# Passed
-
 ##
-
-```hulk
 type A(id : string) 
 {
     id = id;
@@ -26,11 +22,9 @@ let a = new A("Pancho"), b = new B("Jenn", 20), c = new C("John", 30) in
     c.jump();
     c.greet();
 };
-```
-
 ##
 
-```hulk
+##
 type Knight inherits Person {
     name() : string => "Sir" @@ base();
 }
@@ -52,10 +46,9 @@ let phil = new Knight("Phil", "Collins"), thomas = new Person("Thomas", "Shelby"
     print(phil.hash());
     print(thomas.hash());
 };
-```
+##
 
 ## 
-```hulk
 function factorial(n : number) : number => 
 if (n < 1)
     1
@@ -63,10 +56,9 @@ else
     n * factorial(n - 1);
 
 print(factorial(5));
-```
+##
 
 ##
-```hulk
 function fibonacci(n : number) : number => 
 if (n < 2)
     1
@@ -74,10 +66,9 @@ else
     fibonacci(n - 1) + fibonacci(n - 2);
 
 print(fibonacci(5));
-```
+##
 
 ##
-```hulk
 function fibonacci(n : number) : number => 
 let index = 0, next = 1, current = 1, temp = next, condition = true in 
     while(condition)
@@ -95,37 +86,32 @@ let index = 0, next = 1, current = 1, temp = next, condition = true in
         };
 
 print(fibonacci(40));
-```
+##
 
 ##
-```hulk
 function fib(n : number) : number => if (n == 0 | n == 1) 1 else fib(n-1) + fib(n-2);
 
 print(fib(6));
-```
+##
 
 ##
-```hulk
 print(print(2)); # Prints pointer address
-```
+##
 
 ##
-```hulk
 print(print(2) as number); # Prints 2
-```
+##
 
 ##
-```hulk
 let a = "Thomas", a = "John" in 
 {
     let a = "Shelby" in print(a);
     let b = a @@ "McArthur" in print(b);
     print(a);
 };
-```
+##
 
 ##
-```hulk
 {
     let a = 6 in
         let b = a * 7 in
@@ -152,9 +138,9 @@ let a = "Thomas", a = "John" in
             print(b);
         };
 };
-```
+##
 
-```hulk
+##
 type Range(start : number, end : number, offset : number) {
     start = start;
     end = end;
@@ -180,15 +166,15 @@ let interval = new Range(1, 5, 1) in
     print(interval.next());
     print(interval.current());
 };
-```
 
-```hulk
+
+
 let i = 0 in
 while (i < 10) 
     print(i := i + 1);
-```
+##
 
-```hulk
+##
 type Range(start : number, end : number, offset : number) {
     start = start;
     end = end;
@@ -200,9 +186,9 @@ type Range(start : number, end : number, offset : number) {
 }
 
 for (n in new Range(1, 10, 1)) print(n);
-```
+##
 
-```hulk
+##
 type Stack
 {
     count = 0;
@@ -285,9 +271,9 @@ let s = new Stack() in
     for (elem in s) 
         print(elem);
 };
-```
+##
 
-```hulk
+##
 type Node(value : number)
 {
     value = value;
@@ -319,9 +305,9 @@ type Node(value : number)
         print(node.getValue());
     };
 };
-```
+##
 
-```hulk
+##
 type Node(value : number) 
 {
     value = value;
@@ -338,12 +324,40 @@ let a = new Node(10) in
     print(a.getPrevious().getValue());
     a.getPrevious().getPrevious().getValue(); # Null reference error
 };
-```
+##
 
-# Not Passed
+##
+type A
+{
+    casa() : object => print("A");
+}
 
-## (Not HULK valid) : Self cannot be assign to an attribute
-```hulk
+type B inherits A
+{
+    casa() : object => print("B");
+}
+
+type C inherits B
+{
+    casa() : object => print("C");
+}
+
+function Test(n : number) : A =>
+if (n < 0)
+    new C()
+elif (n < 10)
+    new B()
+else
+    new A();
+
+let a = Test(10), b = Test(5), c = Test(-10) in {
+    a.casa();
+    b.casa();
+    c.casa();
+};
+##
+
+##
 type Stack
 {
     top = new Node(0);
@@ -400,89 +414,82 @@ let stack = new Stack() in
     print("Top:" @@ stack.peek());
     print("Count:" @@ stack.getCount());
 };
-```
+##
 
-## (Not HULK valid)
-```hulk
+##
+
 let a = "Thomas" in 
 {
     let a = a @@ "Shelby" in print(a);
     print(a);
 };
-```
+##
 
-## 5 (Not HULK valid)
-```hulk
+##
+
 function fib(n : number, n : number) : number => 2;
 print(fib(6));
-```
+##
 
-## 6 (Not HULK valid)
-```hulk
+##
 function fib(n : number, n : number) : nn + 1;
-```
+##
 
-## 8 (Not HULK valid)
-```hulk
+##
 print("a" + 2);
-```
+##
 
-## 9 (Not HULK valid)
-```hulk
+##
+
 let x = 2 in print(x + y);
-```
+##
 
-## 11
-```hulk
+##
 print(sin(10));
-```
+##
 
-## 12 (Not HULK valid)
-```hulk
+##
+
 function g() => f(x);
 function f() => g(x);
 print("Boom");
-```
+##
 
-## 13 (Not HULK valid)
-```hulk
+##
 function g(x) => f(x);
 function f(x) => g(x);
 print("Semantic should work but code don't");
-```
+##
 
-## 14 
-```hulk
+## 
 print("The message is \"Hello World\"");
-```
+##
 
-## 15 (Not HULK valid)
-```hulk
+##
+
 let a = 10 in { 
             a := "A";
             print(a);
             };
-```
+##
 
-## 16
-```hulk
+##
+
 type Knight inherits Person {
     name() => "Sir" @@ base();
 }
 
 let p = new Knight("Phil", "Collins") in
     print(p.name());
-```
+##
 
-## 17 (Not HULK valid)
-```hulk
+##
+
 let pt = new PolarPoint(3,4) in
     print("rho: " @ pt.rho());
-```
+##
 
-## 18
-```hulk
-# print first square greater or equal than x.
+##
 function first_square(z : Number)
 {
     let len = z, squares = [x^2 || x in range(1, len+1, 1)], st = 0, ed = len - 1, middle = 0 
@@ -511,27 +518,24 @@ function first_square(z : Number)
         };
 };
 print(first_square(10));
-```
+##
 
-## 19
-```hulk
-# semantic error
+##
 let squares = [x^2 || x in range(1,x)] in print(x);
-```
+##
 
-## 20
-```hulk
-# semantic error
-let squares = [x^2 || x in range(1, 10)] in print(x + y);
-```
+##
 
-## 21
-```hulk
-# semantic error
+
 let squares = [x^2 || x in range(1, 10)] in print(x + y);
-```
-## 22
-```hulk
+##
+
+##
+
+let squares = [x^2 || x in range(1, 10)] in print(x + y);
+##
+
+##
 type range(st:Number, ed:Number, offset : Number) {
     st = st;
     ed = ed;
@@ -613,22 +617,20 @@ type BinaryNode(left : Node, op : string, right : Node) {
         };
     };
 }
-
 let node = parseTerm([3, "*", 2, "*", 4, "-", 1, "-", 1]) in print(node.eval());
-```
+##
 
-## 23
-```hulk
+##
+
 print(sin(1.03432)^2 + cos(1.03432)^2);
-```
+##
 
-## 24
-```hulk
+##
 4 @ 4;
-```
+##
 
-## 25
-```hulk
+##
+
 type Person
 {
     message = "Hi";
@@ -636,9 +638,9 @@ type Person
 }
 
 (new Person()).greet();
-```
-## 26
-```hulk
+##
+
+##
 
 type Num
 {
@@ -646,20 +648,20 @@ type Num
     get_num() => self.num;
 }
 print(3^(new Num()).get_num())
-```
+##
 
-## 27
-```hulk
+##
+
 type Num
 {
     num = 4;
     get_num() => self.num;
 }
 print(3^(new Num()).get_num())
-```
+##
 
-## 28
-```hulk
+##
+
 type Superman {
 }
 type Bird {
@@ -667,10 +669,10 @@ type Bird {
 type Plane {
 }
 4;
-```
+##
 
-## 29
-```hulk
+##
+
 type A {
     hello() => print("A");
 }
@@ -683,10 +685,10 @@ type C inherits A {
     hello() => print("C");
 }
 4;
-```
+##
 
-## 30
-```hulk
+##
+
 print(tan(PI) ** 2 + cot(PI) ** 2); #error
 let msg = "Hello World" in print(msg);
 let number = 42, text = "The meaning of life is" in
@@ -746,24 +748,24 @@ let a = 10 in while (a >= 0) {
     print(a);
     a := a - 1;
 }
-```
+##
 
-## 31
-```hulk
+##
+
 { 
     print("The message is \\\" Hello World \\\" " @ "and\\\"nothing else \\\"");
 };
-```
+##
 
-## 32
-```hulk
+##
+
 { 
     let p = new Knight("Phil", "Collins") in print(p.name());
 };
-```
+##
 
-## 33
-```hulk
+## 
+
 type Node(value : number)
 {
     value = value;
@@ -785,91 +787,36 @@ let n1 = new Node(4), n2 = new Node(6), n3 = new Node(8) in
     n1.getNext().getNext().print();
     n2.getPrevious().print();
 };
-```
+##
 
-## 34
-"""
+##
 {
     print("\\\" a"); 
 }
-"""
+##
 
-## 35
-"""hulk
+## 
 {
 	print("Alvaro says: 'what is a regular expression'");
     print("Someone older says to him: \\\"let drama go\\\"");
     print("He answers with \\\"Speak is easy\\\"");
     print("There is no need to escape this ' symbol because in Hulk it is not a special character");
 }
-"""
+## 
 
-```hulk
-type Stack
-{
-    top = new Node(0);
-    count = 0;
+##
+type range(st:Number, ed:Number, offset : Number) {
+    st = st;
+    ed = ed;
+    offset = offset;
+    current = st - offset;
 
-    push(n : number) : number => let pushedNode = new Node(n) in 
-    {
-        pushedNode.addPrevious(self.top);
-        self.top.addNext(pushedNode);
-        self.top := pushedNode;
-        self.count := self.count + 1;
-        n;
-    };
-
-    pop(n : number) : number => let popped = self.top.getValue() in 
-    {
-        self.top := self.top.getPrevious();
-        self.count := self.count - 1;
-        popped;
-    };
-
-    peek() : number => self.top.getValue();
-
-    getCount() : number => self.count;
+    next(): Boolean => (self.current := self.current + self.offset) < self.ed;
+    m(): Number => self.current;
 }
 
-type Node(value : number)
+let X = new range(3, 6, 1) in while(X.next())
 {
-    value = value;
-    previous = self;
-    next = self;
-    addPrevious(previous : Node) : Node => self.previous := previous;
-    addNext(next : Node) : Node => self.next := next;
-    getPrevious() : Node => self.previous;
-    getNext() : Node => self.next;
-    print() : number => print(self.value);
-    getValue() : number => self.value;
-}
-
-let stack = new Stack() in
-{
-    stack.push(4);
-    print("Top:" @@ stack.peek());
-    print("Count:" @@ stack.getCount());
-    stack.push(3);
-    stack.pop();
-    stack.push(2);
-    stack.push(5);
-    stack.pop();
-    stack.pop();
-    print("Top:" @@ stack.peek());
-    print("Count:" @@ stack.getCount());
-    stack.push(10);
-    print("Top:" @@ stack.peek());
-    print("Count:" @@ stack.getCount());
+    print(X.m());
 };
-```
-
-#david 1
-```hulk
-type Perro(color : string, color: number)
-{
-    color = color;
-    edad = edad;
-    Ladrar(a: number, af: string) : number => print("Wolf" @ "Wolf");
-}
-let a = new Perro("Negro", 7), c = new Perro("Negro", 7), b = [1, "3"] in if(1 == 1) "t" else 1;
-```+
+##
