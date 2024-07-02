@@ -250,7 +250,7 @@ class Parser:
             return CallNode(
                 GetNode(
                     s[1].left,
-                    Token('id', 'set_Vector')
+                    Token('id', 'set')
                 ),
                 [
                     s[1].index,

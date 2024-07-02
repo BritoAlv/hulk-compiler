@@ -22,6 +22,7 @@ one: .float 1.0
 .globl build_str
 .globl build_null
 .globl null_error
+.globl error
 # .globl done # Simulation code
 
 #** Constructors

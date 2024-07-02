@@ -1,5 +1,6 @@
 import argparse
 from os import mkdir
+import pickle
 import sys
 
 from code_gen.constructor_builder import ConstructorBuilder
@@ -26,13 +27,43 @@ parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
+type Range(start : number, end : number, offset : number) {
+    start = start;
+    end = end;
+    current = start - offset;
+    offset = offset;
 
-type Perro
-{
-    Parir() => new Perro();
-    nieto = self.Parir().Parir();
+    next(): bool => (self.current := self.current + self.offset) < self.end ;
+    current(): number => self.current;
 }
-3;
+
+function range(s : number, e : number) : Range => new Range(s, e, 1);
+
+function fibonacci(n : number) : number => 
+let index = 0, next = 1, current = 1, temp = next, condition = true in 
+    while(condition)
+        if (index == n)
+        {
+            condition := false;
+            current;
+        }
+        else
+        {
+            index := index + 1;
+            temp := next;
+            next := next + current;
+            current := temp;
+        };
+
+let a = [fibonacci(i) || i in range(0, 21)] in
+{
+    for(i in a) print(i as number);
+    
+    for(i in range(0, 11))
+        a[i] := 0;
+
+    for(i in a) print(i as number);
+};
 """
 
 inputStr = defaultHulkProgram
@@ -80,8 +111,17 @@ def codeGen(inputStr : str, show = False) -> str:
     ast = semantic_analysis(inputStr)
     constructor_builder = ConstructorBuilder()
     constructor_builder.build(ast)
+
+    # Load standard environment
+    with open('src/code_gen/assembly/environment.pkl', 'rb') as file:
+        environment = pickle.load(file)
     environment_builder = EnvironmentBuilder()
-    environment = environment_builder.build(ast)
+    environment_builder.build(environment, ast)
+    
+    # environment._functions.pop('main')
+    # with open('environment.pkl', 'wb') as file:
+    #     pickle.dump(environment, file)
+    
     resolver = Resolver(environment)
     generator = Generator(resolver)
     if show:
@@ -97,6 +137,7 @@ def run(inputStr : str):
     file1_name = '.bin/main.asm'
     file2_name = '.bin/std.asm'
     file3_name = '.bin/stack.asm'
+    file4_name = '.bin/vector.asm'
 
     try:
         mkdir('.bin/')
@@ -109,6 +150,10 @@ def run(inputStr : str):
 
     with open('src/code_gen/assembly/stack.asm', 'r') as source:
         with open(file3_name, 'w') as target:
+            target.write(source.read())
+    
+    with open('src/code_gen/assembly/vector.asm', 'r') as source:
+        with open(file4_name, 'w') as target:
             target.write(source.read())
 
     with open(file1_name, 'w') as file:
@@ -138,6 +183,10 @@ def run(inputStr : str):
 
         # Load the third file
         spim.sendline(f'load "{file3_name}"')
+        spim.expect_exact('(spim) ')
+
+        # Load the third file
+        spim.sendline(f'load "{file4_name}"')
         spim.expect_exact('(spim) ')
 
         # Run the SPIM process and capture its output
