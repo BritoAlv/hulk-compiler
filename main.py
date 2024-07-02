@@ -25,9 +25,9 @@ defaultHulkProgram = """
         } 
         type Perro(color : string, edad: number) inherits Node 
         {
-            color = base;
-            edad = new Perro("31", 4);
-            comer = self.edad.Ladrar(1).Ladrar(1);
+            color = color;
+            edad = 1;
+            comer = 1;
             son = new Perro("31", 4);
             Ladrar(a: number) : Perro {
                 new Perro("1", 1);
@@ -39,7 +39,7 @@ defaultHulkProgram = """
         let a = [1,2,3], b = 3, c = new Perro("ds", 3) in 
             {
               b := 3; 
-              a := 3;       
+              c.Ladrar(1);       
             };
         """
 
@@ -56,7 +56,7 @@ def codeGen(inputStr : str):
         print("\n")
     return tokens
 
-def parse(inputStr : str, show = False) -> ParseTree:
+def parse(inputStr : str, show = False) -> Parser:
     tokens = lex(inputStr)
     parser = Parser()
     parse_tree = parser.parse(tokens)
@@ -67,7 +67,7 @@ def parse(inputStr : str, show = False) -> ParseTree:
         print("\n")
     return ast
 
-def semantic_analysis(inputStr : str) -> ProgramNode:
+def semantic_analysis(inputStr : str) :
     treeAst = ast(inputStr)
     sem_an = SemanticAnalysis()
     #sem_an.run(treeAst)

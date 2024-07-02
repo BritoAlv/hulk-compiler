@@ -607,7 +607,6 @@ class TypeCheckerVisitor(Visitor):
         # necesita revisar que el tipo implementa todos los metodos de su protocolo
         ancient = self.hierarchy.get_type(self.hierarchy.root, self.actual_type.name).parent
         if (ancient != None):
-            print(ancient.name, self.context.get_type(ancient.name))
             methods_ancient = self.context.get_type(ancient.name).method 
             for i in methods_ancient:
                 mk = False
@@ -754,6 +753,7 @@ class TypeCheckerVisitor(Visitor):
             self.is_call_node = False
             self.is_use_self = False
             type = self.context.get_type(callee.type)
+            print("call ", callee.type, type)
             if type == None:
                 self.error_logger.add("tipo de llamada no exite")
                 self.queue_call.pop()
@@ -772,13 +772,19 @@ class TypeCheckerVisitor(Visitor):
         type = self.context.get_type(left.type)
         id = get_node.id.lexeme
         if self.actual_type == None:
+            print(get_node.left.id.lexeme, left.type, type, id)
             if type == None: 
                 self.error_logger.add("tipo  no existe")
                 self.queue_call.pop()
                 return ComputedValue(None, None)
-            if type.get_method_whithout_params(id) != None:
-                self.queue_call.pop()
-                return ComputedValue(type.name, id)
+            if len(self.queue_call) > 1 and self.queue_call[len(self.queue_call) - 2] == "call":
+                if type.get_method_whithout_params(id) != None:
+                    self.queue_call.pop()
+                    return ComputedValue(type.name, id)
+                else:
+                    self.error_logger.add("intentando acceder a un atributo privado " + id)
+                    self.queue_call.pop()
+                    return ComputedValue(None, None)
             else:
                 self.error_logger.add("intentando acceder a un atributo privado " + id)
                 self.queue_call.pop()
@@ -880,13 +886,13 @@ class TypeCheckerVisitor(Visitor):
         return ComputedValue("object")
 
     def visit_binary_node(self, binary_node : BinaryNode):
-        left = binary_node.left.accept(self)
-        right = binary_node.right.accept(self)
         type = None
         value = None
         msg = "" 
         match binary_node.op.lexeme:
             case "==":
+                left = binary_node.left.accept(self)
+                right = binary_node.right.accept(self)
                 type = "boolean"
                 if left.type == right.type:
                     value = None
@@ -901,6 +907,8 @@ class TypeCheckerVisitor(Visitor):
                     value = False
 
             case ">=":
+                left = binary_node.left.accept(self)
+                right = binary_node.right.accept(self)
                 type = "boolean"
                 if left.type == right.type:
                     value = None
@@ -915,6 +923,8 @@ class TypeCheckerVisitor(Visitor):
                     value = False
             
             case "<=":
+                left = binary_node.left.accept(self)
+                right = binary_node.right.accept(self)
                 type = "boolean"
                 if left.type == right.type:
                     value = None
@@ -929,6 +939,8 @@ class TypeCheckerVisitor(Visitor):
                     value = False
 
             case "<":
+                left = binary_node.left.accept(self)
+                right = binary_node.right.accept(self)
                 type = "boolean"
                 if left.type == right.type:
                     value = None
@@ -943,6 +955,8 @@ class TypeCheckerVisitor(Visitor):
                     value = False
 
             case ">":
+                left = binary_node.left.accept(self)
+                right = binary_node.right.accept(self)
                 type = "boolean"
                 if left.type == right.type:
                     value = None
@@ -957,6 +971,8 @@ class TypeCheckerVisitor(Visitor):
                     value = False
             
             case "+":
+                left = binary_node.left.accept(self)
+                right = binary_node.right.accept(self)
                 if left.type == "number" and right.type == "number":
                     type = "number"
                     if left.value == None or right.value == None:
@@ -969,6 +985,8 @@ class TypeCheckerVisitor(Visitor):
                     type = None
                 
             case "-":
+                left = binary_node.left.accept(self)
+                right = binary_node.right.accept(self)
                 if left.type == "number" and right.type == "number":
                     type = "number"
                     if left.value == None or right.value == None:
@@ -981,6 +999,8 @@ class TypeCheckerVisitor(Visitor):
                     type = None
             
             case "*":
+                left = binary_node.left.accept(self)
+                right = binary_node.right.accept(self)
                 if left.type == "number" and right.type == "number":
                     type = "number"
                     if left.value == None or right.value == None:
@@ -993,6 +1013,8 @@ class TypeCheckerVisitor(Visitor):
                     type = None
             
             case "/":
+                left = binary_node.left.accept(self)
+                right = binary_node.right.accept(self)
                 if left.type == "number" and right.type == "number":
                     type = "number"
                     if left.value == None or right.value == None:
@@ -1010,16 +1032,30 @@ class TypeCheckerVisitor(Visitor):
                     type = None
             
             case "is":
-                print(left, right)
+                left = binary_node.left.accept(self)
+                if isinstance(binary_node.right, LiteralNode) == False:
+                    self.error_logger.add("no viene un tipo en el is")
+                    return ComputedValue(None, None)
+                self.queue_call.append("is")
+                right = binary_node.right.accept(self)
+                self.queue_call.pop()
+
+                if (self.hierarchy.is_type(right.type)) == None:
+                    self.error_logger.add("en el is no hay tipo existe")
+                    return ComputedValue(None, None)
+                return ComputedValue(left.type == right.type)
 
             case "as":
-                print(left, right)
+                left = binary_node.left.accept(self)
+                right = binary_node.right.accept(self)
 
             case "@":
-                print(left, right)
+                left = binary_node.left.accept(self)
+                right = binary_node.right.accept(self)
 
             case "@@":
-                print(left, right)
+                left = binary_node.left.accept(self)
+                right = binary_node.right.accept(self)
 
         value = ComputedValue(type, value)
         if msg != "":
@@ -1091,6 +1127,9 @@ class TypeCheckerVisitor(Visitor):
             case "base":
                 return ComputedValue("base", "base")
             case "id":
+                if len(self.queue_call) > 0 and self.queue_call[len(self.queue_call) - 1] == "is":
+                    return ComputedValue(id, id)
+                print(id, self.context.is_defined(id), self.is_call_node == False)
                 if self.context.is_defined(id) and self.is_call_node == False:
                     var = self.context.get(id)
                     return ComputedValue(var.type, var.value)
