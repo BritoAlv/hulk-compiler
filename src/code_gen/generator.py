@@ -25,6 +25,7 @@ class Generator(Visitor):
         self._literal_strings : list[str] = []
         self._literal_numbers : list[str] = []
         self._if_index = 0
+        self._logical_index = 0
         self._while_index = 0
         self._call_index = 0
 
@@ -441,38 +442,39 @@ class Generator(Visitor):
         # Logical And and Or
         elif binary_node.op.type == 'and' or binary_node.op.type == 'or':
             if binary_node.op.type == 'and':
-                code +='''
+                code += f'''
     add $s0 $s0 $s1
-    beq $s0 2 and_true
+    beq $s0 2 and_true_{self._logical_index}
     li $a0 0
     jal build_bool
     move $a0 $v0
     jal stack_push
-    j and_end
-    and_true:
+    j and_end_{self._logical_index}
+    and_true_{self._logical_index}:
     li $a0 1
     jal build_bool
     move $a0 $v0
     jal stack_push
-    and_end:
+    and_end_{self._logical_index}:
             '''
             else:    
-                code += '''
+                code += f'''
     add $s0 $s0 $s1
     sgt $s0 $s0 $zero
-    beq $s0 1 or_true
+    beq $s0 1 or_true_{self._logical_index}
     li $a0 0
     jal build_bool
     move $a0 $v0
     jal stack_push
-    j or_end
-    or_true:
+    j or_end_{self._logical_index}
+    or_true_{self._logical_index}:
     li $a0 1
     jal build_bool
     move $a0 $v0
     jal stack_push
-    or_end:
+    or_end_{self._logical_index}:
 '''
+            self._logical_index += 1
             return GenerationResult(code, 'bool')
         # GreaterThan
         elif binary_node.op.type == 'greater':
