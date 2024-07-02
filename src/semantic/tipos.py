@@ -164,7 +164,7 @@ class Context():
     def defineSymbol(self, symbol, type) -> bool:
         return False
     
-    def create_type(self, name, args):
+    def create_type(self, name, args = []):
         if (self.get_type(name) != None):
             return False
         self.types.append(Type(name, args))
@@ -174,7 +174,8 @@ class NodeClass:
     def __init__(self, name, sons = [], parent = None) -> None:
         self.name = name
         self.sons = sons
-        self.parent = None
+        self.parent = parent
+
 class Hierarchy:
     def __init__(self) -> None:
         self.root = NodeClass("object", [NodeClass("number"), NodeClass("string"), NodeClass("boolean"), 
@@ -186,8 +187,9 @@ class Hierarchy:
         if (actual.name == name):
             return actual
         for i in actual.sons:
-            if self.get_type(i, name) != None:
-                return i
+            g = self.get_type(i, name) 
+            if g != None:
+                return g
         return None
     
     def is_type(self, name):
@@ -199,7 +201,7 @@ class Hierarchy:
             return None
         ancestor = self.get_type(self.root, ancestor_name)
         if ancestor != None:
-            ancestor.sons.append(NodeClass(name, parent=ancestor))
+            ancestor.sons.append(NodeClass(name, [], ancestor))
     
     def get_ancestors(self, actual: NodeClass, name):
         if (actual.name == name):
@@ -357,9 +359,7 @@ class TypeBuilderVisitor(Visitor):
             if ancestor_type == False:
                 self.error_logger.add("clase herada incorrectamente")
             else: 
-                print(type_node.id.lexeme, type_node.ancestor_id.lexeme, type_node.id.lexeme)
                 self.hierarchy.add_type(type_node.id.lexeme, type_node.ancestor_id.lexeme)
-                print(self.hierarchy.get_type(self.hierarchy.root, 'Perro'))
         else:
             self.hierarchy.add_type(type_node.id.lexeme, "object")
         for i in type_node.methods:
@@ -409,6 +409,8 @@ class TypeBuilderVisitor(Visitor):
             ancestor_type = self.context.get_type(protocol_node.ancestor_node.lexeme)
             if ancestor_type == False:
                 self.error_logger.add("clase herada incorrectamente")
+            if ancestor_type.args != None:
+                self.error_logger.add("no se puede heredar un protocolo de un tipo")
             self.hierarchy.add_type(protocol_node.id.lexeme, protocol_node.ancestor_node.lexeme)
         else:
             self.hierarchy.add_type(protocol_node.id.lexeme, "object")
@@ -606,6 +608,21 @@ class TypeCheckerVisitor(Visitor):
         self.actual_type = self.context.get_type(type_node.id.lexeme) 
         self.context.create_child_context()
         self.context.define("self")
+        self.context.define_func("base", "base", []) # base es un llamado de funcion
+
+        # necesita revisar que el tipo implementa todos los metodos de su protocolo
+        ancient = self.hierarchy.get_type(self.hierarchy.root, self.actual_type.name).parent
+        if (ancient != None):
+            print(ancient.name, self.context.get_type(ancient.name))
+            methods_ancient = self.context.get_type(ancient.name).method 
+            for i in methods_ancient:
+                mk = False
+                for j in self.actual_type.method:
+                    if j.name != i.name and j.type != i.type and j.args != i.args:
+                        mk = True
+                if mk == False:
+                    self.error_logger.add("metodo " + i.name + " no implementado")
+
         for i in self.actual_type.method:
             self.context.context_lower.method.append(Method("self." + i.name, i.type, i.args))
         for i in type_node.methods:
@@ -757,7 +774,6 @@ class TypeCheckerVisitor(Visitor):
                 self.queue_call.pop()
                 return ComputedValue(None, None)
             type_method = type.get_method(callee.value, args)
-            print("callnode ", type.name, callee.value, type_method)
             if type_method != None:
                 self.queue_call.pop()
                 return ComputedValue(type_method.type, None)
@@ -770,7 +786,6 @@ class TypeCheckerVisitor(Visitor):
         left = get_node.left.accept(self)
         type = self.context.get_type(left.type)
         id = get_node.id.lexeme
-        print(left.type, id)
         if self.actual_type == None:
             if type == None: 
                 self.error_logger.add("tipo  no existe")
@@ -801,7 +816,6 @@ class TypeCheckerVisitor(Visitor):
                         return ComputedValue(self.actual_type.name, id)
                     self.error_logger.add("tipo self no existe en la clase")
             else:
-                # print(type.name, type.get_method_whithout_params(id))
                 if type == None: 
                     self.error_logger.add("tipo  no existe")
                     self.queue_call.pop()
@@ -1067,7 +1081,6 @@ class TypeCheckerVisitor(Visitor):
             case "string":
                 return ComputedValue("string", id)
             case "self":
-                print(self.queue_call)
                 value = "self"
                 type = "self"
                 if (len(self.queue_call) == 2) and self.queue_call[0] == 'get' and self.queue_call[1] == 'get':
@@ -1089,7 +1102,6 @@ class TypeCheckerVisitor(Visitor):
                                 type = None
                                 break
                     
-                print(type, value)
                 return ComputedValue(type, value)
             case "base":
                 return ComputedValue("base", "base")
@@ -1097,11 +1109,10 @@ class TypeCheckerVisitor(Visitor):
                 if self.context.is_defined(id) and self.is_call_node == False:
                     var = self.context.get(id)
                     return ComputedValue(var.type, var.value)
-                # print(id, self.context.is_defined_func_whithout_params(id), self.is_call_node)
                 if self.context.is_defined_func_whithout_params(id) == True and self.is_call_node == True:
                     var = self.context.get(id)
                     return ComputedValue(None, id)
-                 
+                
                 self.error_logger.add("variable no definida " + id)
         return ComputedValue(None, None)
 
@@ -1115,6 +1126,12 @@ class SemanticAnalysis:
     def run(self, ast):
         context = Context()
         hierarchy = Hierarchy()
+        context.create_type("object")
+        context.create_type("number")
+        context.create_type("string")
+        context.create_type("boolean")
+        context.create_type("Vector")
+        context.create_type("Iterable")
 
         typeCollectorVisitor = TypeCollectorVisitor(context)
         ast.accept(typeCollectorVisitor)
@@ -1123,7 +1140,7 @@ class SemanticAnalysis:
         typeFunctionVisitor = TypeFunctionVisitor(context, hierarchy)
         ast.accept(typeFunctionVisitor)
         typeCheckerVisitor = TypeCheckerVisitor(context, hierarchy)
-        # ast.accept(typeCheckerVisitor)
+        ast.accept(typeCheckerVisitor)
         
         err1 = typeCollectorVisitor.error_logger
         err2 = typeBuilderVisitor.error_logger
@@ -1133,3 +1150,5 @@ class SemanticAnalysis:
         err2.log_errors()
         err3.log_errors()
         err4.log_errors()
+
+ 
