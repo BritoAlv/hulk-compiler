@@ -1,4 +1,3 @@
-from crypt import methods
 from common.ErrorLogger.ErrorLogger import ErrorLogger
 from common.ast_nodes.expressions import *
 from common.ast_nodes.expressions import VectorGetNode
@@ -358,9 +357,9 @@ class TypeBuilderVisitor(Visitor):
             if ancestor_type == False:
                 self.error_logger.add("clase herada incorrectamente")
             else: 
-                print(type_node.id.lexeme, type_node.ancestor_id.lexeme)
+                print(type_node.id.lexeme, type_node.ancestor_id.lexeme, type_node.id.lexeme)
                 self.hierarchy.add_type(type_node.id.lexeme, type_node.ancestor_id.lexeme)
-                # print(self.hierarchy.get_type(self.hierarchy.root, type_node.id.lexeme).name)
+                print(self.hierarchy.get_type(self.hierarchy.root, 'Perro'))
         else:
             self.hierarchy.add_type(type_node.id.lexeme, "object")
         for i in type_node.methods:
@@ -715,6 +714,7 @@ class TypeCheckerVisitor(Visitor):
         return value
 
     def visit_call_node(self, call_node : CallNode):
+        self.queue_call.append("call")
         args = []
         for i in call_node.args:
             args.append(i.accept(self).type)
@@ -737,10 +737,13 @@ class TypeCheckerVisitor(Visitor):
                         continue
                 if j < len(args) - 1:
                     self.error_logger.add("argumentos de menos " +  method.name)
+                    self.queue_call.pop()
                     return ComputedValue(None, None)
+                self.queue_call.pop()
                 return ComputedValue(method.type, None)
             else:
                 self.error_logger.add("intento de usar funcion no definida")
+                self.queue_call.pop()
                 return ComputedValue(None, None)
             
         if (isinstance(call_node.callee, GetNode)):
@@ -751,14 +754,19 @@ class TypeCheckerVisitor(Visitor):
             type = self.context.get_type(callee.type)
             if type == None:
                 self.error_logger.add("tipo de llamada no exite")
+                self.queue_call.pop()
                 return ComputedValue(None, None)
             type_method = type.get_method(callee.value, args)
+            print("callnode ", type.name, callee.value, type_method)
             if type_method != None:
+                self.queue_call.pop()
                 return ComputedValue(type_method.type, None)
         self.error_logger.add("funcion no definida")
+        self.queue_call.pop()
         return ComputedValue(None, None)
 
     def visit_get_node(self, get_node : GetNode):
+        self.queue_call.append("get")
         left = get_node.left.accept(self)
         type = self.context.get_type(left.type)
         id = get_node.id.lexeme
@@ -766,11 +774,14 @@ class TypeCheckerVisitor(Visitor):
         if self.actual_type == None:
             if type == None: 
                 self.error_logger.add("tipo  no existe")
+                self.queue_call.pop()
                 return ComputedValue(None, None)
             if type.get_method_whithout_params(id) != None:
+                self.queue_call.pop()
                 return ComputedValue(type.name, id)
             else:
                 self.error_logger.add("intentando acceder a un atributo privado " + id)
+                self.queue_call.pop()
                 return ComputedValue(None, None)
         else:
             if left.value == "self":
@@ -778,25 +789,32 @@ class TypeCheckerVisitor(Visitor):
                 if self.is_call_node == False:
                     attr = self.context.get(left.value +"." + id)
                     if attr != None:
+                        self.queue_call.pop()
                         return ComputedValue(attr.type, None)
                     self.error_logger.add("tipo self no existe en la clase")
+                    self.queue_call.pop()
                     return ComputedValue(None, None)
                 else:
                     methods = self.context.is_defined_func_whithout_params(left.value +"." + id)
                     if methods != None:
+                        self.queue_call.pop()
                         return ComputedValue(self.actual_type.name, id)
                     self.error_logger.add("tipo self no existe en la clase")
             else:
-                print(type.name, type.get_method_whithout_params(id))
+                # print(type.name, type.get_method_whithout_params(id))
                 if type == None: 
                     self.error_logger.add("tipo  no existe")
+                    self.queue_call.pop()
                     return ComputedValue(None, None)
                 if type.get_method_whithout_params(id) != None:
+                    self.queue_call.pop()
                     return ComputedValue(type.name, id)
                 else:
                     self.error_logger.add("intentando acceder a un atributo privado " + id)
+                    self.queue_call.pop()
                     return ComputedValue(None, None)
         self.error_logger.add("get node fallo")
+        self.queue_call.pop()
         return ComputedValue(None, None)
 
     def visit_set_node(self, set_node : SetNode):
@@ -1049,8 +1067,30 @@ class TypeCheckerVisitor(Visitor):
             case "string":
                 return ComputedValue("string", id)
             case "self":
-                self.queue_call.append("self")
-                return ComputedValue("self", "self")
+                print(self.queue_call)
+                value = "self"
+                type = "self"
+                if (len(self.queue_call) == 2) and self.queue_call[0] == 'get' and self.queue_call[1] == 'get':
+                    self.error_logger.add("intento de acceder a variable privada")
+                    value = None
+                    type = None
+                if len(self.queue_call) > 2:
+                    mk = self.queue_call[0]
+                    if mk == "get":
+                        value = None
+                        type = None
+                    else:
+                        for i in range(1, len(self.queue_call) - 2):
+                            ele = self.queue_call[i]
+                            if mk != ele:
+                                mk = ele
+                            else:
+                                value = None
+                                type = None
+                                break
+                    
+                print(type, value)
+                return ComputedValue(type, value)
             case "base":
                 return ComputedValue("base", "base")
             case "id":
@@ -1083,7 +1123,7 @@ class SemanticAnalysis:
         typeFunctionVisitor = TypeFunctionVisitor(context, hierarchy)
         ast.accept(typeFunctionVisitor)
         typeCheckerVisitor = TypeCheckerVisitor(context, hierarchy)
-        ast.accept(typeCheckerVisitor)
+        # ast.accept(typeCheckerVisitor)
         
         err1 = typeCollectorVisitor.error_logger
         err2 = typeBuilderVisitor.error_logger

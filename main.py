@@ -21,17 +21,9 @@ defaultHulkProgram = """
         protocol Node {
             eval(node: number, valor: number) : number;
         } 
-        type Perro(color : string, edad: number) 
+        type Perro(color : string, edad: number) inherits Node
         {
-            color = color;
-            edad = edad;
-            comer = self.Ladrar(1).Ladrar;
-            eat = self.Ladrar(1);
-            son = new Perro("31", 4);
-            Ladrar(a: number) : Perro {
-                self.son;
-            };
-            Ladrar(a: number, b : string, ba : number) : Vector => [12];
+            
         }
         function h(num: number) : Perro =>
             new Perro("31", 4);  
