@@ -28,13 +28,13 @@ class Lexer:
                 error_line = lines[line]
                 print(f"Error on line {line}, " + error.type +  ":")
                 print(error_line)
-                print(" " * (position-1) + "^")
+                print(" " * (position) + "^")
             return True
         return False
 
     def sanity_check(self, tokens: list[Token]):
         marked = [False for _ in range(0, len(tokens))]
-        self.after_num(tokens, marked)
+        self.after_literal(tokens, marked)
         self.unterminated_string_literal(tokens, marked)
         for i in range(len(marked)-1, -1, -1):
             if marked[i]:
@@ -42,15 +42,14 @@ class Lexer:
 
         for x in tokens:
             if x.type == "Error":
-                self.errors.append(Token("Invalid Symbol", x.lexeme, x.line, x.offsetLine))
+                self.errors.append(Token("Invalid Symbol ", x.lexeme, x.line, x.offsetLine))
         
-    def after_num(self, tokens: list[Token], marked : list[bool]):
+    def after_literal(self, tokens: list[Token], marked : list[bool]):
+        literals = ["string", "id", "number", "true", "false"]
         for i in range(0, len(tokens) - 1):
-            if tokens[i].type == "number" and tokens[i + 1].type == "number" and not marked[i]:
-                self.errors.append(Token("Invalid Number Format", tokens[i].lexeme, tokens[i].line, tokens[i].offsetLine))
-                marked[i] = marked[i+1] = True
-            if tokens[i].type == "number" and tokens[i+1].type == "id" and not marked[i]:
-                self.errors.append(Token("Identifier can't start with number", tokens[i].lexeme, tokens[i].line, tokens[i].offsetLine))
+            if tokens[i].type in literals and tokens[i + 1].type in literals and not marked[i]:
+                self.errors.append(Token("Two consecutive literals", tokens[i].lexeme, tokens[i].line, tokens[i].offsetLine))
+                self.errors.append(Token("Two consecutive literals", tokens[i+1].lexeme, tokens[i+1].line, tokens[i+1].offsetLine))
                 marked[i] = marked[i+1] = True
 
     def unterminated_string_literal(self, tokens : list[Token], marked : list[bool]):
@@ -58,8 +57,11 @@ class Lexer:
             if tokens[i].type == "Error" and tokens[i].lexeme[0] == "\"" and not marked[i]:
                 self.errors.append(Token("Unterminated String Literal", tokens[i].lexeme, tokens[i].line, tokens[i].offsetLine))
                 marked[i] = True
-    
-            
+        for i in range(1, len(tokens)):
+            if tokens[i].type == "Error" and tokens[i-1].lexeme[0] == "\"" and not marked[i]:
+                self.errors.append(Token("Unterminated String Literal", tokens[i-1].lexeme, tokens[i-1].line, tokens[i-1].offsetLine))
+                marked[i] = True
+                marked[i-1] = True
 
     def scanTokens(self, inputStr: str) -> list[Token]:
         self.currentLine = 0
@@ -72,8 +74,13 @@ class Lexer:
                 if inputStr[cr] == "\n":
                     self.currentLine += 1
                     self.positionInLine = 0
+                elif inputStr[cr] == " ":
+                    self.positionInLine += 1
+                elif inputStr[cr] == "\t":
+                    self.positionInLine += 4
+                else:
+                    self.positionInLine += 1
                 cr += 1
-                self.positionInLine += 1
                 continue
             elif inputStr[cr] == "#":
                 while cr < len(inputStr) and inputStr[cr] != "\n":
@@ -90,7 +97,6 @@ class Lexer:
                 else:
                     self.positionInLine += 1
             cr += len(tok.lexeme)
-            tok.lexeme = tok.lexeme.replace("\\\"", "\"")
             tokens.append(tok)
         tokens.append(Token("$", "$", self.currentLine, self.positionInLine))
         self.sanity_check(tokens)
@@ -105,8 +111,8 @@ class Lexer:
             while cr < len(inputStr) and self.automatas[i].next_state(inputStr[cr], st) != -1:
                 st = self.automatas[i].next_state(inputStr[cr], st)
                 cr += 1
-                if st in self.automatas[i].accepting_states:
-                    longest_matched = cr
+            if st in self.automatas[i].accepting_states:
+                longest_matched = cr
             if longest_matched != -1:
                 if matched == (-1, -1) or matched[1] < longest_matched:
                     matched = (i, longest_matched)

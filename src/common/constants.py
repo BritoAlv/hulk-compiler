@@ -11,3 +11,4 @@ plus = "\\+"
 question = "\\?"
 star = "\\*"
 
+EOF = "$"

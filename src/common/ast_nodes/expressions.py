@@ -19,15 +19,6 @@ class WhileNode(Expr):
 
     def accept(self, visitor):
         return visitor.visit_while_node(self)
-    
-class ForNode(Expr):
-    def __init__(self, target : Token, iterable : Expr, body : Expr):
-        self.target = target
-        self.iterable = iterable
-        self.body = body
-    
-    def accept(self, visitor):
-        return visitor.visit_for_node(self)
 
 class IfNode(Expr):
     def __init__(self, body : list[tuple[Expr, Expr]], elsebody : Expr):

@@ -123,17 +123,6 @@ class TreePrinter(Visitor):
             with IndentManager(self):
                 while_node.body.accept(self)
         return self.current
-
-    def visit_for_node(self, for_node : ForNode):
-        self.add_word("For Node " + for_node.target.lexeme)
-        with IndentManager(self):
-            self.add_word("Iterable ")
-            with IndentManager(self):
-                for_node.iterable.accept(self)
-            self.add_word("Body ")
-            with IndentManager(self):
-                for_node.body.accept(self)
-        return self.current
     
     def visit_if_node(self, if_node : IfNode):
         self.add_word("If ")

@@ -1,6 +1,7 @@
 BOOL_TYPE_ID = 0
 NUMBER_TYPE_ID = 1
 STR_TYPE_ID = 2
+OBJ_TYPE_ID = 3
 
 class VarData:
     def __init__(self, index : int, type : str = None) -> None:
@@ -16,7 +17,7 @@ class Context:
 class FunctionData:
     def __init__(self):
         self.type : str = None
-        self.context : Context = None
+        self.context : Context = Context()
         self.params : dict[str, VarData] = {}
         self.var_count = 0
 
@@ -31,7 +32,12 @@ class TypeData:
 class Environment:
     def __init__(self) -> None:
         self._functions : dict[str, FunctionData] = {}
-        self._types : dict[str, TypeData] = {}
+        self._types : dict[str, TypeData] = {
+            'bool': TypeData(BOOL_TYPE_ID),
+            'number': TypeData(NUMBER_TYPE_ID),
+            'string': TypeData(STR_TYPE_ID),
+            'object': TypeData(OBJ_TYPE_ID)
+        }
 
     def get_function_data(self, function_name : str) -> FunctionData:
         if function_name not in self._functions:
