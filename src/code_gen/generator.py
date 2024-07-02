@@ -2,6 +2,7 @@ from code_gen.resolver import Resolver
 from common.ast_nodes.base import Statement
 from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, NewNode, SetNode, UnaryNode, VectorGetNode, VectorSetNode, WhileNode
 from common.ast_nodes.statements import AttributeNode, MethodNode, ProgramNode, ProtocolNode, SignatureNode, TypeNode
+from common.token_class import Token
 from common.visitor import Visitor
 
 
@@ -334,13 +335,13 @@ class Generator(Visitor):
     jal stack_push
 '''
             return GenerationResult(code, 'bool')
-        elif literal_node.id.type == 'self':
-            offset = self._get_offset('self')
+        elif literal_node.id.type == 'null':
             code = f'''
-    lw $a0 {offset}($sp)
+    jal build_null
+    move $a0 $v0
     jal stack_push
 '''
-            return GenerationResult(code, self._type_name)
+            return GenerationResult(code, 'object')
         
     def visit_binary_node(self, binary_node: BinaryNode):
         left_result = self._generate(binary_node.left)
@@ -880,7 +881,14 @@ class Generator(Visitor):
         pass
 
     def visit_vector_get_node(self, vector_get_node: VectorGetNode):
-        pass
+        node = CallNode(
+            GetNode(
+                vector_get_node.left,
+                Token('id', 'element')
+            ),
+            [vector_get_node.index]
+        )
+        return self._generate(node)
 
     def visit_vector_set_node(self, vector_set_node: VectorSetNode):
         pass
