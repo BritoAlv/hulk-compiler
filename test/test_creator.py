@@ -11,7 +11,18 @@ def create_test(name: str, test: str, expected: str):
     with open(expected_file, "w") as f:
         f.write(expected)
 
-
+create_test(
+    "semantic_error",
+    """
+        type Perro
+    {
+        Parir() => new Perro();
+        nieto = Parir().Parir2();
+    }
+    3;
+    """,
+    "Semantic Error"
+)
 
 
 """ # Read test cases from tests.md

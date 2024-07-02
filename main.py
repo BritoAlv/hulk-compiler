@@ -26,7 +26,13 @@ parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
-print(2a + 2);
+
+type Perro
+{
+    Parir() => new Perro();
+    nieto = self.Parir().Parir();
+}
+3;
 """
 
 inputStr = defaultHulkProgram
@@ -157,7 +163,7 @@ else:
     args = parser.parse_args()
 
     # Use the input argument
-    inputStr = sys.stdin.read().strip()
+    # inputStr = sys.stdin.read().strip()
 
     if inputStr == None or inputStr == "":
         inputStr = defaultHulkProgram
@@ -178,4 +184,7 @@ else:
         codeGen(inputStr, True)
 
     if args.run:
-        run(inputStr)
+        try:
+            run(inputStr)
+        except:
+            sys.exit(1)

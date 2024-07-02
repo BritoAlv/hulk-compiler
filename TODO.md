@@ -15,3 +15,10 @@
 # Testing:
 
 ## Exceptions should be logged and not raised.
+
+#
+- infer parameter types.
+- for each protocol know which type implements it.
+- infer type of functions.
+- keep track of constructors. semantic check for constructors. type of params in the constructors.
+- covariance and contravariance.

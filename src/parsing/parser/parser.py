@@ -186,7 +186,6 @@ class Parser:
                 lambda s: VectorGetNode(s[1], s[3]),
                 lambda s: LiteralNode(s[1].token),
                 lambda s: LiteralNode(s[1].token),
-                lambda s: LiteralNode(s[1].token),
                 lambda s: s[2],
             ],
             "ArgList": [lambda s: [s[1]] + s[2], lambda s: []],
