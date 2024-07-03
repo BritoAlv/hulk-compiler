@@ -1,7 +1,7 @@
 type vector
 {
-    head = null as Node;
-    tail = null as Node;
+    head = new Node(null);
+    tail = new Node(null);
     count = 0;
     index = 0;
     currentValue = null;
@@ -33,7 +33,7 @@ type vector
             error("Error: Index was outside of the bounds of the vector")
         else
         {
-            let i = -1, current = (while(false) 0) as Node in 
+            let i = -1, current = new Node(null) in 
                 while(i < index)
                 {
                     if (i < 0)
@@ -74,8 +74,8 @@ type vector
 type Node(value : object) 
 {
     value = value;
-    previous : Node = null;
-    next : Node = null;
+    previous : Node = new Node(null);
+    next : Node = new Node(null);
     getValue() : object => self.value;
     setValue(value : object) : object => self.value := value; 
     getNext() : Node => self.next;

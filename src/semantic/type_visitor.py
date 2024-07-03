@@ -119,8 +119,9 @@ class TypeVisitor(Visitor):
 
     
     def visit_while_node(self, while_node : WhileNode):
-        self._check_types(while_node.condition)
-        return self.check_types(while_node.body)
+        if self._check_types(while_node.condition) != 'bool':
+            self._errors.append('While condition must evaluate to bool')
+        return self._check_types(while_node.body)
 
     
     def visit_if_node(self, if_node : IfNode):
@@ -165,7 +166,7 @@ class TypeVisitor(Visitor):
                     return "object"
                 for i, arg in enumerate(call_node.args):
                     inferred_type = self._check_types(arg)
-                    param_var_data = fn_data.params[fn_data.params_index[i+1]]
+                    param_var_data = fn_data.params[fn_data.params_index[i]]
 
                     fn_name = fn_name + "_" + self._type_name if self._in_type else fn_name
 
@@ -265,6 +266,17 @@ class TypeVisitor(Visitor):
         elif len(self._stack) == 2 and self._stack[-2].id != "self":
             self._errors.append("After self should come at most one attribute")
         self._stack.pop()
+        if isinstance(get_node.left, LiteralNode) and get_node.left.id.lexeme == 'self':
+            if not self._in_type:
+                self._errors.append('Using self outside of a type and not declared')
+                return 'object'
+            type_data = self._resolver.resolve_type_data(self._type_name)
+            
+            attr_name = get_node.id.lexeme
+            if attr_name not in type_data.attributes:
+                self._errors.append('Type do not has attribute')
+                return 'object'
+            return type_data.attributes[attr_name].type
         return self._check_types(get_node.left)
     
     def visit_set_node(self, set_node : SetNode):
@@ -322,7 +334,7 @@ class TypeVisitor(Visitor):
     def visit_binary_node(self, binary_node : BinaryNode):
         left_inferred_type = self._check_types(binary_node.left)
         op = binary_node.op.type
-        if op == 'is' and isinstance(binary_node.right, LiteralNode):
+        if op == 'isOp' and isinstance(binary_node.right, LiteralNode):
             is_type = binary_node.right.id.lexeme
 
             if is_type not in self._resolver.resolve_types():
@@ -334,7 +346,7 @@ class TypeVisitor(Visitor):
 
             return 'bool'
 
-        if op == 'as' and isinstance(binary_node.right, LiteralNode):
+        if op == 'asOp' and isinstance(binary_node.right, LiteralNode):
             as_type = binary_node.right.id.lexeme
 
             if as_type not in self._resolver.resolve_types():
@@ -349,7 +361,7 @@ class TypeVisitor(Visitor):
         right_inferred_type = self._check_types(binary_node.right)
 
         match binary_node.op.type:
-            case 'plus', 'minus', 'star', 'div', 'powerOp', 'modOp', 'greater', 'less', 'greaterEq', 'lessEq':
+            case 'plus'| 'minus'| 'star'| 'div'| 'powerOp'| 'modOp'| 'greater'| 'less'| 'greaterEq'| 'lessEq':
                 if left_inferred_type != 'number' or right_inferred_type != 'number':
                     self._errors.append('Cannot apply binary operation to non-numerical types')
 
@@ -357,11 +369,11 @@ class TypeVisitor(Visitor):
                     return 'bool'
                 
                 return 'number'
-            case 'and', 'or':
+            case 'and' | 'or':
                 if left_inferred_type != 'bool' or right_inferred_type != 'bool':
                     self._errors.append('Cannot apply binary operation to non-boolean types')
                 return 'bool'
-            case 'doubleEqual', 'notEqual':
+            case 'doubleEqual' | 'notEqual':
                 return 'bool'
     
     def visit_unary_node(self, unary_node : UnaryNode):
@@ -382,13 +394,14 @@ class TypeVisitor(Visitor):
                 return 'number'
             case 'string':
                 return 'string'
-            case 'true', 'false':
+            case 'true' | 'false':
                 return 'bool'
             case 'null':
                 return 'object'
             case 'id':
                 try:
-                    self._resolver.resolve_var_data(literal_node.id.lexeme).type
+                    t =  self._resolver.resolve_var_data(literal_node.id.lexeme)
+                    return t.type
                 except:
                     self._errors.append(f'Variable {literal_node.id.lexeme} was not declared')
 
