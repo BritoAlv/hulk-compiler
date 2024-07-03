@@ -1,4 +1,4 @@
-from code_gen.environment import BOOL_TYPE_ID, NUMBER_TYPE_ID, STR_TYPE_ID
+from code_gen.environment import BOOL_TYPE_ID, NUMBER_TYPE_ID, OBJ_TYPE_ID, STR_TYPE_ID
 from code_gen.resolver import Resolver
 from common.ast_nodes.base import Statement
 from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, DestructorNode, ExplicitVectorNode, GetNode, IfNode, ImplicitVectorNode, LetNode, LiteralNode, NewNode, SetNode, UnaryNode, VectorGetNode, VectorSetNode, WhileNode
@@ -32,6 +32,7 @@ class Generator(Visitor):
         self._call_index = 0
         self._print_index = 0
         self._equality_index = 0
+        self._concat_index = 0
 
     def generate(self, program : ProgramNode) -> str:
         result = self._generate(program)
@@ -596,42 +597,98 @@ class Generator(Visitor):
             return GenerationResult(code, 'bool')
         # String concatenation
         elif binary_node.op.type == 'at' or binary_node.op.type == 'doubleAt':
-            if right_type == 'number':
-                code +='''
+            code += f'''
+    lw $t0 ($s2)
+    beq $t0 {BOOL_TYPE_ID} stringify_bool_{self._concat_index}
+    beq $t0 {NUMBER_TYPE_ID} stringify_number_{self._concat_index}
+    beq $t0 {STR_TYPE_ID} stringify_end_{self._concat_index}
+    j stringify_pointer_{self._concat_index}
+
+    stringify_bool_{self._concat_index}:
+    move $a0 $s0
+    jal bool_to_str
+    move $s0 $v0
+    j stringify_end_{self._concat_index}
+
+    stringify_number_{self._concat_index}:
     mov.s $f12 $f20
     jal number_to_str
     move $s0 $v0 
-            '''
-            elif right_type == 'bool':
-                code +='''
-    move $a0 $s0
-    jal bool_to_str
-    move $s0 $v0
-'''
-            elif right_type != 'string':
-                code +='''
+    j stringify_end_{self._concat_index}
+
+    stringify_pointer_{self._concat_index}:
     move $a0 $s0
     jal pointer_to_str
     move $s0 $v0
+
+    stringify_end_{self._concat_index}:
 '''
-            if left_type == 'number':
-                code +='''
+            self._concat_index += 1
+            code += f'''
+    lw $t0 ($s3)
+    beq $t0 {BOOL_TYPE_ID} stringify_bool_{self._concat_index}
+    beq $t0 {NUMBER_TYPE_ID} stringify_number_{self._concat_index}
+    beq $t0 {STR_TYPE_ID} stringify_end_{self._concat_index}
+    j stringify_pointer_{self._concat_index}
+
+    stringify_bool_{self._concat_index}:
+    move $a0 $s1
+    jal bool_to_str
+    move $s1 $v0
+    j stringify_end_{self._concat_index}
+
+    stringify_number_{self._concat_index}:
     mov.s $f12 $f22
     jal number_to_str
     move $s1 $v0 
-            '''
-            elif left_type == 'bool':
-                code +='''
-    move $a0 $s1
-    jal bool_to_str
-    move $s1 $v0
-'''
-            elif left_type != 'string':
-                code +='''
+    j stringify_end_{self._concat_index}
+
+    stringify_pointer_{self._concat_index}:
     move $a0 $s1
     jal pointer_to_str
     move $s1 $v0
+
+    stringify_end_{self._concat_index}:
 '''
+            self._concat_index += 1
+
+#             if right_type == 'number':
+#                 code +='''
+#     mov.s $f12 $f20
+#     jal number_to_str
+#     move $s0 $v0 
+#             '''
+#             elif right_type == 'bool':
+#                 code +='''
+#     move $a0 $s0
+#     jal bool_to_str
+#     move $s0 $v0
+# '''
+#             elif right_type != 'string':
+#                 code +='''
+#     move $a0 $s0
+#     jal pointer_to_str
+#     move $s0 $v0
+# '''
+#             if left_type == 'number':
+#                 code +='''
+#     mov.s $f12 $f22
+#     jal number_to_str
+#     move $s1 $v0 
+#             '''
+#             elif left_type == 'bool':
+#                 code +='''beq $t0 {BOOL_TYPE_ID} stringify_bool_{self._concat_index}
+#     move $a0 $s1
+#     jal bool_to_str
+#     move $s1 $v0
+# '''
+#             elif left_type != 'string':
+#                 code +='''
+#     move $a0 $s1
+#     jal pointer_to_str
+#     move $s1 $v0
+# '''
+
             if binary_node.op.type == 'at':
                 code += '''
     move $a0 $s1
@@ -813,7 +870,8 @@ class Generator(Visitor):
     def visit_new_node(self, new_node: NewNode):
         type_name = new_node.id.lexeme
         type_data = self._resolver.resolve_type_data(type_name)
-        type_size = type_data.inherited_offset + len(type_data.attributes)
+        attributes_len = len(type_data.attributes)
+        type_size = type_data.inherited_offset + (attributes_len if attributes_len > 0 else 1)
         type_id = type_data.id
 
         code = f'''
@@ -822,6 +880,7 @@ class Generator(Visitor):
     syscall
     li $t0 {type_id}
     sw $t0 ($v0) # Store type metadata
+    {'sw $v0 4($v0)' if attributes_len == 0 else ''}
     move $a0 $v0
     jal stack_push
 '''

@@ -78,7 +78,6 @@ class EnvironmentBuilder(Visitor):
 
     def visit_let_node(self, let_node: LetNode):
         old_context = self._create_context()
-        function_data = self._environment.get_function_data(self._func_name)
 
         for assignment in let_node.assignments:
             var_name = assignment.id.lexeme
