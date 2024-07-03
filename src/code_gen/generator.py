@@ -937,9 +937,6 @@ class Generator(Visitor):
             return GenerationResult(code, 'number')
     
     def visit_get_node(self, get_node: GetNode):
-        print(get_node.id.lexeme)
-        if get_node.id.lexeme == 'getNodeAt':
-            pass
         if self._type_name != None:
             type_data = self._resolver.resolve_type_data(self._type_name)
         if isinstance(get_node.left, LiteralNode) and get_node.left.id.lexeme == 'self' and (get_node.id.lexeme not in type_data.methods or not self._in_call):

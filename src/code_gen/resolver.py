@@ -15,7 +15,10 @@ class Resolver:
         self._child_index = 0
 
     def resolve_types(self):
-        return self._environment._types()
+        return self._environment._types.keys()
+
+    def resolve_functions(self):
+        return self._environment._functions.keys()
 
     def next(self) -> None:
         if self._context == None:

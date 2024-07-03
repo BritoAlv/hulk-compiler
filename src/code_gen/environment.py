@@ -19,6 +19,7 @@ class FunctionData:
         self.type : str = None
         self.context : Context = Context()
         self.params : dict[str, VarData] = {}
+        self.params_index : dict[int, str] = {}
         self.var_count = 0
 
 class TypeData:

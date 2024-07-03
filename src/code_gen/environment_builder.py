@@ -60,6 +60,7 @@ class EnvironmentBuilder(Visitor):
 
         if self._in_type:
             func_data.params['self'] = VarData(self._var_index, self._type_name)
+            func_data.params_index[self._var_index] = "self"
             self._var_index += 1
 
         for param in method_node.params:
@@ -69,6 +70,7 @@ class EnvironmentBuilder(Visitor):
                     raise Exception("Params must be named differently")
             
             func_data.params[param_name] = VarData(self._var_index)
+            func_data.params_index[self._var_index] = param_name
             self._var_index += 1
                 
         self._build(method_node.body)

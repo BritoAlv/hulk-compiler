@@ -33,15 +33,7 @@ with open('program.hulk', 'r') as source:
     defaultHulkProgram = source.read()
 
 defaultHulkProgram += """
-type H inherits A { }
-
-type C inherits B { }
-
-type B inherits A { }
-
-type A inherits object { }
-
-12;
+4;
 """
 
 inputStr = defaultHulkProgram
