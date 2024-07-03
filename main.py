@@ -30,16 +30,26 @@ defaultHulkProgram = """
 protocol Node{
     eval(a: number): number;
 }
+protocol Value extends Node{
+    visit(): object;
+}
+protocol Printer{
+    print(a:object): object;
+}
 function h(s: string): Perro {
 let i = new Perro("3", 3) in i;
 }
 type Perro(color : string, edad: number)
 {
     color = color;
-    edad = edad;
-    Ladrar(a: number, af: string) : number => 1;
+    edad = self.Ladrar(1).Ladrar(1);
+    Ladrar(a: number) : Perro => new Perro("2", 3);
+    Imagen(): Perro => {
+        let self = 1  in self;
+        self;
+        };
 }
-1;
+let a: number = "2" in a;
 """
 
 inputStr = defaultHulkProgram
