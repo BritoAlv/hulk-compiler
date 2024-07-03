@@ -4,6 +4,7 @@ import pickle
 import sys
 
 from code_gen.constructor_builder import ConstructorBuilder
+from code_gen.environment import Environment
 from code_gen.environment_builder import EnvironmentBuilder
 from code_gen.generator import Generator
 from code_gen.resolver import Resolver
@@ -17,6 +18,8 @@ from semantic.tipos import SemanticAnalysis
 import re
 import pexpect
 
+from semantic.type_visitor import TypeVisitor
+
 # Set up argument parsing
 parser = argparse.ArgumentParser(description='Hulk Compiler')
 parser.add_argument('-l', '--lex', action='store_true', help='Perform lexing')
@@ -26,44 +29,19 @@ parser.add_argument("-sa", "--semantic_analysis", action="store_true", help="Per
 parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code')
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
-defaultHulkProgram = """
-type Range(start : number, end : number, offset : number) {
-    start = start;
-    end = end;
-    current = start - offset;
-    offset = offset;
+with open('program.hulk', 'r') as source:
+    defaultHulkProgram = source.read()
 
-    next(): bool => (self.current := self.current + self.offset) < self.end ;
-    current(): number => self.current;
-}
+defaultHulkProgram += """
+type H inherits A { }
 
-function range(s : number, e : number) : Range => new Range(s, e, 1);
+type C inherits B { }
 
-function fibonacci(n : number) : number => 
-let index = 0, next = 1, current = 1, temp = next, condition = true in 
-    while(condition)
-        if (index == n)
-        {
-            condition := false;
-            current;
-        }
-        else
-        {
-            index := index + 1;
-            temp := next;
-            next := next + current;
-            current := temp;
-        };
+type B inherits A { }
 
-let a = [fibonacci(i) || i in range(0, 21)] in
-{
-    for(i in a) print(i as number);
-    
-    for(i in range(0, 11))
-        a[i] := 0;
+type A inherits object { }
 
-    for(i in a) print(i as number);
-};
+12;
 """
 
 inputStr = defaultHulkProgram
@@ -112,17 +90,16 @@ def codeGen(inputStr : str, show = False) -> str:
     constructor_builder = ConstructorBuilder()
     constructor_builder.build(ast)
 
-    # Load standard environment
-    with open('src/code_gen/assembly/environment.pkl', 'rb') as file:
-        environment = pickle.load(file)
+    # # Load standard environment
+    # with open('src/code_gen/assembly/environment.pkl', 'rb') as file:
+    #     environment = pickle.load(file)
+
+    environment = Environment()
     environment_builder = EnvironmentBuilder()
-    environment_builder.build(environment, ast)
-    
-    # environment._functions.pop('main')
-    # with open('environment.pkl', 'wb') as file:
-    #     pickle.dump(environment, file)
-    
+    errors = environment_builder.build(environment, ast)
     resolver = Resolver(environment)
+    type_visitor = TypeVisitor(resolver)
+    errors += type_visitor.check_types(ast)
     generator = Generator(resolver)
     if show:
         print("Generated Code:")

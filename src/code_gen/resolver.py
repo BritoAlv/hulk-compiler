@@ -14,6 +14,9 @@ class Resolver:
         self._context = func_data.context
         self._child_index = 0
 
+    def resolve_types(self):
+        return self._environment._types()
+
     def next(self) -> None:
         if self._context == None:
             raise Exception("Context is None")

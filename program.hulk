@@ -1,3 +1,96 @@
-{ 
-    print("The message is \" Hello World \" " @ "and\"nothing else \"");
+type vector
+{
+    head = null as Node;
+    tail = null as Node;
+    count = 0;
+    index = 0;
+    currentValue = null;
+    length() : number => self.count;
+
+    append(value : object) : object => let node = new Node(value) in
+    {
+        if(self.count == 0)
+        {
+            self.head := node;
+            self.tail := node;
+        }
+        else
+        {
+            node.setPrevious(self.tail);
+            self.tail.setNext(node);
+            self.tail := node;
+        };
+
+        self.count := self.count + 1;
+        node;
+    };
+
+    getNodeAt(index : number) : Node 
+    {
+        index := floor(index);
+
+        if (index < 0 | index >= self.count)
+            error("Error: Index was outside of the bounds of the vector")
+        else
+        {
+            let i = -1, current = (while(false) 0) as Node in 
+                while(i < index)
+                {
+                    if (i < 0)
+                    {
+                        current := self.head;
+                    }
+                    else 
+                    {
+                        current := current.getNext();
+                    };
+
+                    i := i + 1;
+                    current;
+                };
+        };
+    }
+
+    element(index : number) : object => self.getNodeAt(index).getValue();
+
+    set(index : number, value : object) : object => let node = self.getNodeAt(index) in node.setValue(value);
+
+    next() : bool =>
+    if (self.index > self.count - 1)
+    {
+        self.index := 0;
+        false;
+    }
+    else
+    {
+        self.currentValue := self.element(self.index);
+        self.index := self.index + 1;
+        true;
+    };
+
+    current() : object => self.currentValue;
+}
+
+type Node(value : object) 
+{
+    value = value;
+    previous : Node = null;
+    next : Node = null;
+    getValue() : object => self.value;
+    setValue(value : object) : object => self.value := value; 
+    getNext() : Node => self.next;
+    getPrevious() : Node => self.previous;
+    setNext(node : Node) : Node => self.next := node;
+    setPrevious(node : Node) : Node => self.previous := node;
+}
+
+function floor(n : number) : number => let i = 0 in 
+{
+    while(i < n)
+        i:= i + 1;
+
+    if (i > n)
+        i := i - 1
+    else
+        i;
 };

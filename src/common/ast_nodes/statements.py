@@ -12,7 +12,7 @@ class AttributeNode(Statement):
     def __init__(self, id : Token, body : Expr, type : Token | None = None):
         self.id = id
         self.body = body    
-        self.type = None
+        self.type = type
     
     def accept(self, visitor):
         return visitor.visit_attribute_node(self)

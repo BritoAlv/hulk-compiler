@@ -39,6 +39,11 @@ class Environment:
             'string': TypeData(STR_TYPE_ID),
             'object': TypeData(OBJ_TYPE_ID)
         }
+        
+        self._types['object'].descendants += ['bool', 'number', 'string']
+        self._types['bool'].ancestor = 'object'
+        self._types['number'].ancestor = 'object'
+        self._types['string'].ancestor = 'object'
 
     def get_function_data(self, function_name : str) -> FunctionData:
         if function_name not in self._functions:

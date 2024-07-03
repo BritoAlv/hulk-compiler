@@ -18,6 +18,7 @@ class EnvironmentBuilder(Visitor):
 
         self._type_graph : Graph
         self._root_types : list[str]
+        self._errors : list[str]
 
     def build(self, environment : Environment, program: ProgramNode) -> Environment:
         self._environment = environment
@@ -31,13 +32,13 @@ class EnvironmentBuilder(Visitor):
         self._in_type = False
 
         self._type_graph = Graph()
-        self._root_types : list[str] = []
+        self._errors : list[str] = []
 
         self._build(program)
 
         self._handle_inheritance()
 
-        return self._environment
+        return self._errors
 
     def visit_program_node(self, program_node: ProgramNode):
         for decl in program_node.decls:
@@ -46,8 +47,8 @@ class EnvironmentBuilder(Visitor):
     def visit_method_node(self, method_node: MethodNode):
         func_data = FunctionData()
         func_name = method_node.id.lexeme
-        func_type = method_node.type.lexeme
-        func_data.type = func_type
+        # func_type = method_node.type.lexeme
+        # func_data.type = func_type
 
         if self._in_type:
             func_name = f'{func_name}_{self._type_name}'
@@ -63,12 +64,11 @@ class EnvironmentBuilder(Visitor):
 
         for param in method_node.params:
             param_name = param[0].lexeme
-            param_type = param[1].lexeme
 
             if param_name in func_data.params:
                     raise Exception("Params must be named differently")
             
-            func_data.params[param_name] = VarData(self._var_index, param_type)
+            func_data.params[param_name] = VarData(self._var_index)
             self._var_index += 1
                 
         self._build(method_node.body)
@@ -121,6 +121,9 @@ class EnvironmentBuilder(Visitor):
         self._type_name = type_name
         self._in_type = True
 
+        # Add type as an object descendant
+        self._environment.get_type_data('object').descendants.append(type_name)
+
         i = 0
         for attribute, _ in type_node.attributes:
             attribute_name = attribute.lexeme
@@ -137,12 +140,16 @@ class EnvironmentBuilder(Visitor):
 
         if type_node.ancestor_id != None:
             ancestor = type_node.ancestor_id.lexeme
+
+            if ancestor in ['number', 'bool', 'string', 'vector']:
+                self._errors.append(f'Cannot inherit {ancestor}')
+
             type_data.ancestor = ancestor
             self._type_graph.add((ancestor, type_name))
         else:
+            type_data.ancestor = 'object'
             if type_name not in self._type_graph.vertices:
-                self._type_graph.add_vertex(type_name)
-            self._root_types.append(type_name)
+                self._type_graph.add(('object', type_name))
             
 
         self._environment.add_type_data(type_name, type_data)
@@ -218,7 +225,7 @@ class EnvironmentBuilder(Visitor):
         if self._type_graph.is_cyclic():
             raise Exception("Cannot have cyclic inheritance")
         
-        stack : list[str] = [] + self._root_types
+        stack : list[str] = ['object']
         graph = self._type_graph
         
         while(len(stack) > 0):

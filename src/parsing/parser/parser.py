@@ -15,7 +15,7 @@ class Parser:
         self.parsing_table.attributed_productions = {
             "Program": [
                 lambda s: ProgramNode(
-                        s[1] + [MethodNode(Token('id', 'main'), [], s[2], Token('id', 'void'))])],
+                        s[1] + [MethodNode(Token('id', 'main'), [], s[2], Token('id', 'object'))])],
             "Decls": [
                 lambda s: [s[1]] + s[2],
                 lambda s: [s[1]] + s[2],
