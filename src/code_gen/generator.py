@@ -20,6 +20,7 @@ class Generator(Visitor):
         
         self._on_function_block = False
         self._in_type = False
+        self._in_call = False
         self._func_name : str = None
         self._type_name : str = None
 
@@ -247,7 +248,10 @@ class Generator(Visitor):
 
                 method_name = type_data.methods[func_name][1]
             elif isinstance(call_node.callee, GetNode):
+                self._in_call = True
                 result = self._generate(call_node.callee)
+                self._in_call = False
+
                 type_data = self._resolver.resolve_type_data(result.type)
                 code = result.code
 
@@ -933,7 +937,9 @@ class Generator(Visitor):
             return GenerationResult(code, 'number')
     
     def visit_get_node(self, get_node: GetNode):
-        if isinstance(get_node.left, LiteralNode) and get_node.left.id.lexeme == 'self':
+        if self._type_name != None:
+            type_data = self._resolver.resolve_type_data(self._type_name)
+        if isinstance(get_node.left, LiteralNode) and get_node.left.id.lexeme == 'self' and (get_node.id.lexeme not in type_data.methods or not self._in_call):
             type_data = self._resolver.resolve_type_data(self._type_name)
             if get_node.id.lexeme in type_data.attributes:
                 var_data = type_data.attributes[get_node.id.lexeme]
