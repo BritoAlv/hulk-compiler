@@ -30,6 +30,12 @@ parser.add_argument("-sa", "--semantic_analysis", action="store_true", help="Per
 parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code')
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
+"""
+need to solve this two bugs:
+   - when initializing an attribute self is not visible.
+   - if A inherits from B and no new constructor specified for A then it inherits B constructor.
+"""
+
 with open('program.hulk', 'r') as source:
     defaultHulkProgram = source.read()
 
@@ -37,7 +43,7 @@ defaultHulkProgram = """
 type A(id : string) 
 {
     id = id;
-    b = self.id;
+    b = let self = self.id in 4;
 }
 4;
 """
