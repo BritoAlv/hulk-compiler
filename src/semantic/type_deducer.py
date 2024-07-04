@@ -18,6 +18,7 @@ class TypeDeducer(Visitor):
 
         self._in_type = False
         self._in_method = False
+        self._in_attribute = False
         self._method_name :  str | None = None
         self._type_name : str = None
         self._stack : list[GetNode] = []
@@ -41,15 +42,18 @@ class TypeDeducer(Visitor):
             self._check_types(attribute_node.body)
             return None
         
+        self._in_attribute = True
         type_data = self._resolver.resolve_type_data(self._type_name)
-        
+        self._in_attribute = True
         if attr_name not in type_data.attributes:
             self.log_error(f"Attribute {attr_name} not in {self._type_name} attributes at line {attribute_node.id.line}")
             return None
         
         var_data = type_data.attributes[attr_name]
 
+        self._in_attribute = True
         inferred_type = self._check_types(attribute_node.body)
+        self._in_attribute = False
 
         if var_data.type == None:
             var_data.type = inferred_type
@@ -72,10 +76,11 @@ class TypeDeducer(Visitor):
         self._resolver.start(func_name)
         func_data = self._resolver.resolve_function_data(func_name)
         
-        declared_type = method_node.type.lexeme
+        declared_type = method_node.type
         inferred_type = self._check_types(method_node.body)
 
         if declared_type != None:
+            declared_type = declared_type.lexeme
             type_data = self._resolver.resolve_type_data(declared_type)
             if inferred_type not in type_data.descendants and inferred_type != declared_type:
                 self.log_error(f'Given type for method {func_name} in {self._type_name} does not conform with its return body at line {method_node.id.line}')
@@ -164,6 +169,8 @@ class TypeDeducer(Visitor):
         fn_name = call_node.callee.id.lexeme
         if len(call_node.args) != len(fn_data.params):
             self.log_error(f"Function {fn_name} call at line {call_node.callee.id.line} doesn't match number of arguments, should be {len(fn_data.params)}, got {len(call_node.args)}")
+            return fn_data.type
+
         for i, arg in enumerate(call_node.args):
             inferred_type = self._check_types(arg)
             index = i
@@ -178,7 +185,8 @@ class TypeDeducer(Visitor):
     def _check_call_arguments_non_static(self, call_node : CallNode, fn_data : FunctionData, method_type_owner : str):
         fn_name = call_node.callee.id.lexeme
         if len(call_node.args) != len(fn_data.params) - 1:
-            self.log_error(f"Function {fn_name} of type {method_type_owner} call at line {call_node.callee.id.line} doesn't match number of arguments, should be {len(fn_data.params)}, got {len(call_node.args)}")
+            self.log_error(f"Function {fn_name} of type {method_type_owner} call at line {call_node.callee.id.line} doesn't match number of arguments, should be {len(fn_data.params) - 1}, got {len(call_node.args)}")
+            return fn_data.type
         
         fn_name += ("_" + method_type_owner)
 
@@ -254,6 +262,11 @@ class TypeDeducer(Visitor):
             return fn_data.type
 
     def visit_get_node(self, get_node : GetNode):
+
+        if isinstance(get_node.left, LiteralNode) and get_node.left.id.lexeme == "self" and self._in_attribute and self._resolver.resolve_var_data("self").type == self._type_name:
+            self.log_error(f"Cannot access to self in attribute declaration at line {get_node.left.id.line}")
+            return "object"
+
         self._stack.append(get_node)
         if len(self._stack) > 2:
             self.log_error(f"After self should come at most one attribute, at line {get_node.id.line}")
@@ -273,6 +286,11 @@ class TypeDeducer(Visitor):
         return type_data.attributes[attr_name].type
     
     def visit_set_node(self, set_node : SetNode):
+
+        if isinstance(set_node.left, LiteralNode) and set_node.left.id.lexeme == "self" and self._in_attribute and self._resolver.resolve_var_data("self").type == self._type_name:
+            self.log_error(f"Cannot access to self in attribute declaration at line {set_node.left.id.line}")
+            return "object" 
+
         left_inferred_type = self._check_types(set_node.left)
         if not self._in_type or left_inferred_type != self._type_name:
             self.log_error(f"Attributes are private, at line {set_node.id.line}")
@@ -370,6 +388,8 @@ class TypeDeducer(Visitor):
                 return 'bool'
             case 'doubleEqual' | 'notEqual':
                 return 'bool'
+            case 'doubleAt' | 'at':
+                return left_inferred_type
     
     def visit_unary_node(self, unary_node : UnaryNode):
         inferred_type = self._check_types(unary_node.expr)
@@ -397,7 +417,7 @@ class TypeDeducer(Visitor):
                     t =  self._resolver.resolve_var_data(literal_node.id.lexeme)
                     return t.type
                 except:
-                    self.log_error(f"Variable {literal_node.id.lexeme} at {literal_node.id.line} was not declared")
+                    self.log_error(f"Variable {literal_node.id.lexeme} at line {literal_node.id.line} was not declared")
                     return "object"
 
     def _check_types(self, node : Statement) -> str:
