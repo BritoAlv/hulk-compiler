@@ -27,29 +27,17 @@ parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
-protocol Node{
-    eval(a: number): number;
+type Range(start : number, end : number, offset : number) {
+    start = start;
+    end = end;
+    current = start - offset;
+    offset = offset;
+
+    next(): bool => (self.current := self.current + self.offset) < self.end ;
+    current(): number => self.current;
 }
-protocol Value extends Node{
-    visit(): object;
-}
-protocol Printer{
-    print(a:object): object;
-}
-function h(s: string): Perro {
-let i = new Perro("3", 3) in i;
-}
-type Perro(color : string, edad: number)
-{
-    color = color;
-    edad = self.Ladrar(1).Ladrar(1);
-    Ladrar(a: number) : Perro => new Perro("2", 3);
-    Imagen(): Perro => {
-        let self = 1  in self;
-        self;
-        };
-}
-let a: number = "2" in a;
+
+for (n in new Range(1, 10, 1)) print(n);
 """
 
 inputStr = defaultHulkProgram

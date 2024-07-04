@@ -98,7 +98,12 @@ class ContextLower():
         return (self.parent != None and self.parent.is_defined_func_whithout_params(name))
     
     def get(self, name):
-        return self.dict.get(name) or (self.parent != None and self.parent.get(name))
+        get = self.dict.get(name)
+        if get != None:
+            return get
+        if self.parent != None:
+            return self.parent.get(name)
+        return None
 
     def define(self, var, type, value = None) -> bool:
         if self.dict.get(var) != None:
@@ -143,7 +148,7 @@ class Context():
         return self.context_lower.get(name)     
     
     def set(self, name, type_new):
-        self.context_lower.dict[name] = type_new
+        self.context_lower.dict[name] = ComputedValue(type_new)
 
     def define(self, var, type = None, value = None) -> bool:
         return self.context_lower.define(var, type, value)
@@ -620,10 +625,32 @@ class TypeCheckerVisitor(Visitor):
         self.error_logger.add("atributo " + id + " ya definido")
         
     def visit_method_node(self, method_node : MethodNode):
-        ret = method_node.body.accept(self)
         id = method_node.id.lexeme
+        attr = []
         if id == "main":
-            return ret
+            return method_node.body.accept(self)
+
+        if self.actual_type != None:
+            method = self.actual_type.get_method(id, method_node.params)
+            if method != None:
+                attr = method.args
+            else:
+                return ComputedValue(None, None)
+        else:
+            method = self.context.is_defined_func(id, method_node.params).args
+            if method != None:
+                attr = method.args
+            else:
+                return ComputedValue(None, None)
+
+        self.context.create_child_context()
+        if attr:
+            for i in attr:
+                self.context.define(i.name, i.type)
+        ret = method_node.body.accept(self)
+        self.context.remove_child_context()
+        
+        
         if ret != None:
             type_func = None
             if self.actual_type == None:
@@ -689,7 +716,8 @@ class TypeCheckerVisitor(Visitor):
     
     def visit_while_node(self, while_node : WhileNode):
         self.context.create_child_context()
-        if  while_node.condition.accept(self):
+        condition = while_node.condition.accept(self)
+        if condition.type != "boolean":
             self.error_logger.add("condicion while")
         value = while_node.body.accept(self)   
         self.context.remove_child_context()
@@ -709,12 +737,13 @@ class TypeCheckerVisitor(Visitor):
 
         self.context.create_child_context()
         types.append(if_node.elsebody.accept(self))
-        value = types[0]
+        value = types[0].type
         for i in range(len(types) ):
             ele = types[i]
-            value = self.hierarchy.get_lca(ele, value)
+            if ele != None:
+                value = self.hierarchy.get_lca(ele.type, value).name
         self.context.remove_child_context()
-        return ComputedValue(value.name, None)
+        return ComputedValue(value, None)
 
     def visit_explicit_vector_node(self, explicit_vector_node : ExplicitVectorNode): # el tipo sera vector y el valor el tipo que devolveria por defecto caualquier indice
         values = []
@@ -744,9 +773,9 @@ class TypeCheckerVisitor(Visitor):
         if self.actual_type != None and id == "self" and self.context.get("self").value == "self" and self.context.get("self").type == self.actual_type.name:
             self.error_logger.add("no se puede usar el self de un tipo en el destructor")
             return ComputedValue(None, None)
-        if self.context.is_defined(id.lexeme) == True:
-            type = self.context.get(id.lexeme).type
-            self.context.set(id.lexeme, new.type)
+        if self.context.is_defined(id) == True:
+            type = self.context.get(id).type
+            self.context.set(id, new.type)
             return ComputedValue(self.hierarchy.get_lca(type, new.type).name, new.value)
         self.error_logger.add("la variable no esta definida")
         return ComputedValue(None, None)
@@ -834,7 +863,6 @@ class TypeCheckerVisitor(Visitor):
                 return ComputedValue(None, None)
         else:
             if left.type == self.actual_type.name and left.value == "self":
-                self.queue_call.append(id)
                 if self.is_call_node == False:
                     attr = self.context.get(left.value +"." + id)
                     if attr != None:
@@ -933,6 +961,12 @@ class TypeCheckerVisitor(Visitor):
         value = None
         msg = "" 
         match binary_node.op.lexeme:
+            case "|":
+                left = binary_node.left.accept(self)
+                right = binary_node.right.accept(self)
+                if left.type == "boolean" and left.type == right.type:
+                    type = "boolean"
+
             case "==":
                 left = binary_node.left.accept(self)
                 right = binary_node.right.accept(self)
@@ -1148,9 +1182,9 @@ class TypeCheckerVisitor(Visitor):
         id = literal_node.id.lexeme
         match literal_node.id.type:
             case "false":
-                return ComputedValue("bolean", id)
+                return ComputedValue("boolean", id)
             case "true":
-                return ComputedValue("bolean", id)
+                return ComputedValue("boolean", id)
             case "number":
                 return ComputedValue("number", int(id))
             case "string":
@@ -1186,11 +1220,13 @@ class TypeCheckerVisitor(Visitor):
                 if len(self.queue_call) > 0 and (self.queue_call[len(self.queue_call) - 1] == "is" or self.queue_call[len(self.queue_call) - 1] == "as"):
                     return ComputedValue(id, id)
                 defined = self.context.is_defined(id)
+                if defined != None and len(self.queue_call) > 0 and (self.queue_call[len(self.queue_call) - 1]) == "get":
+                    var = self.context.get(id)
+                    return ComputedValue(var.type, var.value)
                 if defined != None and self.is_call_node == False:
                     var = self.context.get(id)
                     return ComputedValue(var.type, var.value)
                 if self.context.is_defined_func_whithout_params(id) == True and self.is_call_node == True:
-                    var = self.context.get(id)
                     return ComputedValue(None, id)
                 
                 self.error_logger.add("variable no definida " + id)
