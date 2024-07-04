@@ -124,7 +124,8 @@ class EnvironmentBuilder(Visitor):
         self._in_type = True
 
         # Add type as an object descendant
-        self._environment.get_type_data('object').descendants.append(type_name)
+        if type_node.ancestor_id == None:
+            self._environment.get_type_data('object').descendants.append(type_name)
 
         i = 0
         for attribute, _ in type_node.attributes:

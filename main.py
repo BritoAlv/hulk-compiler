@@ -43,8 +43,8 @@ defaultHulkProgram = """
 type A(id : string) 
 {
     id = id;
-    b = let self = self.id in 4;
 }
+type B inherits A(1) {}
 4;
 """
 
@@ -105,6 +105,7 @@ def codeGen(inputStr : str, show = False) -> str:
 
     environment = Environment()
     environment_builder = EnvironmentBuilder()
+    print(ast.accept(TreePrinter()))
     errors = environment_builder.build(environment, ast)
     resolver = Resolver(environment)
     type_picker = TypePicker(resolver)
@@ -117,12 +118,12 @@ def codeGen(inputStr : str, show = False) -> str:
         print(errors)
         sys.exit(1)
 
-    generator = Generator(resolver)
+    """ generator = Generator(resolver)
     if show:
         print("Generated Code:")
         print(generator.generate(ast))
         print("\n")
-    return generator.generate(ast)
+    return generator.generate(ast) """
     
 def run(inputStr : str):
     assembly = codeGen(inputStr)
