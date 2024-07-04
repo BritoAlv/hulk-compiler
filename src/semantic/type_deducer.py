@@ -163,7 +163,7 @@ class TypeDeducer(Visitor):
     def _check_call_arguments_static(self, call_node : CallNode, fn_data : FunctionData):
         fn_name = call_node.callee.id.lexeme
         if len(call_node.args) != len(fn_data.params):
-            self.log_error(f"Function {fn_name} call at line {call_node.callee.id.line} doesn't match number of arguments, should be {len(fn_data.params)}")
+            self.log_error(f"Function {fn_name} call at line {call_node.callee.id.line} doesn't match number of arguments, should be {len(fn_data.params)}, got {len(call_node.args)}")
         for i, arg in enumerate(call_node.args):
             inferred_type = self._check_types(arg)
             index = i
@@ -178,7 +178,7 @@ class TypeDeducer(Visitor):
     def _check_call_arguments_non_static(self, call_node : CallNode, fn_data : FunctionData, method_type_owner : str):
         fn_name = call_node.callee.id.lexeme
         if len(call_node.args) != len(fn_data.params) - 1:
-            self.log_error(f"Function {fn_name} of type {method_type_owner} call at line {call_node.callee.id.line} doesn't match number of arguments, should be {len(fn_data.params)}")
+            self.log_error(f"Function {fn_name} of type {method_type_owner} call at line {call_node.callee.id.line} doesn't match number of arguments, should be {len(fn_data.params)}, got {len(call_node.args)}")
         
         fn_name += ("_" + method_type_owner)
 
@@ -200,6 +200,7 @@ class TypeDeducer(Visitor):
             return self._check_call_arguments_non_static(call_node, fn_data, method_type_owner)
 
     def visit_call_node(self, call_node : CallNode):
+        
         if isinstance(call_node.callee, LiteralNode):
             if call_node.callee.id.lexeme == "base" and self._in_type and self._in_method:
                 type_data = self._resolver.resolve_type_data(self._type_name)
@@ -207,15 +208,16 @@ class TypeDeducer(Visitor):
                 if type_data.ancestor == "object":
                     self.log_error(f"Call to base in {self._type_name} in {self._method_name} but there is no inheritance" )
                     return "object"
-                methods = type_data.methods[func_name]
-                if len(methods) <= 2:
+                methods = type_data.methods[func_name.split("_")[0]]
+                if len(methods) < 2:
                     self.log_error(f"There is no ancestor of {self._type_name} with method {self._method_name}")
                     return "object"
                 method_name = methods[1]
                 fn_name = method_name
                 assert(fn_name in self._resolver.resolve_functions())
                 fn_data = self._resolver.resolve_function_data(fn_name)
-                self.check_call_arguments(call_node, fn_data, self._in_type)
+                call_node.callee.id.lexeme = fn_name.split("_")[0]
+                self.check_call_arguments(call_node, fn_data, fn_name.split("_")[1])
                 return fn_data.type
             
             else:
@@ -246,8 +248,9 @@ class TypeDeducer(Visitor):
                 self.log_error(f"{fn_name} is not a method of inferred type {left_inferred} at line {call_node.callee.id.line}")
                 return "object"
             
-            fn_data = self._resolver.resolve_function_data(fn_name + "_" + left_inferred)
-            self.check_call_arguments(call_node, fn_data, left_inferred)
+            owner_type = left_type_data.methods[fn_name][0].split("_")[1]
+            fn_data = self._resolver.resolve_function_data(fn_name + "_" + owner_type)
+            self.check_call_arguments(call_node, fn_data, owner_type)
             return fn_data.type
 
     def visit_get_node(self, get_node : GetNode):

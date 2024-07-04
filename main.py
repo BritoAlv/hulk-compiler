@@ -33,8 +33,13 @@ parser.add_argument('-r', '--run', action='store_true', help='Run the compiled a
 with open('program.hulk', 'r') as source:
     defaultHulkProgram = source.read()
 
-defaultHulkProgram += """
-print(4);
+defaultHulkProgram = """
+type A(id : string) 
+{
+    id = id;
+    b = self.id;
+}
+4;
 """
 
 inputStr = defaultHulkProgram
@@ -72,14 +77,19 @@ def ast(inputStr : str, show = False) -> ProgramNode:
         print("\n")
     return ast
 
-def semantic_analysis(inputStr : str) -> ProgramNode:
+def semantic_clean_analysis(inputStr : str) -> ProgramNode:
     treeAst = ast(inputStr)
     sem_an = SemanticAnalysis()
-    #sem_an.run(treeAst)
+    """     
+    errors += sem_an.run(treeAst)
+    if len(errors) > 0:
+        print(errors)
+        sys.exit(1)
+    """
     return treeAst
 
 def codeGen(inputStr : str, show = False) -> str:
-    ast = semantic_analysis(inputStr)
+    ast = semantic_clean_analysis(inputStr)
     constructor_builder = ConstructorBuilder()
     constructor_builder.build(ast)
 
@@ -96,6 +106,10 @@ def codeGen(inputStr : str, show = False) -> str:
 
     type_deducer = TypeDeducer(resolver)
     errors += type_deducer.check_types(ast)
+
+    if len(errors) > 0:
+        print(errors)
+        sys.exit(1)
 
     generator = Generator(resolver)
     if show:
@@ -201,7 +215,7 @@ else:
         ast(inputStr, True)
 
     if args.semantic_analysis:
-        semantic_analysis(inputStr)
+        semantic_clean_analysis(inputStr)
 
     if args.codegen:
         codeGen(inputStr, True)
