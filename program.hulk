@@ -30,7 +30,11 @@ type vector
         index := floor(index);
 
         if (index < 0 | index >= self.count)
-            error("Error: Index was outside of the bounds of the vector")
+        {
+            # error("Error: Index was outside of the bounds of the vector");
+            print("Error: Index was outside of the bounds of the vector");
+            new Node(null);   
+        }
         else
         {
             let i = -1, current = new Node(null) in 

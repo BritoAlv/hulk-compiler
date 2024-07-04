@@ -25,3 +25,5 @@
 - infer type of functions.
 - keep track of constructors. semantic check for constructors. type of params in the constructors.
 - covariance and contravariance.
+
+fix call node, if, while, add at least one token to print semantic error.
