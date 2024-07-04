@@ -34,7 +34,7 @@ with open('program.hulk', 'r') as source:
     defaultHulkProgram = source.read()
 
 defaultHulkProgram += """
-let error = error("Bla");
+print(4);
 """
 
 inputStr = defaultHulkProgram

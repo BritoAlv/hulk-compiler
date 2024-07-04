@@ -64,9 +64,6 @@ class TypeDeducer(Visitor):
         self._in_method = True
         func_name = method_node.id.lexeme
 
-        if func_name == "error":
-            self.log_error("Cannot declare a method called error")
-
         if self._in_type:
             func_name = f'{func_name}_{self._type_name}'
 
@@ -93,9 +90,6 @@ class TypeDeducer(Visitor):
         self._in_type = True
         self._type_name = type_node.id.lexeme
 
-        if self._type_name == "error":
-            self.log_error("Cannot declare a type called error")
-
         for method in type_node.methods:
             self._check_types(method)
 
@@ -104,11 +98,9 @@ class TypeDeducer(Visitor):
     
     def visit_signature_node(self, signature_node : SignatureNode):
         pass
-
     
     def visit_protocol_node(self, protocol_node : ProtocolNode):
         pass
-
     
     def visit_let_node(self, let_node : LetNode):
         self._resolver.next()
@@ -147,12 +139,10 @@ class TypeDeducer(Visitor):
     
     def visit_explicit_vector_node(self, explicit_vector_node : ExplicitVectorNode):
         pass
-
     
     def visit_implicit_vector_node(self, implicit_vector_node : ImplicitVectorNode):
         pass
 
-    
     def visit_destructor_node(self, destructor_node : DestructorNode):
         var_name = destructor_node.id.lexeme
         try:
@@ -170,13 +160,12 @@ class TypeDeducer(Visitor):
             type = self._check_types(expr)
         return type
     
-
     def _check_call_arguments_static(self, call_node : CallNode, fn_data : FunctionData):
         fn_name = call_node.callee.id.lexeme
         if len(call_node.args) != len(fn_data.params):
             self.log_error(f"Function {fn_name} call at line {call_node.callee.id.line} doesn't match number of arguments, should be {len(fn_data.params)}")
         for i, arg in enumerate(call_node.args):
-            inferred_type = self.check_types(arg)
+            inferred_type = self._check_types(arg)
             index = i
             param_var_data = fn_data.params[fn_data.params_index[index]]
             param_var_type = param_var_data.type
