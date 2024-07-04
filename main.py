@@ -18,7 +18,8 @@ from semantic.tipos import SemanticAnalysis
 import re
 import pexpect
 
-from semantic.type_visitor import TypeVisitor
+from semantic.type_deducer import TypeDeducer
+from semantic.type_picker import TypePicker
 
 # Set up argument parsing
 parser = argparse.ArgumentParser(description='Hulk Compiler')
@@ -33,7 +34,7 @@ with open('program.hulk', 'r') as source:
     defaultHulkProgram = source.read()
 
 defaultHulkProgram += """
-4;
+let error = error("Bla");
 """
 
 inputStr = defaultHulkProgram
@@ -90,8 +91,12 @@ def codeGen(inputStr : str, show = False) -> str:
     environment_builder = EnvironmentBuilder()
     errors = environment_builder.build(environment, ast)
     resolver = Resolver(environment)
-    type_visitor = TypeVisitor(resolver)
-    errors += type_visitor.check_types(ast)
+    type_picker = TypePicker(resolver)
+    errors += type_picker.pick_types(ast)
+
+    type_deducer = TypeDeducer(resolver)
+    errors += type_deducer.check_types(ast)
+
     generator = Generator(resolver)
     if show:
         print("Generated Code:")
