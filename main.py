@@ -30,22 +30,23 @@ parser.add_argument("-sa", "--semantic_analysis", action="store_true", help="Per
 parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code')
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
-"""
-need to solve this two bugs:
-   - when initializing an attribute self is not visible.
-   - if A inherits from B and no new constructor specified for A then it inherits B constructor.
-"""
-
 with open('program.hulk', 'r') as source:
     defaultHulkProgram = source.read()
 
 defaultHulkProgram = """
-type A(id : string) 
+type C
 {
-    id = id;
+    b = 10;
+    c = 4;
+    greet() => self.c;
 }
-type B inherits A(1) {}
-4;
+
+type B inherits C
+{
+
+}
+
+print( (new B()).greet() );
 """
 
 inputStr = defaultHulkProgram
@@ -118,12 +119,12 @@ def codeGen(inputStr : str, show = False) -> str:
         print(errors)
         sys.exit(1)
 
-    """ generator = Generator(resolver)
+    generator = Generator(resolver)
     if show:
         print("Generated Code:")
         print(generator.generate(ast))
         print("\n")
-    return generator.generate(ast) """
+    return generator.generate(ast)
     
 def run(inputStr : str):
     assembly = codeGen(inputStr)
