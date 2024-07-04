@@ -64,6 +64,9 @@ class TypeDeducer(Visitor):
         self._in_method = True
         func_name = method_node.id.lexeme
 
+        if func_name == "error":
+            self.log_error("Cannot declare a method called error")
+
         if self._in_type:
             func_name = f'{func_name}_{self._type_name}'
 
@@ -89,6 +92,9 @@ class TypeDeducer(Visitor):
     def visit_type_node(self, type_node : TypeNode):
         self._in_type = True
         self._type_name = type_node.id.lexeme
+
+        if self._type_name == "error":
+            self.log_error("Cannot declare a type called error")
 
         for method in type_node.methods:
             self._check_types(method)
