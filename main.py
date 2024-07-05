@@ -28,68 +28,60 @@ parser.add_argument('-r', '--run', action='store_true', help='Run the compiled a
 defaultHulkProgram = """
  type Stack
 {
+    top = new Node(0);
     count = 0;
-    top : Node = new Node(1);
-    index = 0;
-    currentProp = new Node(1);
 
-    push(value : number) : number => let node = new Node(value) in 
+    push(n : number) : number => let pushedNode = new Node(n) in 
     {
-        if (self.count == 0)
-        {
-            self.top := node;
-            self.count := 1;
-        }
-        else
-        {
-            self.top.setNext(node);
-            node.setPrevious(self.top);
-            self.top := node;
-            self.count := self.count + 1;
-        };
-
-        self.currentProp := self.top;
-        self.index := self.count;
-        value;
+        pushedNode.addPrevious(self.top);
+        self.top.addNext(pushedNode);
+        self.top := pushedNode;
+        self.count := self.count + 1;
+        n;
     };
-    
+
+    pop(n : number) : number => let popped = self.top.getValue() in 
+    {
+        self.top := self.top.getPrevious();
+        self.count := self.count - 1;
+        popped;
+    };
+
     peek() : number => self.top.getValue();
 
     getCount() : number => self.count;
-
-    next() : boolean 
-    {
-        if (self.index == self.count & self.index > 0)
-        {
-            self.currentProp := self.top;
-            self.index := self.index - 1;
-            true;
-        }
-        elif (self.index > 0)
-        {
-            self.currentProp := self.currentProp.getPrevious();
-            self.index := self.index - 1;
-            true;
-        }
-        else
-            false;
-    }
-
-    current() : number => self.currentProp.getValue(); 
 }
 
-type Node(value : number) 
+type Node(value : number)
 {
     value = value;
-    previous : Node = new Node (1);
-    next : Node = new Node (1);
-    getValue() : number => self.value;
-    getNext() : Node => self.next;
+    previous = self;
+    next = self;
+    addPrevious(previous : Node) : Node => self.previous := previous;
+    addNext(next : Node) : Node => self.next := next;
     getPrevious() : Node => self.previous;
-    setNext(node : Node) : Node => self.next := node;
-    setPrevious(node : Node) : Node => self.previous := node;
+    getNext() : Node => self.next;
+    print() : number => print(self.value);
+    getValue() : number => self.value;
 }
-d;
+
+let stack = new Stack() in
+{
+    stack.push(4);
+    print("Top:" @@ stack.peek());
+    print("Count:" @@ stack.getCount());
+    stack.push(3);
+    stack.pop();
+    stack.push(2);
+    stack.push(5);
+    stack.pop();
+    stack.pop();
+    print("Top:" @@ stack.peek());
+    print("Count:" @@ stack.getCount());
+    stack.push(10);
+    print("Top:" @@ stack.peek());
+    print("Count:" @@ stack.getCount());
+};
 """
 
 inputStr = defaultHulkProgram
