@@ -1,13 +1,13 @@
-type vector
+type Vector
 {
     head = new Node(null);
     tail = new Node(null);
     count = 0;
     index = 0;
     currentValue = null;
-    length() : number => self.count;
+    length() : Number => self.count;
 
-    append(value : object) : object => let node = new Node(value) in
+    append(value : Object) : Object => let node = new Node(value) in
     {
         if(self.count == 0)
         {
@@ -25,7 +25,7 @@ type vector
         node;
     };
 
-    getNodeAt(index : number) : Node 
+    getNodeAt(index : Number) : Node 
     {
         index := floor(index);
 
@@ -55,11 +55,11 @@ type vector
         };
     }
 
-    element(index : number) : object => self.getNodeAt(index).getValue();
+    element(index : Number) : Object => self.getNodeAt(index).getValue();
 
-    set(index : number, value : object) : object => let node = self.getNodeAt(index) in node.setValue(value);
+    set(index : Number, value : Object) : Object => let node = self.getNodeAt(index) in node.setValue(value);
 
-    next() : bool =>
+    next() : Boolean =>
     if (self.index > self.count - 1)
     {
         self.index := 0;
@@ -72,23 +72,23 @@ type vector
         true;
     };
 
-    current() : object => self.currentValue;
+    current() : Object => self.currentValue;
 }
 
-type Node(value : object) 
+type Node(value : Object) 
 {
     value = value;
     previous : Node = new Node(null);
     next : Node = new Node(null);
-    getValue() : object => self.value;
-    setValue(value : object) : object => self.value := value; 
+    getValue() : Object => self.value;
+    setValue(value : Object) : Object => self.value := value; 
     getNext() : Node => self.next;
     getPrevious() : Node => self.previous;
     setNext(node : Node) : Node => self.next := node;
     setPrevious(node : Node) : Node => self.previous := node;
 }
 
-function floor(n : number) : number => let i = 0 in 
+function floor(n : Number) : Number => let i = 0 in 
 {
     while(i < n)
         i:= i + 1;
