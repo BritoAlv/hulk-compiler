@@ -133,7 +133,7 @@ class Generator(Visitor):
             result = self._generate(value)
             code += result.code
 
-            self._resolver.resolve_var_data(var_name).type = result.type # TODO: Remove when types are correctly inferred during semantic analysis
+            # self._resolver.resolve_var_data(var_name).type = result.type # TODO: Remove when types are correctly inferred during semantic analysis
 
             code += f'''
     jal stack_pop
@@ -217,7 +217,7 @@ class Generator(Visitor):
     jal stack_push
 '''
                 self._print_index += 1
-                return GenerationResult(code, 'object')
+                return GenerationResult(code, 'Object')
             elif func_name == 'error':
                 func_type = 'error'
             else:
@@ -325,7 +325,7 @@ class Generator(Visitor):
     move $a0 $v0
     jal stack_push
 '''         
-            return GenerationResult(code, 'number')
+            return GenerationResult(code, 'Number')
         
         elif literal_node.id.type == 'id':
             var_name = literal_node.id.lexeme
@@ -348,7 +348,7 @@ class Generator(Visitor):
     move $a0 $v0
     jal stack_push            
 '''
-            return GenerationResult(code, 'string')
+            return GenerationResult(code, 'String')
         
         elif literal_node.id.type == 'true':
             code = '''
@@ -357,7 +357,7 @@ class Generator(Visitor):
     move $a0 $v0
     jal stack_push
 '''
-            return GenerationResult(code, 'bool')
+            return GenerationResult(code, 'Boolean')
         elif literal_node.id.type == 'false':
             code = '''
     li $a0 0
@@ -365,14 +365,14 @@ class Generator(Visitor):
     move $a0 $v0
     jal stack_push
 '''
-            return GenerationResult(code, 'bool')
+            return GenerationResult(code, 'Boolean')
         elif literal_node.id.type == 'null':
             code = f'''
     jal build_null
     move $a0 $v0
     jal stack_push
 '''
-            return GenerationResult(code, 'object')
+            return GenerationResult(code, 'Object')
         
     def visit_binary_node(self, binary_node: BinaryNode):
         left_result = self._generate(binary_node.left)
@@ -394,7 +394,7 @@ class Generator(Visitor):
     move $a0 $v0
     jal stack_push
 '''
-            return GenerationResult(code, 'bool')
+            return GenerationResult(code, 'Boolean')
         elif binary_node.op.type == 'asOp' and isinstance(binary_node.right, LiteralNode) and binary_node.right.id.type == 'id':
             type_name = binary_node.right.id.lexeme
 
@@ -438,7 +438,7 @@ class Generator(Visitor):
     move $a0 $v0
     jal stack_push
             '''
-            return GenerationResult(code, 'number')
+            return GenerationResult(code, 'Number')
         # Subtraction
         elif binary_node.op.type == 'minus':
             code += '''
@@ -448,7 +448,7 @@ class Generator(Visitor):
     move $a0 $v0
     jal stack_push
             '''
-            return GenerationResult(code, 'number')
+            return GenerationResult(code, 'Number')
         # Multiplication
         elif binary_node.op.type == 'star':
             code +='''
@@ -458,7 +458,7 @@ class Generator(Visitor):
     move $a0 $v0
     jal stack_push
             '''
-            return GenerationResult(code, 'number')
+            return GenerationResult(code, 'Number')
         # Division
         elif binary_node.op.type == 'div':
             code +='''
@@ -468,7 +468,7 @@ class Generator(Visitor):
     move $a0 $v0
     jal stack_push
             '''
-            return GenerationResult(code, 'number')
+            return GenerationResult(code, 'Number')
         # Logical And and Or
         elif binary_node.op.type == 'and' or binary_node.op.type == 'or':
             if binary_node.op.type == 'and':
@@ -505,7 +505,7 @@ class Generator(Visitor):
     or_end_{self._logical_index}:
 '''
             self._logical_index += 1
-            return GenerationResult(code, 'bool')
+            return GenerationResult(code, 'Boolean')
         # GreaterThan
         elif binary_node.op.type == 'greater':
             code +='''
@@ -516,7 +516,7 @@ class Generator(Visitor):
     move $a0 $v0
     jal stack_push
             '''
-            return GenerationResult(code, 'bool')
+            return GenerationResult(code, 'Boolean')
         # LessThan
         elif binary_node.op.type == 'less':
             code +='''
@@ -528,7 +528,7 @@ class Generator(Visitor):
     move $a0 $v0
     jal stack_push
             '''
-            return GenerationResult(code, 'bool')
+            return GenerationResult(code, 'Boolean')
         # GreaterThanOrEqual
         elif binary_node.op.type == 'greaterEq':
             code +='''
@@ -539,7 +539,7 @@ class Generator(Visitor):
     move $a0 $v0
     jal stack_push
             '''
-            return GenerationResult(code, 'bool')
+            return GenerationResult(code, 'Boolean')
         # LessThanOrEqual
         elif binary_node.op.type == 'lessEq':
             code +='''
@@ -551,7 +551,7 @@ class Generator(Visitor):
     move $a0 $v0
     jal stack_push
             '''
-            return GenerationResult(code, 'bool')
+            return GenerationResult(code, 'Boolean')
         # DoubleEqual
         elif binary_node.op.type == 'doubleEqual':
             code += f'''
@@ -574,7 +574,7 @@ class Generator(Visitor):
     equality_end_{self._equality_index}:
 '''
             self._equality_index += 1
-            return GenerationResult(code, 'bool')
+            return GenerationResult(code, 'Boolean')
         # NotEqual
         elif binary_node.op.type == 'notEqual':
             code += f'''
@@ -598,7 +598,7 @@ class Generator(Visitor):
     equality_end_{self._equality_index}:
 '''
             self._equality_index += 1
-            return GenerationResult(code, 'bool')
+            return GenerationResult(code, 'Boolean')
         # String concatenation
         elif binary_node.op.type == 'at' or binary_node.op.type == 'doubleAt':
             code += f'''
@@ -656,43 +656,6 @@ class Generator(Visitor):
 '''
             self._concat_index += 1
 
-#             if right_type == 'number':
-#                 code +='''
-#     mov.s $f12 $f20
-#     jal number_to_str
-#     move $s0 $v0 
-#             '''
-#             elif right_type == 'bool':
-#                 code +='''
-#     move $a0 $s0
-#     jal bool_to_str
-#     move $s0 $v0
-# '''
-#             elif right_type != 'string':
-#                 code +='''
-#     move $a0 $s0
-#     jal pointer_to_str
-#     move $s0 $v0
-# '''
-#             if left_type == 'number':
-#                 code +='''
-#     mov.s $f12 $f22
-#     jal number_to_str
-#     move $s1 $v0 
-#             '''
-#             elif left_type == 'bool':
-#                 code +='''beq $t0 {BOOL_TYPE_ID} stringify_bool_{self._concat_index}
-#     move $a0 $s1
-#     jal bool_to_str
-#     move $s1 $v0
-# '''
-#             elif left_type != 'string':
-#                 code +='''
-#     move $a0 $s1
-#     jal pointer_to_str
-#     move $s1 $v0
-# '''
-
             if binary_node.op.type == 'at':
                 code += '''
     move $a0 $s1
@@ -713,7 +676,7 @@ class Generator(Visitor):
     move $a0 $v0
     jal stack_push
 '''
-            return GenerationResult(code, 'string')
+            return GenerationResult(code, 'String')
         # Power
         elif binary_node.op.type == 'powerOp' or binary_node.op.type == 'modOp':
             if binary_node.op.type == 'powerOp':
@@ -736,7 +699,7 @@ class Generator(Visitor):
     move $a0 $v0
     jal stack_push
 '''
-            return GenerationResult(code, 'number')
+            return GenerationResult(code, 'Number')
         else:
             raise Exception("Invalid operation")
 
@@ -761,7 +724,7 @@ class Generator(Visitor):
         code = result.code
 
         type_data = self._resolver.resolve_type_data(self._type_name)
-        type_data.attributes[attribute_name].type = result.type # TODO: Remove when types are correctly inferred during semantic analysis
+        # type_data.attributes[attribute_name].type = result.type # TODO: Remove when types are correctly inferred during semantic analysis
 
         self_offset = self._get_offset('self')
         attribute_offset = (type_data.attributes[attribute_name].index + type_data.inherited_offset) * WORD_SIZE
@@ -830,7 +793,7 @@ class Generator(Visitor):
         base_type = types[0]
         for type in types:
             if type != base_type:
-                return GenerationResult(code, 'object')
+                return GenerationResult(code, 'Object')
         
         return GenerationResult(code, base_type)
 
@@ -922,7 +885,7 @@ class Generator(Visitor):
     move $a0 $v0
     jal stack_push
 '''
-            return GenerationResult(code, 'bool')
+            return GenerationResult(code, 'Boolean')
         else:
             code += '''
     jal stack_pop
@@ -934,7 +897,7 @@ class Generator(Visitor):
     move $a0 $v0
     jal stack_push
 '''
-            return GenerationResult(code, 'number')
+            return GenerationResult(code, 'Number')
     
     def visit_get_node(self, get_node: GetNode):
         if self._type_name != None:
