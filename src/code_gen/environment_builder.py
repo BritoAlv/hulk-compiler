@@ -32,6 +32,7 @@ class EnvironmentBuilder(Visitor):
         self._in_type = False
 
         self._type_graph = Graph()
+        self._type_graph.add_vertex("Object")
         self._errors : list[str] = []
 
         self._build(program)
