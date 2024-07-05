@@ -26,25 +26,70 @@ parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
-protocol It {
-    next(): boolean;
-}
-type Range(start : number, end : number, offset : number) {
-    start = start;
-    end = self;
-    current = start - offset;
-    offset = self.current(1);
+ type Stack
+{
+    count = 0;
+    top : Node = new Node(1);
+    index = 0;
+    currentProp = new Node(1);
 
-    next(): boolean => (self.current := self.current + self.offset) < self.end ;
-    current(a: number): number => self.current;
-}
-type he {
-    next(): boolean => false;
+    push(value : number) : number => let node = new Node(value) in 
+    {
+        if (self.count == 0)
+        {
+            self.top := node;
+            self.count := 1;
+        }
+        else
+        {
+            self.top.setNext(node);
+            node.setPrevious(self.top);
+            self.top := node;
+            self.count := self.count + 1;
+        };
+
+        self.currentProp := self.top;
+        self.index := self.count;
+        value;
+    };
+    
+    peek() : number => self.top.getValue();
+
+    getCount() : number => self.count;
+
+    next() : boolean 
+    {
+        if (self.index == self.count & self.index > 0)
+        {
+            self.currentProp := self.top;
+            self.index := self.index - 1;
+            true;
+        }
+        elif (self.index > 0)
+        {
+            self.currentProp := self.currentProp.getPrevious();
+            self.index := self.index - 1;
+            true;
+        }
+        else
+            false;
+    }
+
+    current() : number => self.currentProp.getValue(); 
 }
 
-let i : It = new he(), s = [3,3,4] in {
-    s[2]:= new he();
-};
+type Node(value : number) 
+{
+    value = value;
+    previous : Node = new Node (1);
+    next : Node = new Node (1);
+    getValue() : number => self.value;
+    getNext() : Node => self.next;
+    getPrevious() : Node => self.previous;
+    setNext(node : Node) : Node => self.next := node;
+    setPrevious(node : Node) : Node => self.previous := node;
+}
+d;
 """
 
 inputStr = defaultHulkProgram

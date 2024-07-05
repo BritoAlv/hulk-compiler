@@ -797,7 +797,7 @@ class TypeCheckerVisitor(Visitor):
                         if n.name == j.name :
                             if n.type != j.name and self.match_args_types(n.args, j.args) == False:
                                 self.error_logger.add(f"metodo sobrecargado de la clase no cumple la firma linea ")
-                                
+
         self.context.remove_child_context()
         self.actual_type = last_type
 
@@ -823,7 +823,6 @@ class TypeCheckerVisitor(Visitor):
         value = while_node.body.accept(self)   
         self.context.remove_child_context()
         return value
-
 
     def visit_if_node(self, if_node : IfNode):
         types = []
@@ -965,7 +964,7 @@ class TypeCheckerVisitor(Visitor):
                 return ComputedValue(None, None)
         else:
             if left.type == self.actual_type.name and left.value == "self":
-                if self.is_call_node == False:
+                if len(self.queue_call) > 0 and self.queue_call[len(self.queue_call) - 1]:
                     attr = self.context.get(left.value +"." + id)
                     if attr != None:
                         self.queue_call.pop()
@@ -975,7 +974,7 @@ class TypeCheckerVisitor(Visitor):
                     return ComputedValue(None, None)
                 else:
                     methods = self.context.is_defined_func_whithout_params(left.value +"." + id)
-                    if methods != None:
+                    if methods != False:
                         self.queue_call.pop()
                         return ComputedValue(self.actual_type.name, id)
                     self.error_logger.add("tipo self no existe en la clase")
@@ -1065,6 +1064,12 @@ class TypeCheckerVisitor(Visitor):
         value = None
         msg = "" 
         match binary_node.op.lexeme:
+            case "&":
+                left = binary_node.left.accept(self)
+                right = binary_node.right.accept(self)
+                if left.type == "boolean" and left.type == right.type:
+                    type = "boolean"
+
             case "|":
                 left = binary_node.left.accept(self)
                 right = binary_node.right.accept(self)
