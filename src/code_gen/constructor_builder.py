@@ -131,7 +131,7 @@ class ConstructorBuilder(Visitor):
                                 ),
                                 [LiteralNode(id) for id, _ in params]
                             )
-                        ] + method.body.exprs
+                        ] + method.body.exprs[1:]
                 
                 # Push onto stack
                 stack.append(neighbor)
