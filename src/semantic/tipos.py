@@ -1,3 +1,5 @@
+from asyncio import protocols
+from sqlalchemy import False_
 from common.ErrorLogger.ErrorLogger import ErrorLogger
 from common.ast_nodes.expressions import *
 from common.ast_nodes.expressions import VectorGetNode
@@ -171,8 +173,13 @@ class Context():
                 return i
         return None
     
-    def get_type_for(self, symbol):
-        pass
+    def get_protocols(self):
+        protocols = []
+        for i in self.types:
+            if i.args == None:
+                protocols.append(i)
+        return protocols
+
     def defineSymbol(self, symbol, type) -> bool:
         return False
     
@@ -382,11 +389,9 @@ class TypeBuilderVisitor(Visitor):
                 for m in i.params:
                     (j, k) = m 
                     args.append((j.lexeme, k.lexeme if k != None else None))
-                
-                for i in type_node.methods:
-                    if i.id.lexeme == "build": 
-                        for j in i.body.exprs:
-                            j.accept(self)
+                 
+                for j in i.body.exprs:
+                    j.accept(self)
 
                 if self.actual_type:
                     self.actual_type.add_args(args)
@@ -592,16 +597,75 @@ class TypeCheckerVisitor(Visitor):
         self.queue_call = []
         self.is_call_node = False # pq no se si un call node deriva en literal como tratar el literal como variable o como metodo
         self.is_use_self = False # self.Ladrar(1).Ladrar en este caso hace falta saber que ya se uso el self
+        self.is_instanciated_type_attr = False # para no poder usar un atributo en cuando inicializo los tipos
         self.analize_attr_type = False # para las variables que declare como atributo de un tipo tenga de nombre self.id
 
-    def get_type_all_function(self, type_name, func_name, args):
-        type = self.context.get_type(type)
+    def get_type_all_function(self, type_name):
+        type = self.context.get_type(type_name)
         ancestors = self.hierarchy.get_ancestors(self.hierarchy.root, type_name)
         methods = []
         for i in ancestors:
             a = self.context.get_type(i.name)
-            print(a.name)
-        return []
+            if a != None:
+                for j in a.method:
+                    methods.append(j)
+        return methods
+    
+    def match_args(self, func_args, args):
+        if len(args) < len(func_args) - 1:
+            return False
+        if len(args) > len(func_args):
+            return False
+        for i in range(len(args)):
+            if func_args[i] == None:
+                return False
+            f = func_args[i].type
+            a = args[i]
+            if self.hierarchy.get_lca(f, a).name != f:
+                return False 
+        return True
+    
+    def match_args_types(self, func_args, args):
+        if len(args) < len(func_args) - 1:
+            return False
+        if len(args) > len(func_args):
+            return False
+        for i in range(len(args)):
+            if func_args[i] == None:
+                return False
+            f = func_args[i].type
+            a = args[i]
+            if f != a:
+                return False 
+        return True
+    
+    def get_type_function(self, type_name, func_name, args):
+        methods = self.get_type_all_function(type_name)
+        for i in methods:
+            match = self.match_args(i.args, args)
+            if i.name == func_name and match == True:
+                return i
+        return None
+    
+    def type_implemets_protocol(self, type: Type, protocol: Type):
+        for i in protocol.method:
+            mk = False
+            type_method = self.get_type_all_function(type.name)
+            for j in type_method:
+                if i.name == j.name and i.type == j.type and self.match_args_types(i.args, j.args):
+                    mk = True 
+                    break
+            if mk == False:
+                return False
+        return True
+
+    def type_protocols_implemented(self, type):
+        protocols = self.context.get_protocols()
+        implemented = []
+        for i in protocols:
+            if self.implemets_protocol(type, i):
+                implemented.append(i)
+        return implemented
 
     def visit_program_node(self, program_node : ProgramNode):
         value = ""
@@ -614,12 +678,29 @@ class TypeCheckerVisitor(Visitor):
             id = 'self.' + id
         if self.context.is_defined_local(id) == False: # variable no declarada antes
             body = attribute_node.body.accept(self)
+            body_type = self.context.get_type(body.type)
             if (attribute_node.type != None): # si viene con tipo
-                if (attribute_node.type.lexeme == body): # si coinciden los tipos
-                    self.context.define(id, body.type, body.value)
-                    return 
+                attr_type = self.context.get_type(attribute_node.type.lexeme)
+                if attr_type == None:
+                    self.error_logger.add("tipo no existe " + attribute_node.type.lexeme)
+                    return
+                if attr_type.args == None and body_type.args != None:
+                    if self.type_implemets_protocol(attr_type, body_type): # si coinciden los tipos
+                        if self.is_instanciated_type_attr == True:
+                            return ComputedValue(body.type, id)
+                        self.context.define(id, body.type, body.value)
+                        return 
+                else:
+                    if self.hierarchy.get_lca(attribute_node.type.lexeme, body.type): # si coinciden los tipos
+                        if self.is_instanciated_type_attr == True:
+                            return ComputedValue(body.type, id)
+                        self.context.define(id, body.type, body.value)
+                        return 
                 self.error_logger.add("atributo " + id + " con tipo incorrecto")
                 return
+            if self.is_instanciated_type_attr == True:
+                return ComputedValue(body.type, id)
+
             self.context.define(id, body.type, body.value)
             return
         self.error_logger.add("atributo " + id + " ya definido")
@@ -687,16 +768,36 @@ class TypeCheckerVisitor(Visitor):
         for i in type_node.methods:
             if i.id.lexeme == "build":
                 args = []
-                for j in i.params:
+                for j in i.params: # definir los parametros para el constructor
                     self.context.define(j[0].lexeme, j[1].lexeme if j[1] != None else None)
-                for j in i.body.exprs:
+                self.is_instanciated_type_attr = True
+                attr = []
+                for j in i.body.exprs: # inicializar los atributos
                     self.analize_attr_type = True
-                    j.accept(self)
+                    attr.append(j.accept(self))
                     self.analize_attr_type = False
+                self.is_instanciated_type_attr = False
+
+                for j in attr:
+                    self.context.define(j.value, j.type)
+
                 for j in i.params:
                     self.context.remove_define(j[0].lexeme)
             else:
                 i.accept(self)
+        
+        # revisar si los metodos del tipo si sobrescriben alguno heredera tiene que cumplir exacta la firma
+        ancestors = self.hierarchy.get_ancestors(self.hierarchy.root, self.actual_type.name)
+        for j in self.actual_type.method:
+            
+            for k in range(1, len(ancestors)):
+                a = self.context.get_type(ancestors[k])
+                if a != None:
+                    for n in a.method:
+                        if n.name == j.name :
+                            if n.type != j.name and self.match_args_types(n.args, j.args) == False:
+                                self.error_logger.add(f"metodo sobrecargado de la clase no cumple la firma linea ")
+                                
         self.context.remove_child_context()
         self.actual_type = last_type
 
@@ -831,7 +932,8 @@ class TypeCheckerVisitor(Visitor):
                 self.error_logger.add("tipo de llamada no exite")
                 self.queue_call.pop()
                 return ComputedValue(None, None)
-            type_method = type.get_method(callee.value, args)
+            # type_method = type.get_method(callee.value, args)
+            type_method = self.get_type_function(callee.type, callee.value, args)
             if type_method != None:
                 self.queue_call.pop()
                 return ComputedValue(type_method.type, None)
@@ -940,6 +1042,8 @@ class TypeCheckerVisitor(Visitor):
         type = self.context.get_type(new_node.id.lexeme) 
         if type != None:
             args = type.args
+            if (args == None):
+                self.error_logger(f"no se puede instanciar un protocolo {new_node.id.line}")
             mk = 0
             for (i, j) in enumerate(new_node.args, 0):
                 arg_type = j.accept(self)
@@ -950,7 +1054,7 @@ class TypeCheckerVisitor(Visitor):
                 if i >= len(args):
                     self.error_logger.add("argumentos de mas " + new_node.id.lexeme)
                     continue
-            if i < len(args) - 1:
+            if mk < len(args) - 1:
                 self.error_logger.add("argumentos de menos " + new_node.id.lexeme)
             return ComputedValue(type.name)
         self.error_logger.add("clase no definida " + new_node.id.lexeme)
@@ -1220,10 +1324,10 @@ class TypeCheckerVisitor(Visitor):
                 if len(self.queue_call) > 0 and (self.queue_call[len(self.queue_call) - 1] == "is" or self.queue_call[len(self.queue_call) - 1] == "as"):
                     return ComputedValue(id, id)
                 defined = self.context.is_defined(id)
-                if defined != None and len(self.queue_call) > 0 and (self.queue_call[len(self.queue_call) - 1]) == "get":
+                if defined != False and len(self.queue_call) > 0 and (self.queue_call[len(self.queue_call) - 1]) == "get":
                     var = self.context.get(id)
                     return ComputedValue(var.type, var.value)
-                if defined != None and self.is_call_node == False:
+                if defined != False and self.is_call_node == False:
                     var = self.context.get(id)
                     return ComputedValue(var.type, var.value)
                 if self.context.is_defined_func_whithout_params(id) == True and self.is_call_node == True:

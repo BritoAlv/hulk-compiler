@@ -4,7 +4,6 @@ import pickle
 import sys
 
 from code_gen.constructor_builder import ConstructorBuilder
-from code_gen.environment_builder import EnvironmentBuilder
 from code_gen.generator import Generator
 from code_gen.resolver import Resolver
 from common.ast_nodes.statements import ProgramNode
@@ -27,17 +26,25 @@ parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
 defaultHulkProgram = """
+protocol It {
+    next(): boolean;
+}
 type Range(start : number, end : number, offset : number) {
     start = start;
-    end = end;
+    end = self;
     current = start - offset;
-    offset = offset;
+    offset = self.current(1);
 
-    next(): bool => (self.current := self.current + self.offset) < self.end ;
-    current(): number => self.current;
+    next(): boolean => (self.current := self.current + self.offset) < self.end ;
+    current(a: number): number => self.current;
+}
+type he {
+    next(): boolean => false;
 }
 
-for (n in new Range(1, 10, 1)) print(n);
+let i : It = new he(), s = [3,3,4] in {
+    s[2]:= new he();
+};
 """
 
 inputStr = defaultHulkProgram
