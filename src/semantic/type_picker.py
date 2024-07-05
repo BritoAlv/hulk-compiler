@@ -45,21 +45,17 @@ class TypePicker(Visitor):
             self.log_error(f"Attribute {attr_name} not in {self._type_name} attributes at line {attribute_node.id.line}")
             return None
         
-        var_data = type_data.attributes[attr_name]
-
         if attribute_node.type != None: 
             stated_type = attribute_node.type.lexeme
             if stated_type not in self._resolver.resolve_types():
                 self.log_error(f"Type {stated_type} given for attribute {attr_name} in type declaration {self._type_name} does not exist at line {attribute_node.id.line}")
-            else:
-                var_data.type = attribute_node.type.lexeme
     
     def visit_method_node(self, method_node : MethodNode):
         self._in_method = True
         func_name = method_node.id.lexeme
 
-        if func_name == "print":
-            self.log_error(f"Can't declare a method called print or error at line {method_node.id.line}")
+        if func_name in ["print", "error"] and not self._in_type:
+            self.log_error(f"Can't declare a method called [print, error] at line {method_node.id.line}")
 
         if self._in_type:
             func_name = f'{func_name}_{self._type_name}'
@@ -74,8 +70,10 @@ class TypePicker(Visitor):
                 func_data.params[param.lexeme].type = type.lexeme
                 continue
             elif type != None:
-                self.log_error(f"Parameter Type {type.lexeme} given for param {param.lexeme} at method {method_node.id.lexeme} " + f"in type declaration {self._type_name}" if self._in_type else "" + f"does not exist at line {method_node.id.line}")
-            func_data.params[param.lexeme].type = None
+                self.log_error(f"Parameter Type {type.lexeme} given for param {param.lexeme} at method {method_node.id.lexeme} " + (f"in type declaration {self._type_name}" if self._in_type else "") + f" does not exist at line {method_node.id.line}")
+                type.lexeme = "Object"
+            else:
+                type.lexeme = "Any"
         
     
         declared_type = method_node.type
@@ -84,10 +82,9 @@ class TypePicker(Visitor):
         if declared_type != None:
             declared_type = declared_type.lexeme
             if declared_type in self._resolver.resolve_types():
-                type_data = self._resolver.resolve_type_data(declared_type)
                 func_data.type = declared_type
             else:
-                self.log_error(f"Type {type.lexeme} given for method {method_node.id.lexeme} " + f"in type declaration {self._type_name}" if self._in_type else "" + f"does not exist at line {method_node.id.line}")
+                self.log_error(f"Type {declared_type} given for method {method_node.id.lexeme} " + (f"in type declaration {self._type_name}" if self._in_type else "") + f" does not exist at line {method_node.id.line}")
 
         self._in_method = False    
         self._method_name = None
@@ -97,8 +94,8 @@ class TypePicker(Visitor):
         self._in_type = True
         self._type_name = type_node.id.lexeme
 
-        if self._type_name == "error":
-            self.log_error(f"Can't declare error as a typename")
+        if self._type_name in ["error", "Any"]:
+            self.log_error(f"Can't declare [error, Any] as typenames")
 
         for method in type_node.methods:
             self._pick_types(method)
@@ -127,9 +124,9 @@ class TypePicker(Visitor):
             elif op_type != None:
                 self.log_error(f"Given tipe for variable {var_name} in let_expression doesn't exist at line {assig.id.line}")
             
-            var_data.type = None
+            var_data.type = "Any"
         
-        f_type = self._pick_types(let_node.body)
+        self._pick_types(let_node.body)
         self._resolver.next()
 
     def visit_while_node(self, while_node : WhileNode):
