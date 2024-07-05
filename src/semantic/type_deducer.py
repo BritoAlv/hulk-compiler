@@ -21,7 +21,7 @@ class TypeDeducer(Visitor):
         self._in_attribute = False
         self._method_name :  str | None = None
         self._type_name : str = None
-        self._stack : list[GetNode] = []
+        self._stack : list[GetNode | CallNode] = []
 
 
     def check_types(self, program : ProgramNode) -> list[str]:
@@ -208,17 +208,19 @@ class TypeDeducer(Visitor):
             return self._check_call_arguments_non_static(call_node, fn_data, method_type_owner)
 
     def visit_call_node(self, call_node : CallNode):
-        
+        self._stack.append(call_node)
         if isinstance(call_node.callee, LiteralNode):
             if call_node.callee.id.lexeme == "base" and self._in_type and self._in_method:
                 type_data = self._resolver.resolve_type_data(self._type_name)
                 func_name = self._method_name
                 if type_data.ancestor == "object":
                     self.log_error(f"Call to base in {self._type_name} in {self._method_name} but there is no inheritance" )
+                    self._stack.pop()
                     return "object"
                 methods = type_data.methods[func_name.split("_")[0]]
                 if len(methods) < 2:
                     self.log_error(f"There is no ancestor of {self._type_name} with method {self._method_name}")
+                    self._stack.pop()
                     return "object"
                 method_name = methods[1]
                 fn_name = method_name
@@ -226,25 +228,33 @@ class TypeDeducer(Visitor):
                 fn_data = self._resolver.resolve_function_data(fn_name)
                 call_node.callee.id.lexeme = fn_name.split("_")[0]
                 self.check_call_arguments(call_node, fn_data, fn_name.split("_")[1])
+                self._stack.pop()
                 return fn_data.type
-            
             else:
                 fn_name = call_node.callee.id.lexeme
                 if self._in_type and fn_name in self._resolver.resolve_type_data(self._type_name).methods:
                     type_data = self._resolver.resolve_type_data(self._type_name)
                     fn_data = self._resolver.resolve_function_data(fn_name)
                     self.check_call_arguments(call_node, fn_data, self._in_type)
+                    self._stack.pop()
                     return fn_data.type
                 
                 if fn_name not in self._resolver.resolve_functions():
                     if fn_name == "print":
+                        if len(call_node.args) != 1:
+                            self.log_error(f"Print only takes one argument at line {call_node.callee.id.line}")
+                        for arg in call_node.args:
+                            self._check_types(arg)
+                        self._stack.pop()
                         return "object"
     
                     self.log_error(f"Call to {fn_name} at line {call_node.callee.id.line} but can't find this function")
+                    self._stack.pop()
                     return "object"
                 
                 fn_data = self._resolver.resolve_function_data(fn_name)
                 self.check_call_arguments(call_node, fn_data, "")
+                self._stack.pop()
                 return fn_data.type
 
         else:
@@ -254,11 +264,13 @@ class TypeDeducer(Visitor):
             left_type_data = self._resolver.resolve_type_data(left_inferred)
             if fn_name not in left_type_data.methods:
                 self.log_error(f"{fn_name} is not a method of inferred type {left_inferred} at line {call_node.callee.id.line}")
+                self._stack.pop()
                 return "object"
             
             owner_type = left_type_data.methods[fn_name][0].split("_")[1]
             fn_data = self._resolver.resolve_function_data(fn_name + "_" + owner_type)
             self.check_call_arguments(call_node, fn_data, owner_type)
+            self._stack.pop()
             return fn_data.type
 
     def visit_get_node(self, get_node : GetNode):
@@ -270,8 +282,13 @@ class TypeDeducer(Visitor):
         self._stack.append(get_node)
         if len(self._stack) > 2:
             self.log_error(f"After self should come at most one attribute, at line {get_node.id.line}")
-        elif len(self._stack) == 2 and self._stack[-2].id != "self":
-            self.log_error(f"After self should come at most one attribute, at line {get_node.id.line}")
+        elif len(self._stack) == 2:
+            if isinstance(self._stack[-2], GetNode):
+                if self._stack[-2].id != "self":
+                    self.log_error(f"After self should come at most one attribute, at line {get_node.id.line}")
+            if isinstance(self._stack[-2], CallNode):
+                self.log_error(f"Attributes are private")
+            
 
         left_inferred_type = self._check_types(get_node.left)
 

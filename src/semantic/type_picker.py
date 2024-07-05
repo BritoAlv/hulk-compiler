@@ -75,7 +75,7 @@ class TypePicker(Visitor):
                 continue
             elif type != None:
                 self.log_error(f"Parameter Type {type.lexeme} given for param {param.lexeme} at method {method_node.id.lexeme} " + f"in type declaration {self._type_name}" if self._in_type else "" + f"does not exist at line {method_node.id.line}")
-            func_data.params[param.lexem].type = None
+            func_data.params[param.lexeme].type = None
         
     
         declared_type = method_node.type
