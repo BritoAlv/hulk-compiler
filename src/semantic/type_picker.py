@@ -65,15 +65,16 @@ class TypePicker(Visitor):
         self._resolver.start(func_name)
         func_data = self._resolver.resolve_function_data(func_name)
         
+        i = 0
         for param, type in method_node.params:
+            i += 1
             if type != None and type.lexeme in self._resolver.resolve_types():
                 func_data.params[param.lexeme].type = type.lexeme
                 continue
             elif type != None:
                 self.log_error(f"Parameter Type {type.lexeme} given for param {param.lexeme} at method {method_node.id.lexeme} " + (f"in type declaration {self._type_name}" if self._in_type else "") + f" does not exist at line {method_node.id.line}")
                 type.lexeme = "Object"
-            else:
-                type.lexeme = "Any"
+
         
     
         declared_type = method_node.type

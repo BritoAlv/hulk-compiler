@@ -27,9 +27,9 @@ class TypeDeducer(Visitor):
 
     def push_type_determiner(self, op : str, custom_type = ""):
         match op:
-            case "+" | "-" | "*" | "/" | "%" | "^" | ">" | ">=" | "<=" | "<" :
+            case "+" | "-" | "*" | "/" | "%" | "^" :
                 self._type_determiner.append("Number")
-            case "!" | "and" | "or" :
+            case "!" | "and" | "or" | ">" | ">=" | "<=" | "<":
                 self._type_determiner.append("Boolean")
             case _:
                 self._type_determiner.append(custom_type)
@@ -206,7 +206,6 @@ class TypeDeducer(Visitor):
             index = i
             param_var_data = fn_data.params[fn_data.params_index[index]]
             param_var_type = param_var_data.type
-            assert(param_var_type != None)
             type_data = self._resolver.resolve_type_data(param_var_type)
             if inferred_type not in type_data.descendants and inferred_type != param_var_data.type:
                 self.log_error(f"Argument {i+1} inferred type {inferred_type} , in call to {fn_name} at line {call_node.callee.id.line},  doesn't conform with {param_var_data.type}")
@@ -255,8 +254,10 @@ class TypeDeducer(Visitor):
                 fn_name = method_name
                 assert(fn_name in self._resolver.resolve_functions())
                 fn_data = self._resolver.resolve_function_data(fn_name)
+                old_name = call_node.callee.id.lexeme
                 call_node.callee.id.lexeme = fn_name.split("_")[0]
                 self.check_call_arguments(call_node, fn_data, fn_name.split("_")[1])
+                call_node.callee.id.lexeme = old_name
                 self._stack.pop()
                 return fn_data.type
             else:
@@ -435,7 +436,7 @@ class TypeDeducer(Visitor):
                     self.log_error(f"Cannot apply binary operation to non-numerical types : {left_inferred_type} {right_inferred_type} at line {binary_node.op.line}")
 
                 # this allows comparing any two types of objects.
-                if op in ['greater', 'less', 'greaterEq', 'lessEq']:
+                if binary_node.op.type in ['greater', 'less', 'greaterEq', 'lessEq']:
                     return 'Boolean'
                 
                 return 'Number'
