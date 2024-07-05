@@ -125,7 +125,7 @@ class EnvironmentBuilder(Visitor):
 
         # Add type as an object descendant
         if type_node.ancestor_id == None:
-            self._environment.get_type_data('object').descendants.append(type_name)
+            self._environment.get_type_data("Object").descendants.append(type_name)
 
         i = 0
         for attribute, _ in type_node.attributes:
@@ -144,15 +144,14 @@ class EnvironmentBuilder(Visitor):
         if type_node.ancestor_id != None:
             ancestor = type_node.ancestor_id.lexeme
 
-            if ancestor in ['number', 'bool', 'string', 'vector']:
+            if ancestor in ['Number', 'Boolean', 'String', 'Vector']:
                 self._errors.append(f'Cannot inherit {ancestor}')
 
             type_data.ancestor = ancestor
             self._type_graph.add((ancestor, type_name))
         else:
-            type_data.ancestor = 'object'
-            if type_name not in self._type_graph.vertices:
-                self._type_graph.add(('object', type_name))
+            type_data.ancestor = 'Object'
+            self._type_graph.add(('Object', type_name))
             
 
         self._environment.add_type_data(type_name, type_data)
@@ -228,7 +227,7 @@ class EnvironmentBuilder(Visitor):
         if self._type_graph.is_cyclic():
             raise Exception("Cannot have cyclic inheritance")
         
-        stack : list[str] = ['object']
+        stack : list[str] = ['Object']
         graph = self._type_graph
         
         while(len(stack) > 0):
