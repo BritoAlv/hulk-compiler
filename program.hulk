@@ -4,7 +4,7 @@ type Vector
     tail = new Node(null);
     count = 0;
     index = 0;
-    currentValue = null;
+    currentValue : Object = null;
     length() : Number => self.count;
 
     append(value : Object) : Object => let node = new Node(value) in
@@ -78,8 +78,8 @@ type Vector
 type Node(value : Object) 
 {
     value = value;
-    previous : Node = new Node(null);
-    next : Node = new Node(null);
+    previous : Node = null;
+    next : Node = null;
     getValue() : Object => self.value;
     setValue(value : Object) : Object => self.value := value; 
     getNext() : Node => self.next;

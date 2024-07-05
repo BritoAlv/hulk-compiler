@@ -71,10 +71,16 @@ class TypeDeducer(Visitor):
         if attribute_node.type != None:
             var_data.type = attribute_node.type.lexeme
             type_data = self._resolver.resolve_type_data(var_data.type)
+            if inferred_type == "null":
+                return var_data.type  
             if inferred_type not in type_data.descendants and inferred_type != var_data.type:
                 self.log_error(f'Given type for attribute {attr_name} in {self._type_name} does not conform with its initialization body at line {attribute_node.id.line}')
         else:
-            var_data.type = inferred_type
+            if inferred_type == "null":
+                self.log_error(f"Can't set to null attribute declaration without specifiying type at line {attribute_node.id.line}")
+                var_data.type = "Object"
+            else:
+                var_data.type = inferred_type
         
         return var_data.type
 
@@ -143,10 +149,16 @@ class TypeDeducer(Visitor):
             inferred_type = self._check_types(assig.body)
             if assig.type != None:
                 op_type_data = self._resolver.resolve_type_data(assig.type.lexeme)
+                if inferred_type == "null":
+                    continue
                 if inferred_type not in op_type_data.descendants and inferred_type != assig.type.lexeme:
                     self.log_error(f"Type {inferred_type} does not conform with {assig.type.lexeme} in Let Expression near line {assig.id.line}")
             else:
-                var_data.type = inferred_type
+                if inferred_type == "null":
+                    self.log_error(f"Can't set to null a non typed variable at line {assig.id.line}")
+                    var_data.type = "Object"
+                else:
+                    var_data.type = inferred_type
         
         f_type = self._check_types(let_node.body)
         self._resolver.next()
@@ -183,6 +195,11 @@ class TypeDeducer(Visitor):
         try:
             var_data = self._resolver.resolve_var_data(var_name)
             inferred_type = self._check_types(destructor_node.expr)
+            if inferred_type == "null" and var_data.type != None:
+                return var_data.type
+            if inferred_type == "null" and var_data.type == None:
+                self.log_error(f"Can't set to null a non typed variable at line {destructor_node.id.line}")
+                return "Object"
             if inferred_type not in self._resolver.resolve_type_data(var_data.type).descendants and inferred_type != var_data.type:
                 self.log_error(f"Infered type {inferred_type} doens't conform with {var_data.type} when using destruct at line {destructor_node.id.line}")
             return var_data.type
@@ -206,9 +223,12 @@ class TypeDeducer(Visitor):
             index = i
             param_var_data = fn_data.params[fn_data.params_index[index]]
             param_var_type = param_var_data.type
-            type_data = self._resolver.resolve_type_data(param_var_type)
-            if inferred_type not in type_data.descendants and inferred_type != param_var_data.type:
-                self.log_error(f"Argument {i+1} inferred type {inferred_type} , in call to {fn_name} at line {call_node.callee.id.line},  doesn't conform with {param_var_data.type}")
+            if param_var_type == None:
+                fn_data.params[fn_data.params_index[index]].type = inferred_type
+            else:
+                type_data = self._resolver.resolve_type_data(param_var_type)
+                if inferred_type not in type_data.descendants and inferred_type != param_var_data.type:
+                    self.log_error(f"Argument {i+1} inferred type {inferred_type} , in call to {fn_name} at line {call_node.callee.id.line},  doesn't conform with {param_var_data.type}")
         return fn_data.type
 
     def _check_call_arguments_non_static(self, call_node : CallNode, fn_data : FunctionData, method_type_owner : str):
@@ -224,9 +244,12 @@ class TypeDeducer(Visitor):
             index = i + 1 
             param_var_data = fn_data.params[fn_data.params_index[index]]
             param_var_type = param_var_data.type
-            type_data = self._resolver.resolve_type_data(param_var_type)
-            if inferred_type not in type_data.descendants and inferred_type != param_var_data.type:
-                self.log_error(f"Argument {i+1} inferred type {inferred_type} , in call to {fn_name} of type {method_type_owner} at line {call_node.callee.id.line},  doesn't conform with {param_var_data.type}")
+            if param_var_type == None:
+                param_var_data.type = inferred_type
+            else:
+                type_data = self._resolver.resolve_type_data(param_var_type)
+                if inferred_type not in type_data.descendants and inferred_type != param_var_data.type:
+                    self.log_error(f"Argument {i+1} inferred type {inferred_type} , in call to {fn_name} of type {method_type_owner} at line {call_node.callee.id.line},  doesn't conform with {param_var_data.type}")
         return fn_data.type
 
     def check_call_arguments(self, call_node : CallNode, fn_data : FunctionData, method_type_owner  : str):
@@ -471,7 +494,7 @@ class TypeDeducer(Visitor):
             case 'true' | 'false':
                 return 'Boolean'
             case 'null':
-                return "Object"
+                return "null"
             case 'id':
                 try:
                     t =  self._resolver.resolve_var_data(literal_node.id.lexeme)
