@@ -2,7 +2,8 @@
 nl: .asciiz "\n"
 true: .asciiz "true"
 false: .asciiz "false"
-null: .asciiz "Null reference error"
+null: .asciiz "Runtime Error: Null reference"
+method: .asciiz "Runtime Error: Type does not contain method" 
 one: .float 1.0
 
 .text
@@ -22,6 +23,7 @@ one: .float 1.0
 .globl build_str
 .globl build_null
 .globl null_error
+.globl method_error
 .globl error
 # .globl done # Simulation code
 
@@ -451,6 +453,15 @@ mod:
 
 null_error:
 	la $a0 null
+	jal build_str
+	sw $v0 -4($sp)
+	jal print_str
+	li $a0 1
+	li $v0 17
+	syscall
+
+method_error:
+	la $a0 method
 	jal build_str
 	sw $v0 -4($sp)
 	jal print_str
