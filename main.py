@@ -33,8 +33,8 @@ parser.add_argument('-r', '--run', action='store_true', help='Run the compiled a
 with open('program.hulk', 'r') as source:
     defaultHulkProgram = source.read()
 
-defaultHulkProgram += """
-[3];
+defaultHulkProgram ="""
+print("Hola");
 """
 
 inputStr = defaultHulkProgram
@@ -94,21 +94,22 @@ def codeGen(inputStr : str, show = False) -> str:
 
     environment = Environment()
     environment_builder = EnvironmentBuilder()
-    print(ast.accept(TreePrinter()))
     errors = environment_builder.build(environment, ast)
     resolver = Resolver(environment)
     type_picker = TypePicker(resolver)
     errors += type_picker.pick_types(ast)
+    
     if len(errors) > 0:
         print(errors)
         sys.exit(1)
+    
     type_deducer = TypeDeducer(resolver)
     errors += type_deducer.check_types(ast)
-
+    
     if len(errors) > 0:
         print(errors)
         sys.exit(1)
-
+    
     generator = Generator(resolver)
     if show:
         print("Generated Code:")

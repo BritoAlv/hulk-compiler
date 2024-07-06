@@ -119,8 +119,8 @@ class TypePicker(Visitor):
             var_data = self._resolver.resolve_var_data(var_name)
             op_type = assig.type
             self._pick_types(assig.body)
-            if op_type != None and op_type in self._resolver.resolve_types():
-                var_data.type = op_type
+            if op_type != None and op_type.lexeme in self._resolver.resolve_types():
+                var_data.type = op_type.lexeme
                 continue
             elif op_type != None:
                 self.log_error(f"Given tipe for variable {var_name} in let_expression doesn't exist at line {assig.id.line}")
