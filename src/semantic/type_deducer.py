@@ -136,7 +136,6 @@ class TypeDeducer(Visitor):
     
     def visit_let_node(self, let_node : LetNode):
         self._resolver.next()
-
         for assig in let_node.assignments:
             # let assignments should be taken into account.
             var_name = assig.id.lexeme
@@ -155,8 +154,7 @@ class TypeDeducer(Visitor):
                     self.log_error(f"Can't set to null a non typed variable at line {assig.id.line}")
                     var_data.type = "Object"
                 else:
-                    var_data.type = inferred_type
-        
+                    var_data.type = inferred_type 
         f_type = self._check_types(let_node.body)
         self._resolver.next()
         return f_type
@@ -262,7 +260,7 @@ class TypeDeducer(Visitor):
                 type_data = self._resolver.resolve_type_data(self._type_name)
                 func_name = self._method_name
                 if type_data.ancestor == "Object":
-                    self.log_error(f"Call to base in {self._type_name} in {self._method_name} but there is no inheritance" )
+                    self.log_error(f"Call to base in {self._type_name} in {self._method_name} but there is no inheritance")
                     self._stack.pop()
                     return "Object"
                 methods = type_data.methods[func_name.split("_")[0]]
@@ -306,7 +304,6 @@ class TypeDeducer(Visitor):
                 self.check_call_arguments(call_node, fn_data, "")
                 self._stack.pop()
                 return fn_data.type
-
         else:
             assert(isinstance(call_node.callee, GetNode))
             fn_name = call_node.callee.id.lexeme
@@ -352,9 +349,7 @@ class TypeDeducer(Visitor):
         self._stack.pop()
         return self.update_type(type_data.attributes[attr_name])
     
-
     def visit_set_node(self, set_node : SetNode):
-
         if isinstance(set_node.left, LiteralNode) and set_node.left.id.lexeme == "self" and self._in_attribute and self._resolver.resolve_var_data("self").type == self._type_name:
             self.log_error(f"Cannot access to self in attribute declaration at line {set_node.left.id.line}")
             return "Object" 
@@ -391,11 +386,11 @@ class TypeDeducer(Visitor):
         
         inferred_type = self._check_types(vector_get_node.left)
 
-        if not inferred_type.startswith('vector~'):
+        if not inferred_type.startswith('Vector'):
             self.log_error(f'Cannot index a non-vector type like {inferred_type}')
             return 'Object'
         
-        return inferred_type.split('~')[1]
+        return "Object"
 
     def visit_new_node(self, new_node : NewNode):
         type_name = new_node.id.lexeme
@@ -440,7 +435,6 @@ class TypeDeducer(Visitor):
         if right_inferred_type not in ["String", "Number"]:
             self.log_error(f"Can only use @ operator with String and Number at line {binary_node.op.line}")
         return "String"
-
 
     def visit_binary_node(self, binary_node : BinaryNode):
         line = binary_node.op.line
