@@ -88,9 +88,6 @@ class TypeDeducer(Visitor):
         self._in_method = True
         func_name = method_node.id.lexeme
 
-        if func_name == "h":
-            pass
-
         if self._in_type:
             func_name = f'{func_name}_{self._type_name}'
 
@@ -434,6 +431,17 @@ class TypeDeducer(Visitor):
 
         return as_type
 
+    def visit_at(self, binary_node :  BinaryNode):
+
+        left_infered_type = self._check_types(binary_node.left)
+        right_inferred_type = self._check_types(binary_node.right)
+        if left_infered_type not in ["String", "Number"]:
+            self.log_error(f"Can only use @ operator with String and Number at line {binary_node.op.line}")
+        if right_inferred_type not in ["String", "Number"]:
+            self.log_error(f"Can only use @ operator with String and Number at line {binary_node.op.line}")
+        return "String"
+
+
     def visit_binary_node(self, binary_node : BinaryNode):
         line = binary_node.op.line
         op = binary_node.op.lexeme
@@ -445,11 +453,12 @@ class TypeDeducer(Visitor):
                     return self.visit_is(binary_node)
                 case "as":
                     return self.visit_as(binary_node)
-
+        if op == "@" or op == "@@":
+            return self.visit_at(binary_node)
         self.push_type_determiner(binary_node.op.lexeme)
         left_inferred_type = self._check_types(binary_node.left)
-        if op == "at" or op == "doubleAt":
-            self.push_type_determiner(left_inferred_type)
+        self.pop_type_determiner()
+        self.push_type_determiner(binary_node.op.lexeme)
         right_inferred_type = self._check_types(binary_node.right)
         self.pop_type_determiner()
         
