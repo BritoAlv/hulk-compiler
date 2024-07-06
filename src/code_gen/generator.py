@@ -255,7 +255,10 @@ class Generator(Visitor):
                 type_data = self._resolver.resolve_type_data(result.type)
                 code = result.code
 
-                method_name = type_data.methods[called_method][0]
+                if called_method in type_data.methods:
+                    method_name = type_data.methods[called_method][0]
+                else:
+                    method_name = None
             else:
                 raise Exception("Functions are not a type here, cannot be called that way")
             
@@ -284,6 +287,8 @@ class Generator(Visitor):
                 # Dynamic method dispatch
                 for descendant in type_data.descendants:
                     descendant_type_data = self._resolver.resolve_type_data(descendant)
+                    if called_method not in descendant_type_data.methods:
+                        continue
                     descendant_method_name = descendant_type_data.methods[called_method][0]
                     code += f'''
     # Dynamic method dispatch
@@ -298,16 +303,30 @@ class Generator(Visitor):
     j call_end_{called_method}_{self._call_index}
     call_next_{descendant_method_name}{descendant}_{self._call_index}:
     '''
-            
-            code += f'''
+                
+            if method_name != None:
+                code += f'''
     jal {method_name}
     move $a0 $v0
     jal stack_push
+    j call_end_{called_method}_{self._call_index}
+'''
+        
+            if isinstance(call_node.callee, GetNode):
+                code += '''
+    jal method_error
+'''
+
+            code += f'''
     call_end_{called_method}_{self._call_index}:
 '''
             self._call_index += 1
-            func_data = self._resolver.resolve_function_data(method_name)
-            return GenerationResult(code, func_data.type)
+            
+            if method_name != None:
+                func_data = self._resolver.resolve_function_data(method_name)
+                return GenerationResult(code, func_data.type)
+            
+            return GenerationResult(code, 'Object')
     
     def visit_literal_node(self, literal_node: LiteralNode):
 

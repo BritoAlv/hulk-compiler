@@ -124,10 +124,6 @@ class EnvironmentBuilder(Visitor):
         self._type_name = type_name
         self._in_type = True
 
-        # Add type as an object descendant
-        if type_node.ancestor_id == None:
-            self._environment.get_type_data("Object").descendants.append(type_name)
-
         i = 0
         for attribute, _ in type_node.attributes:
             attribute_name = attribute.lexeme
