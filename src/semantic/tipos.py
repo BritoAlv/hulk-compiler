@@ -1,4 +1,5 @@
 from asyncio import protocols
+import math
 from sqlalchemy import False_
 from common.ErrorLogger.ErrorLogger import ErrorLogger
 from common.ast_nodes.expressions import *
@@ -149,8 +150,8 @@ class Context():
     def get(self, name):
         return self.context_lower.get(name)     
     
-    def set(self, name, type_new):
-        self.context_lower.dict[name] = ComputedValue(type_new)
+    def set(self, name, type_new,value):
+        self.context_lower.dict[name] = ComputedValue(type_new, value)
 
     def define(self, var, type = None, value = None) -> bool:
         return self.context_lower.define(var, type, value)
@@ -197,7 +198,7 @@ class NodeClass:
 
 class Hierarchy:
     def __init__(self) -> None:
-        self.root = NodeClass("object", [NodeClass("number"), NodeClass("string"), NodeClass("boolean"), 
+        self.root = NodeClass("Object", [NodeClass("Number"), NodeClass("String"), NodeClass("Boolean"), 
                                          NodeClass("Iterable", [NodeClass("Vector")])])
 
     def get_type(self, actual: NodeClass, name):
@@ -339,7 +340,7 @@ class TypeBuilderVisitor(Visitor):
             if attribute_node.id.lexeme == "self":
                 self.error_logger.add("no se puede usar el self como atributo a definir")
             if self.actual_type.get_attribute(attribute_node.id.lexeme) == None:
-                self.actual_type.define_attribute(attribute_node.id.lexeme, attribute_node.type.lexeme if attribute_node.type != None else "object")
+                self.actual_type.define_attribute(attribute_node.id.lexeme, attribute_node.type.lexeme if attribute_node.type != None else "Object")
                 return    
             self.error_logger.add("atributo ya definido " + attribute_node.id.lexeme + " de " + self.actual_type.name)
 
@@ -363,7 +364,7 @@ class TypeBuilderVisitor(Visitor):
                                 self.error_logger.add("tipo de parametro incorrecto")
                         else:
                             self.error_logger.add("parametro ya existe metodo " + method_node.id.lexeme +  " - " + i.lexeme)
-                    self.actual_type.define_method(method_node.id.lexeme, method_node.type.lexeme if method_node.type != None else "object", method_node.params)
+                    self.actual_type.define_method(method_node.id.lexeme, method_node.type.lexeme if method_node.type != None else "Object", method_node.params)
                 else:
                     self.error_logger.add("tipo de retorno incorrecto metodo en build")
                 return
@@ -374,12 +375,13 @@ class TypeBuilderVisitor(Visitor):
         self.actual_type = self.context.get_type(type_node.id.lexeme)
         if type_node.ancestor_id != None:
             ancestor_type = self.context.get_type(type_node.ancestor_id.lexeme)
-            if ancestor_type == False:
+            if ancestor_type == None:
+                self.hierarchy.add_type(type_node.id.lexeme, "Object")
                 self.error_logger.add("clase herada incorrectamente")
             else: 
                 self.hierarchy.add_type(type_node.id.lexeme, type_node.ancestor_id.lexeme)
         else:
-            self.hierarchy.add_type(type_node.id.lexeme, "object")
+            self.hierarchy.add_type(type_node.id.lexeme, "Object")
         for i in type_node.methods:
             if i.id.lexeme == "build":
                 args = []
@@ -402,7 +404,7 @@ class TypeBuilderVisitor(Visitor):
     def visit_signature_node(self, signature_node : SignatureNode):
         if self.actual_type != None:
             if self.actual_type.get_method(signature_node.id.lexeme, len(signature_node.params)) == None:
-                self.actual_type.define_method(signature_node.id.lexeme, signature_node.type.lexeme if signature_node.type != None else "object", signature_node.params)
+                self.actual_type.define_method(signature_node.id.lexeme, signature_node.type.lexeme if signature_node.type != None else "Object", signature_node.params)
                 return_type = signature_node.type.lexeme if signature_node.type != None else None
                 # revisa que existe el tipo de retorno 
                 if return_type != None and self.hierarchy.is_type(return_type):
@@ -418,7 +420,7 @@ class TypeBuilderVisitor(Visitor):
                                 self.error_logger.add("tipo de parametro incorrecto de signature " + signature_node.id.lexeme)
                         else:
                             self.error_logger.add("parametro ya existe de signature " + signature_node.id.lexeme)
-                    self.actual_type.define_method(signature_node.id.lexeme, signature_node.type.lexeme if signature_node.type != None else "object", signature_node.params)
+                    self.actual_type.define_method(signature_node.id.lexeme, signature_node.type.lexeme if signature_node.type != None else "Object", signature_node.params)
                 else:
                     self.error_logger.add("tipo de retorno incorrecto de signature " + signature_node.id.lexeme)
                 return
@@ -436,7 +438,7 @@ class TypeBuilderVisitor(Visitor):
                 self.error_logger.add("no se puede heredar un protocolo de un tipo")
             self.hierarchy.add_type(protocol_node.id.lexeme, protocol_node.ancestor_node.lexeme)
         else:
-            self.hierarchy.add_type(protocol_node.id.lexeme, "object")
+            self.hierarchy.add_type(protocol_node.id.lexeme, "Object")
         for i in protocol_node.signatures:
             i.accept(self)
             
@@ -511,7 +513,7 @@ class TypeFunctionVisitor(Visitor):
     def visit_method_node(self, method_node : MethodNode):
         id = method_node.id.lexeme
         args = method_node.params
-        ret = method_node.type.lexeme if method_node.type != None else "object"
+        ret = method_node.type.lexeme if method_node.type != None else "Object"
 
         if (self.context.is_defined_func(id, args)) == None:
             return_type = method_node.type.lexeme if method_node.type != None else None
@@ -540,6 +542,7 @@ class TypeFunctionVisitor(Visitor):
                 # method_node.body.accept(self)
                 self.context.remove_child_context()
             else:
+                self.context.define_func(id, "Object", args)
                 self.error_logger.add("tipo de retorno incorrecto de function " + method_node.id.lexeme)
             return
             
@@ -683,6 +686,7 @@ class TypeCheckerVisitor(Visitor):
                 attr_type = self.context.get_type(attribute_node.type.lexeme)
                 if attr_type == None:
                     self.error_logger.add("tipo no existe " + attribute_node.type.lexeme)
+                    self.context.define(id, "Object")
                     return
                 if attr_type.args == None and body_type.args != None:
                     if self.type_implemets_protocol(attr_type, body_type): # si coinciden los tipos
@@ -696,6 +700,7 @@ class TypeCheckerVisitor(Visitor):
                             return ComputedValue(body.type, id)
                         self.context.define(id, body.type, body.value)
                         return 
+                self.context.define(id, "Object")
                 self.error_logger.add("atributo " + id + " con tipo incorrecto")
                 return
             if self.is_instanciated_type_attr == True:
@@ -703,7 +708,36 @@ class TypeCheckerVisitor(Visitor):
 
             self.context.define(id, body.type, body.value)
             return
-        self.error_logger.add("atributo " + id + " ya definido")
+        else:   # pq si estoy en un let puede ya estar definida y se puede sobrescribir
+            if len(self.queue_call) > 0 and (self.queue_call[len(self.queue_call) - 1]) == "let":
+                body = attribute_node.body.accept(self)
+                body_type = self.context.get_type(body.type)
+                if (attribute_node.type != None): # si viene con tipo
+                    attr_type = self.context.get_type(attribute_node.type.lexeme)
+                    if attr_type == None:
+                        self.error_logger.add("tipo no existe " + attribute_node.type.lexeme)
+                        return
+                    if attr_type.args == None and body_type.args != None:
+                        if self.type_implemets_protocol(attr_type, body_type): # si coinciden los tipos
+                            if self.is_instanciated_type_attr == True:
+                                return ComputedValue(body.type, id)
+                            self.context.set(id, body.type, body.value)
+                            return 
+                    else:
+                        if self.hierarchy.get_lca(attribute_node.type.lexeme, body.type): # si coinciden los tipos
+                            if self.is_instanciated_type_attr == True:
+                                return ComputedValue(body.type, id)
+                            self.context.set(id, body.type, body.value)
+                            return 
+                    self.error_logger.add("atributo " + id + " con tipo incorrecto")
+                    return
+                if self.is_instanciated_type_attr == True:
+                    return ComputedValue(body.type, id)
+
+                self.context.set(id, body.type, body.value)
+                return
+            else:
+                self.error_logger.add("atributo " + id + " ya definido")
         
     def visit_method_node(self, method_node : MethodNode):
         id = method_node.id.lexeme
@@ -718,7 +752,7 @@ class TypeCheckerVisitor(Visitor):
             else:
                 return ComputedValue(None, None)
         else:
-            method = self.context.is_defined_func(id, method_node.params).args
+            method = self.context.is_defined_func(id, method_node.params)
             if method != None:
                 attr = method.args
             else:
@@ -752,17 +786,20 @@ class TypeCheckerVisitor(Visitor):
         self.context.define_func("base", "base", []) # base es un llamado de funcion
 
         # necesita revisar que el tipo implementa todos los metodos de su protocolo
-        ancient = self.hierarchy.get_type(self.hierarchy.root, self.actual_type.name).parent
-        if (ancient != None and ancient.name != "object"):
-            methods_ancient = self.context.get_type(ancient.name).method 
-            for i in methods_ancient:
-                mk = False
-                for j in self.actual_type.method:
-                    if j.name != i.name and j.type != i.type and j.args != i.args:
-                        mk = True
-                if mk == False:
-                    self.error_logger.add("metodo " + i.name + " no implementado")
-
+        type = self.hierarchy.get_type(self.hierarchy.root, self.actual_type.name)
+        if type != None:
+            ancient = type.parent
+            if (ancient != None and ancient.name != "Object"):
+                methods_ancient = self.context.get_type(ancient.name).method 
+                for i in methods_ancient:
+                    mk = False
+                    for j in self.actual_type.method:
+                        if j.name != i.name and j.type != i.type and j.args != i.args:
+                            mk = True
+                    if mk == False:
+                        self.error_logger.add("metodo " + i.name + " no implementado")
+        else:
+            self.error_logger.add(f"Tipo al heredar no existe en linea {self.actual_type.name}")
         for i in self.actual_type.method:
             self.context.context_lower.method.append(Method("self." + i.name, i.type, i.args))
         for i in type_node.methods:
@@ -809,8 +846,10 @@ class TypeCheckerVisitor(Visitor):
 
     def visit_let_node(self, let_node : LetNode):
         self.context.create_child_context()
+        self.queue_call.append("let")
         for i in let_node.assignments:
             i.accept(self)
+        self.queue_call.pop()
         value = let_node.body.accept(self)             
         self.context.remove_child_context()
         return value
@@ -818,7 +857,7 @@ class TypeCheckerVisitor(Visitor):
     def visit_while_node(self, while_node : WhileNode):
         self.context.create_child_context()
         condition = while_node.condition.accept(self)
-        if condition.type != "boolean":
+        if condition.type != "Boolean":
             self.error_logger.add("condicion while")
         value = while_node.body.accept(self)   
         self.context.remove_child_context()
@@ -828,7 +867,7 @@ class TypeCheckerVisitor(Visitor):
         types = []
         for (i, j) in if_node.body:
             self.context.create_child_context()
-            if i.accept(self).type != "boolean":
+            if i.accept(self).type != "Boolean":
                 self.error_logger.add("condicion mal")
                 continue
             t = j.accept(self)
@@ -862,7 +901,7 @@ class TypeCheckerVisitor(Visitor):
         self.context.define(implicit_vector_node.target)
         if implicit_vector_node.iterable.accept(self).type != "Iterable":
             self.error_logger.add("no iterable")
-            return ComputedValue('object')
+            return ComputedValue('Object')
         value = implicit_vector_node.result.accept(self)
         self.context.remove_child_context()
         return value
@@ -875,8 +914,26 @@ class TypeCheckerVisitor(Visitor):
             return ComputedValue(None, None)
         if self.context.is_defined(id) == True:
             type = self.context.get(id).type
-            self.context.set(id, new.type)
-            return ComputedValue(self.hierarchy.get_lca(type, new.type).name, new.value)
+            id_type = self.context.get_type(type)
+            new_type = self.context.get_type(new.type)
+
+            if id_type != None and id_type.args == None and new_type.args != None:
+                if self.type_implemets_protocol(id_type, new_type): # si coinciden los tipos
+                    if self.is_instanciated_type_attr == True:
+                        return ComputedValue(type, id)
+                    return 
+                else:
+                    self.error_logger.add(f"intento de cambiar tipo a la variable {destructor_node.id.line}")
+            else:
+                if self.hierarchy.get_lca(type, new_type): # si coinciden los tipos
+                    if self.is_instanciated_type_attr == True:
+                        return ComputedValue(type, id)
+                    return 
+                else:
+                    self.error_logger.add(f"intento de cambiar tipo a la variable {destructor_node.id.line}")
+
+
+           
         self.error_logger.add("la variable no esta definida")
         return ComputedValue(None, None)
         
@@ -1006,9 +1063,24 @@ class TypeCheckerVisitor(Visitor):
             return ComputedValue(None, None)
         else:
             if left.value == "self":
-                attr = self.context.get(left.value +"." + set_node.id.lexeme)
-                if attr != None:
-                    return ComputedValue(attr.type, None)
+                left_value = self.context.get(left.value +"." + set_node.id.lexeme)
+                id_type = self.context.get_type(left_value.type)
+                value = set_node.value.accept(self).type
+                new_type = self.context.get_type(value)
+                
+                # revisar que el nuevo tipo cumple la firma
+                if id_type != None and id_type.args == None and new_type.args != None:
+                    if self.type_implemets_protocol(id_type, new_type): # si coinciden los tipos
+                        if self.is_instanciated_type_attr == True:
+                            return ComputedValue(type, id)
+                        return 
+                    else:
+                        self.error_logger.add(f"intento de cambiar tipo a la variable {set_node.id.line}")
+                else:
+                    if self.hierarchy.get_lca(type.name, new_type.name).name == type.name: # si coinciden los tipos
+                        return ComputedValue(type.name, None)
+                    else:
+                        self.error_logger.add(f"intento de cambiar tipo a la variable {set_node.id.line}")
                 self.error_logger.add("tipo self no existe en la clase") 
                 return ComputedValue(None, None)
         return ComputedValue(None, None)
@@ -1016,8 +1088,26 @@ class TypeCheckerVisitor(Visitor):
     def visit_vector_set_node(self, vector_set_node : VectorSetNode):
         left = vector_set_node.left.accept(self)
         if left.type == "Vector":
-            vector_set_node.index
+            if vector_set_node.index.accept(self).type != "Number":
+                self.error_logger.add(f"intento de acceder a una posicion sin pasarle un numero")
             vector_set_node.value
+            id_type = self.context.get_type(left.value)
+            value = vector_set_node.value.accept(self).type
+            new_type = self.context.get_type(value)
+            
+            # revisar que el nuevo tipo cumple la firma
+            if id_type != None and id_type.args == None and new_type.args != None:
+                if self.type_implemets_protocol(id_type, new_type): # si coinciden los tipos
+                    if self.is_instanciated_type_attr == True:
+                        return ComputedValue(type, id)
+                    return 
+                else:
+                    self.error_logger.add(f"intento de cambiar tipo a la variable ")
+            else:
+                if self.hierarchy.get_lca(left.value, new_type.name).name == left.value: # si coinciden los tipos
+                    return ComputedValue(left.value, None)
+                else:
+                    self.error_logger.add(f"intento de cambiar tipo a la variable ")
         else:
             self.error_logger.add("no valido vector")
             return ComputedValue(None, None)
@@ -1025,7 +1115,7 @@ class TypeCheckerVisitor(Visitor):
     def visit_vector_get_node(self, vector_get_node : VectorGetNode):
         left = vector_get_node.left.accept(self)
         index = vector_get_node.index.accept(self)
-        if (isinstance(left.type, Vector) and index.type == "number"):
+        if (isinstance(left.type, Vector) and index.type == "Number"):
             if index.value == None:
                 value = left.type.values[0]
                 for i in range(len(left.type.values)):
@@ -1034,10 +1124,22 @@ class TypeCheckerVisitor(Visitor):
                 return ComputedValue(value, None)
             if index.value >= len(left.value):
                 self.error_logger.add("indice fuera de rango")
-                return ComputedValue("object")
+                return ComputedValue("Object")
             return left.value[index.value]
 
     def visit_new_node(self, new_node : NewNode):
+        mk = False
+        match new_node.id.lexeme:
+            case "Object":
+                mk = True
+            case "String":
+                mk = True
+            case "Boolean":
+                mk = True
+            case "Number":
+                mk = True
+        if mk == True:
+            self.error_logger.add(f"no se puede instanciar un tipo primitivo {new_node.id.line}")
         type = self.context.get_type(new_node.id.lexeme) 
         if type != None:
             args = type.args
@@ -1048,7 +1150,7 @@ class TypeCheckerVisitor(Visitor):
                 arg_type = j.accept(self)
                 mk = i 
                 if i < len(args) and args[i].type != arg_type.type:
-                    self.error_logger.add("argumentos incorrecto de tipo " + args[i].type + " " + new_node.id.lexeme)
+                    self.error_logger.add(f"argumentos incorrecto de tipo {args[i].type} {new_node.id.lexeme}")
                     continue
                 if i >= len(args):
                     self.error_logger.add("argumentos de mas " + new_node.id.lexeme)
@@ -1057,29 +1159,30 @@ class TypeCheckerVisitor(Visitor):
                 self.error_logger.add("argumentos de menos " + new_node.id.lexeme)
             return ComputedValue(type.name)
         self.error_logger.add("clase no definida " + new_node.id.lexeme)
-        return ComputedValue("object")
+        return ComputedValue("Object")
 
     def visit_binary_node(self, binary_node : BinaryNode):
         type = None
         value = None
         msg = "" 
-        match binary_node.op.lexeme:
+        op = binary_node.op.lexeme
+        match op:
             case "&":
                 left = binary_node.left.accept(self)
                 right = binary_node.right.accept(self)
-                if left.type == "boolean" and left.type == right.type:
-                    type = "boolean"
+                if left.type == "Boolean" and left.type == right.type:
+                    type = "Boolean"
 
             case "|":
                 left = binary_node.left.accept(self)
                 right = binary_node.right.accept(self)
-                if left.type == "boolean" and left.type == right.type:
-                    type = "boolean"
+                if left.type == "Boolean" and left.type == right.type:
+                    type = "Boolean"
 
             case "==":
                 left = binary_node.left.accept(self)
                 right = binary_node.right.accept(self)
-                type = "boolean"
+                type = "Boolean"
                 if left.type == right.type:
                     value = None
                     if left.value == None or right.value == None:
@@ -1095,7 +1198,7 @@ class TypeCheckerVisitor(Visitor):
             case ">=":
                 left = binary_node.left.accept(self)
                 right = binary_node.right.accept(self)
-                type = "boolean"
+                type = "Boolean"
                 if left.type == right.type:
                     value = None
                     if left.value == None or right.value == None:
@@ -1111,7 +1214,7 @@ class TypeCheckerVisitor(Visitor):
             case "<=":
                 left = binary_node.left.accept(self)
                 right = binary_node.right.accept(self)
-                type = "boolean"
+                type = "Boolean"
                 if left.type == right.type:
                     value = None
                     if left.value == None or right.value == None:
@@ -1127,7 +1230,7 @@ class TypeCheckerVisitor(Visitor):
             case "<":
                 left = binary_node.left.accept(self)
                 right = binary_node.right.accept(self)
-                type = "boolean"
+                type = "Boolean"
                 if left.type == right.type:
                     value = None
                     if left.value == None or right.value == None:
@@ -1143,7 +1246,7 @@ class TypeCheckerVisitor(Visitor):
             case ">":
                 left = binary_node.left.accept(self)
                 right = binary_node.right.accept(self)
-                type = "boolean"
+                type = "Boolean"
                 if left.type == right.type:
                     value = None
                     if left.value == None or right.value == None:
@@ -1159,8 +1262,8 @@ class TypeCheckerVisitor(Visitor):
             case "+":
                 left = binary_node.left.accept(self)
                 right = binary_node.right.accept(self)
-                if left.type == "number" and right.type == "number":
-                    type = "number"
+                if left.type == "Number" and right.type == "Number":
+                    type = "Number"
                     if left.value == None or right.value == None:
                         value = None
                     else:
@@ -1173,8 +1276,8 @@ class TypeCheckerVisitor(Visitor):
             case "-":
                 left = binary_node.left.accept(self)
                 right = binary_node.right.accept(self)
-                if left.type == "number" and right.type == "number":
-                    type = "number"
+                if left.type == "Number" and right.type == "Number":
+                    type = "Number"
                     if left.value == None or right.value == None:
                         value = None
                     else:
@@ -1187,8 +1290,8 @@ class TypeCheckerVisitor(Visitor):
             case "*":
                 left = binary_node.left.accept(self)
                 right = binary_node.right.accept(self)
-                if left.type == "number" and right.type == "number":
-                    type = "number"
+                if left.type == "Number" and right.type == "Number":
+                    type = "Number"
                     if left.value == None or right.value == None:
                         value = None
                     else:
@@ -1201,8 +1304,8 @@ class TypeCheckerVisitor(Visitor):
             case "/":
                 left = binary_node.left.accept(self)
                 right = binary_node.right.accept(self)
-                if left.type == "number" and right.type == "number":
-                    type = "number"
+                if left.type == "Number" and right.type == "Number":
+                    type = "Number"
                     if left.value == None or right.value == None:
                         value = None
                     else:
@@ -1229,11 +1332,9 @@ class TypeCheckerVisitor(Visitor):
                 if (self.hierarchy.is_type(right.type)) == None:
                     self.error_logger.add("en el is no hay tipo existe")
                     return ComputedValue(None, None)
-                return ComputedValue("boolean", None)
+                return ComputedValue("Boolean", None)
 
             case "as":
-                left = binary_node.left.accept(self)
-                right = binary_node.right.accept(self)
                 left = binary_node.left.accept(self)
                 if isinstance(binary_node.right, LiteralNode) == False:
                     self.error_logger.add("no viene un tipo en el as")
@@ -1242,18 +1343,31 @@ class TypeCheckerVisitor(Visitor):
                 right = binary_node.right.accept(self)
                 self.queue_call.pop()
 
-                if self.hierarchy.get_lca(left.type, right.type).name == right.type:
+                type_right = self.context.get_type(right.type)
+                if type_right != None:
+                    if type_right.args == None:
+                        self.error_logger.add(f"No se puede poner en el as un protocolo {binary_node.op.line}")
+                else:
                     self.error_logger.add("en el as no hay tipo existe")
-                    return ComputedValue(None, None)
-                return ComputedValue(left.type == right.type)
+
+                lca = self.hierarchy.get_lca(left.type, right.type)
+                if lca != None and lca.name != right.type:
+                    self.error_logger.add("no se puede castear el as")
+                    return ComputedValue("object", None)
+                return ComputedValue(right.type)
             case "@":
                 left = binary_node.left.accept(self)
                 right = binary_node.right.accept(self)
-
+                if left.type != "Number" and left.type != "String" or ight.type != "Number" and right.type != "String":
+                    self.error_logger.add(f"tipo incorrecto en operacion @ {binary_node.op.line}")
+                return ComputedValue("String")
             case "@@":
                 left = binary_node.left.accept(self)
                 right = binary_node.right.accept(self)
-
+                if left.type != "Number" and left.type != "String" or ight.type != "Number" and right.type != "String":
+                    self.error_logger.add(f"tipo incorrecto en operacion @ {binary_node.op.line}")
+                return ComputedValue("String")
+            
         value = ComputedValue(type, value)
         if msg != "":
             self.error_logger.add("inconsistencia de tipos en op binaria")
@@ -1265,24 +1379,24 @@ class TypeCheckerVisitor(Visitor):
         type = None
         match unary_node.op.lexeme:
             case "!":
-                if expr.type != "boolean":
+                if expr.type != "Boolean":
                     self.error_logger.add("no unaria not")
                 else:
-                    type = "boolean"
+                    type = "Boolean"
                     if expr.value != None:
                         value = True if expr.value == False else False
             case "+":
-                if expr.type != "number":
+                if expr.type != "Number":
                     self.error_logger.add("no unaria not")
                 else:
-                    type = "number"
+                    type = "Number"
                     if expr.value != None:
                         value = expr.value
             case "-":
-                if expr.type != "number":
+                if expr.type != "Number":
                     self.error_logger.add("no unaria not")
                 else:
-                    type = "number"
+                    type = "Number"
                     if expr.value != None:
                         value = expr.value * -1
         return ComputedValue(type, value)
@@ -1291,19 +1405,19 @@ class TypeCheckerVisitor(Visitor):
         id = literal_node.id.lexeme
         match literal_node.id.type:
             case "false":
-                return ComputedValue("boolean", id)
+                return ComputedValue("Boolean", id)
             case "true":
-                return ComputedValue("boolean", id)
+                return ComputedValue("Boolean", id)
             case "number":
-                return ComputedValue("number", int(id))
+                return ComputedValue("Number", int(id))
             case "string":
-                return ComputedValue("string", id)    
+                return ComputedValue("String", id)    
             case "base":
                 return ComputedValue("base", "base")
             case "id":
                 if id == "self":
                     self_var = self.context.get("self")
-                    if self_var != None and self_var.type != "string" and self_var.value == "self":
+                    if self_var != None and self_var.type != "String" and self_var.value == "self":
                         value = "self"
                         type = "self"
                         if (len(self.queue_call) == 2) and self.queue_call[0] == 'get' and self.queue_call[1] == 'get':
@@ -1351,7 +1465,11 @@ class SemanticAnalysis:
     def run(self, ast):
         context = Context()
         hierarchy = Hierarchy()
-        context.define_func("print", "object", [(Token("object", "name"), Token("object", "object"))])
+        context.define_func("print", "Object", [(Token("Object", "name"), Token("Object", "Object"))])
+        context.create_type("Object", [])
+        context.create_type("Number", [])
+        context.create_type("String", [])
+        context.create_type("Boolean", [])
 
         typeCollectorVisitor = TypeCollectorVisitor(context)
         ast.accept(typeCollectorVisitor)
