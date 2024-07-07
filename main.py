@@ -14,6 +14,7 @@ from common.printer import TreePrinter
 from common.token_class import Token
 from lexing.lexer.main import *
 from parsing.parser.parser import Parser
+from semantic.ast_modifier import VectorModifier
 from semantic.tipos import SemanticAnalysis
 import re
 import pexpect
@@ -81,7 +82,7 @@ def semantic_clean_analysis(inputStr : str) -> ProgramNode:
         print(errors)
         sys.exit(1)
     """
-    return treeAst
+    return treeAst.accept(VectorModifier())
 
 def codeGen(inputStr : str, show = False) -> str:
     ast = semantic_clean_analysis(inputStr)
