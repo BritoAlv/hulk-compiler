@@ -325,7 +325,7 @@ class TypeDeducer(Visitor):
             
             owner_type = left_type_data.methods[fn_name][0].split("_")[1]
             fn_data = self._resolver.resolve_function_data(fn_name + "_" + owner_type)
-            if self._method_name == fn_name:
+            if self._method_name == fn_name + "_" + owner_type:
                 self.update_type(fn_data)
             self.check_call_arguments(call_node, fn_data, owner_type)
             self._stack.pop()
