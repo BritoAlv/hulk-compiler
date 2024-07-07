@@ -82,16 +82,20 @@ def semantic_clean_analysis(inputStr : str) -> ProgramNode:
         print(errors)
         sys.exit(1)
     """
-    return treeAst.accept(VectorModifier())
+
+    # handle constructors and inheritance. 
+    # this modifies the Ast.
+    constructor_builder = ConstructorBuilder()
+    constructor_builder.build(treeAst)
+
+    # handle vector declarations.
+    # this modifies the Ast.
+    treeAst = treeAst.accept(VectorModifier())
+
+    return treeAst
 
 def codeGen(inputStr : str, show = False) -> str:
     ast = semantic_clean_analysis(inputStr)
-    constructor_builder = ConstructorBuilder()
-    constructor_builder.build(ast)
-
-    # # Load standard environment
-    # with open('src/code_gen/assembly/environment.pkl', 'rb') as file:
-    #     environment = pickle.load(file)
 
     environment = Environment()
     environment_builder = EnvironmentBuilder()
