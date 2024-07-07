@@ -124,9 +124,7 @@ class TypePicker(Visitor):
                 continue
             elif op_type != None:
                 self.log_error(f"Given tipe for variable {var_name} in let_expression doesn't exist at line {assig.id.line}")
-            
-            var_data.type = "Any"
-        
+                    
         self._pick_types(let_node.body)
         self._resolver.next()
 

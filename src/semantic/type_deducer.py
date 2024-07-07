@@ -38,7 +38,7 @@ class TypeDeducer(Visitor):
         self._type_determiner.pop()
 
     def update_type(self, data):
-        if data.type == "Any" and len(self._type_determiner) > 0:
+        if (data.type == "Any" or data.type == None) and len(self._type_determiner) > 0:
             data.type = self._type_determiner[-1]
         return data.type
 
@@ -442,11 +442,13 @@ class TypeDeducer(Visitor):
         if op == "is" or op == "as":
             if not isinstance(binary_node.right, LiteralNode):
                 self.log_error(f"Right side of operators is, as should be types at line {line}")
-            match op:
-                case "is":
-                    return self.visit_is(binary_node)
-                case "as":
-                    return self.visit_as(binary_node)
+                return "Object"
+            else:
+                match op:
+                    case "is":
+                        return self.visit_is(binary_node)
+                    case "as":
+                        return self.visit_as(binary_node)
         if op == "@" or op == "@@":
             return self.visit_at(binary_node)
         self.push_type_determiner(binary_node.op.lexeme)
