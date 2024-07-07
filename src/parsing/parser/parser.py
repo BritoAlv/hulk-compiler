@@ -96,7 +96,6 @@ class Parser:
             "IfExpr": [lambda s: IfNode([(s[3], s[5])] + s[6], s[8], s[1].token)],
             "OptElif": [lambda s: [(s[3], s[5])] + s[6], lambda s: []],
             "WhileExpr": [lambda s: WhileNode(s[3], s[5], s[1].token)],
-            # "ForExpr": [lambda s: ForNode(s[3].token, s[5], s[7])],
             "ForExpr": [lambda s: LetNode(
                 [
                     AttributeNode(
@@ -134,57 +133,8 @@ class Parser:
             ), s[1].token))],
             "DestrucExpr": [self.destruct_Expr],
             "VectorExpr": [
-                self.explicit_vector,
-                lambda s: LetNode(
-                    [
-                        AttributeNode(
-                            s[4].token,
-                            LiteralNode(Token('null', 'null')),
-                            Token('id', 'Object')),
-                        AttributeNode(
-                            Token('id', 'source'),
-                            s[6]
-                        ),
-                        AttributeNode(
-                            Token('id', 'target'),
-                            NewNode(Token('id', 'Vector'), [])
-                        )
-                    ],
-                    BlockNode(
-                        [
-                            WhileNode(
-                                CallNode(
-                                    GetNode(
-                                        LiteralNode(Token('id', 'source')),
-                                        Token('id', 'next')
-                                    ),
-                                    []
-                                ),
-                                BlockNode([
-                                    DestructorNode(
-                                        s[4].token,
-                                        CallNode(
-                                            GetNode(
-                                                LiteralNode(Token('id', 'source')),
-                                                Token('id', 'current')
-                                            ),
-                                            []
-                                        )
-                                    ),
-                                    CallNode(
-                                    GetNode(
-                                        LiteralNode(Token('id', 'target')),
-                                        Token('id', 'append')
-                                    ),
-                                    [s[2]]
-                                    ),
-                                ]),
-                            ),
-                            LiteralNode(Token('id', 'target'))
-                        ]
-                    )
-                ),
-            ],
+                lambda s: ExplicitVectorNode(s[2]),
+                lambda s: ImplicitVectorNode(s[2], s[4].token, s[6])],
             "VectorElems": [lambda s: [s[1]] + s[2], lambda s: []],
             "VectorTail": [lambda s: [s[2]] + s[3], lambda s: []],
             'NewExpr': [self.new_expr],
@@ -301,4 +251,3 @@ class Parser:
 
     def toAst(self, tree: ParseTree):
         return self.parsing_table.convertAst(tree.root)
-        
