@@ -178,7 +178,8 @@ class TypeDeducer(Visitor):
             if cond_type != 'Boolean':
                 self.log_error(f"Conditions of if / elif must evaluate to a boolean not to {cond_type} at line {if_node.handle.line}")
             type = self._check_types(st[1])
-            initial_type = self._resolver.resolve_lowest_common_ancestor(initial_type, type)
+            if type != "Any":
+                initial_type = self._resolver.resolve_lowest_common_ancestor(initial_type, type)
         return initial_type
     
     def visit_explicit_vector_node(self, explicit_vector_node : ExplicitVectorNode):
