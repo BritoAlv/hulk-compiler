@@ -27,9 +27,9 @@ class TypeDeducer(Visitor):
 
     def push_type_determiner(self, op : str, custom_type = ""):
         match op:
-            case "+" | "-" | "*" | "/" | "%" | "^" :
+            case "+" | "-" | "*" | "/" | "%" | "^" | ">" | ">=" | "<=" | "<" :
                 self._type_determiner.append("Number")
-            case "!" | "and" | "or" | ">" | ">=" | "<=" | "<":
+            case "!" | "and" | "or" :
                 self._type_determiner.append("Boolean")
             case _:
                 self._type_determiner.append(custom_type)
@@ -40,6 +40,8 @@ class TypeDeducer(Visitor):
     def update_type(self, data):
         if (data.type == "Any" or data.type == None) and len(self._type_determiner) > 0:
             data.type = self._type_determiner[-1]
+        if (data.type != "Any" and data.type == None) and len(self._type_determiner) > 0:
+            data.type = self._resolver.resolve_lowest_common_ancestor(data.type, self._type_determiner[-1])
         return data.type
 
     def visit_program_node(self, program_node : ProgramNode): 
@@ -272,6 +274,8 @@ class TypeDeducer(Visitor):
                 fn_name = method_name
                 assert(fn_name in self._resolver.resolve_functions())
                 fn_data = self._resolver.resolve_function_data(fn_name)
+                if self._method_name == fn_name:
+                    self.update_type(fn_data)
                 old_name = call_node.callee.id.lexeme
                 call_node.callee.id.lexeme = fn_name.split("_")[0]
                 self.check_call_arguments(call_node, fn_data, fn_name.split("_")[1])
@@ -283,6 +287,8 @@ class TypeDeducer(Visitor):
                 if self._in_type and fn_name in self._resolver.resolve_type_data(self._type_name).methods and isinstance(call_node.callee, GetNode):
                     type_data = self._resolver.resolve_type_data(self._type_name)
                     fn_data = self._resolver.resolve_function_data(fn_name)
+                    if self._method_name == fn_name:
+                        self.update_type(fn_data)
                     self.check_call_arguments(call_node, fn_data, self._in_type)
                     self._stack.pop()
                     return fn_data.type
@@ -301,6 +307,8 @@ class TypeDeducer(Visitor):
                     return "Object"
                 
                 fn_data = self._resolver.resolve_function_data(fn_name)
+                if self._method_name == fn_name:
+                    self.update_type(fn_data)
                 self.check_call_arguments(call_node, fn_data, "")
                 self._stack.pop()
                 return fn_data.type
@@ -316,6 +324,8 @@ class TypeDeducer(Visitor):
             
             owner_type = left_type_data.methods[fn_name][0].split("_")[1]
             fn_data = self._resolver.resolve_function_data(fn_name + "_" + owner_type)
+            if self._method_name == fn_name:
+                self.update_type(fn_data)
             self.check_call_arguments(call_node, fn_data, owner_type)
             self._stack.pop()
             return fn_data.type
