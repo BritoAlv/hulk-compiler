@@ -15,7 +15,7 @@ class Parser:
         self.parsing_table.attributed_productions = {
             "Program": [
                 lambda s: ProgramNode(
-                        s[1] + [MethodNode(Token('id', 'main'), [], s[2], Token('id', 'void'))])],
+                        s[1] + [MethodNode(Token('id', 'main'), [], s[2], Token('id', 'Object'))])],
             "Decls": [
                 lambda s: [s[1]] + s[2],
                 lambda s: [s[1]] + s[2],
@@ -40,7 +40,7 @@ class Parser:
                                                          Token('id', 'base')), 
                                                          s[4][1] if s[4][1] != None else []
                                                          )] 
-                                                    if s[4][0] != None else []) 
+                                                    if (s[4][0] != None) else []) 
                                                 + s[6][0] + [LiteralNode(Token('id', 'self'))]), 
                                                     Token('id', s[2].token.lexeme))] 
                                     + s[6][1],
@@ -93,10 +93,9 @@ class Parser:
                 lambda s: [s[1]] + s[2],
             ],
             "ExprTail": [lambda s: [s[1]] + s[2], lambda s: []],
-            "IfExpr": [lambda s: IfNode([(s[3], s[5])] + s[6], s[8])],
+            "IfExpr": [lambda s: IfNode([(s[3], s[5])] + s[6], s[8], s[1].token)],
             "OptElif": [lambda s: [(s[3], s[5])] + s[6], lambda s: []],
-            "WhileExpr": [lambda s: WhileNode(s[3], s[5])],
-            # "ForExpr": [lambda s: ForNode(s[3].token, s[5], s[7])],
+            "WhileExpr": [lambda s: WhileNode(s[3], s[5], s[1].token)],
             "ForExpr": [lambda s: LetNode(
                 [
                     AttributeNode(
@@ -131,12 +130,11 @@ class Parser:
                                 None)
                         ],
                         s[7]
-            )))],
+            ), s[1].token))],
             "DestrucExpr": [self.destruct_Expr],
             "VectorExpr": [
                 lambda s: ExplicitVectorNode(s[2]),
-                lambda s: ImplicitVectorNode(s[2], s[4].token, s[6]),
-            ],
+                lambda s: ImplicitVectorNode(s[2], s[4].token, s[6])],
             "VectorElems": [lambda s: [s[1]] + s[2], lambda s: []],
             "VectorTail": [lambda s: [s[2]] + s[3], lambda s: []],
             'NewExpr': [self.new_expr],
@@ -182,7 +180,7 @@ class Parser:
             ],
             "CallList": [
                 lambda s: GetNode(s[1], s[3].token),
-                lambda s: CallNode(s[1], s[3]),
+                lambda s: CallNode(s[1], s[3], s[2].token),
                 lambda s: VectorGetNode(s[1], s[3]),
                 lambda s: LiteralNode(s[1].token),
                 lambda s: LiteralNode(s[1].token),

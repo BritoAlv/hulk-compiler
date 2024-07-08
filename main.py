@@ -4,6 +4,8 @@ import pickle
 import sys
 
 from code_gen.constructor_builder import ConstructorBuilder
+from code_gen.environment import Environment
+from code_gen.environment_builder import EnvironmentBuilder
 from code_gen.generator import Generator
 from code_gen.resolver import Resolver
 from common.ast_nodes.statements import ProgramNode
@@ -12,9 +14,13 @@ from common.printer import TreePrinter
 from common.token_class import Token
 from lexing.lexer.main import *
 from parsing.parser.parser import Parser
+from semantic.ast_modifier import VectorModifier
 from semantic.tipos import SemanticAnalysis
 import re
 import pexpect
+
+from semantic.type_deducer import TypeDeducer
+from semantic.type_picker import TypePicker
 
 # Set up argument parsing
 parser = argparse.ArgumentParser(description='Hulk Compiler')
@@ -25,39 +31,11 @@ parser.add_argument("-sa", "--semantic_analysis", action="store_true", help="Per
 parser.add_argument('-cg', '--codegen', action='store_true', help='Generate code')
 parser.add_argument('-r', '--run', action='store_true', help='Run the compiled assembly')
 
-defaultHulkProgram = """
- type Node(value : Number)
-{
-    value = value;
-    previous = new Node(1) ;
-    next = 0  ;
-    getValue() : Number => self.value;
-    setPrevious(node : Node) : Node => self.previous := node; 
-    getPrevious() : Node => self.previous;
-}
+with open('program.hulk', 'r') as source:
+    defaultHulkProgram = source.read()
 
-{
-    print(("Casa" as Boolean) is String);
-    print(("Casa" as Boolean) is Boolean);
-
-    let node : Node = new Node(40), node= new Node(3), previous = node.getPrevious() in 
-    {
-        if (previous is Node)
-            print(previous.getValue())
-        else
-            print("Null pointer");
-        
-        previous := node.setPrevious(new Node(30));
-
-        if (previous is Node)
-            print(previous.getValue())
-        else
-            print("Null pointer");
-        
-        print(node.getValue());
-    };
-let a = [5] in a[3]:= 4;
-};
+defaultHulkProgram +="""
+print("Hola");
 """
 
 inputStr = defaultHulkProgram
@@ -95,28 +73,48 @@ def ast(inputStr : str, show = False) -> ProgramNode:
         print("\n")
     return ast
 
-def semantic_analysis(inputStr : str) :
+def semantic_clean_analysis(inputStr : str) -> ProgramNode:
     treeAst = ast(inputStr)
     sem_an = SemanticAnalysis()
-    sem_an.run(treeAst)
+         
+    errors = sem_an.run(treeAst)
+    if len(errors) > 0:
+        print(errors)
+        sys.exit(1)
+    
+
+    # handle constructors and inheritance. 
+    # this modifies the Ast.
+    constructor_builder = ConstructorBuilder()
+    constructor_builder.build(treeAst)
+
+    # handle vector declarations.
+    # this modifies the Ast.
+    treeAst = treeAst.accept(VectorModifier())
+
     return treeAst
 
 def codeGen(inputStr : str, show = False) -> str:
-    ast = semantic_analysis(inputStr)
-    constructor_builder = ConstructorBuilder()
-    constructor_builder.build(ast)
+    ast = semantic_clean_analysis(inputStr)
 
-    # Load standard environment
-    with open('src/code_gen/assembly/environment.pkl', 'rb') as file:
-        environment = pickle.load(file)
+    environment = Environment()
     environment_builder = EnvironmentBuilder()
-    environment_builder.build(environment, ast)
-    
-    # environment._functions.pop('main')
-    # with open('environment.pkl', 'wb') as file:
-    #     pickle.dump(environment, file)
-    
+    errors = environment_builder.build(environment, ast)
     resolver = Resolver(environment)
+    type_picker = TypePicker(resolver)
+    errors += type_picker.pick_types(ast)
+    
+    if len(errors) > 0:
+        print(errors)
+        sys.exit(1)
+    
+    type_deducer = TypeDeducer(resolver)
+    errors += type_deducer.check_types(ast)
+    
+    if len(errors) > 0:
+        print(errors)
+        sys.exit(1)
+    
     generator = Generator(resolver)
     if show:
         print("Generated Code:")
@@ -221,7 +219,7 @@ else:
         ast(inputStr, True)
 
     if args.semantic_analysis:
-        semantic_analysis(inputStr)
+        semantic_clean_analysis(inputStr)
 
     if args.codegen:
         codeGen(inputStr, True)

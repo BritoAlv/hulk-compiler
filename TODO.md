@@ -7,6 +7,9 @@
 ## CodeGen Requirements:
 - Print floats as floats
 - Compare strings (equality) char by char
+- Handle method dispatch when object
+- Is returns true on ancestors
+- Remove type inference during CodeGen
 
 ## Lexer and Parser Error Handling:
 - how get lexer tell errors.
@@ -22,3 +25,5 @@
 - infer type of functions.
 - keep track of constructors. semantic check for constructors. type of params in the constructors.
 - covariance and contravariance.
+
+fix call node, if, while, add at least one token to print semantic error.

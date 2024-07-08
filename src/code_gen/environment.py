@@ -19,6 +19,7 @@ class FunctionData:
         self.type : str = None
         self.context : Context = Context()
         self.params : dict[str, VarData] = {}
+        self.params_index : dict[int, str] = {}
         self.var_count = 0
 
 class TypeData:
@@ -34,11 +35,16 @@ class Environment:
     def __init__(self) -> None:
         self._functions : dict[str, FunctionData] = {}
         self._types : dict[str, TypeData] = {
-            'bool': TypeData(BOOL_TYPE_ID),
-            'number': TypeData(NUMBER_TYPE_ID),
-            'string': TypeData(STR_TYPE_ID),
-            'object': TypeData(OBJ_TYPE_ID)
+            'Boolean': TypeData(BOOL_TYPE_ID),
+            'Number': TypeData(NUMBER_TYPE_ID),
+            'String': TypeData(STR_TYPE_ID),
+            'Object': TypeData(OBJ_TYPE_ID)
         }
+        
+        self._types['Object'].descendants += ['Boolean', 'Number', 'String']
+        self._types['Boolean'].ancestor = 'Object'
+        self._types['Number'].ancestor = 'Object'
+        self._types['String'].ancestor = 'Object'
 
     def get_function_data(self, function_name : str) -> FunctionData:
         if function_name not in self._functions:

@@ -14,6 +14,12 @@ class Resolver:
         self._context = func_data.context
         self._child_index = 0
 
+    def resolve_types(self):
+        return self._environment._types.keys()
+
+    def resolve_functions(self):
+        return self._environment._functions.keys()
+
     def next(self) -> None:
         if self._context == None:
             raise Exception("Context is None")
@@ -31,9 +37,6 @@ class Resolver:
 
 
     def resolve_var_data(self, var_name : str) -> VarData:
-        if var_name in self._params:
-            return self._params[var_name]
-        
         if var_name in self._context.variables:
             return self._context.variables[var_name]
         
@@ -44,6 +47,9 @@ class Resolver:
 
             temp_context = temp_context.parent
 
+        if var_name in self._params:
+            return self._params[var_name]
+
         raise Exception("Variable was not declared")
     
     def resolve_function_data(self, func_name : str) -> FunctionData:
@@ -53,13 +59,13 @@ class Resolver:
         return self._environment.get_type_data(type_name)
     
     def resolve_lowest_common_ancestor(self, type_1 : str, type_2 : str) -> str:
-        BASIC_TYPES = ['number', 'string', 'bool', 'object']
+        BASIC_TYPES = ['Number', 'String', 'Boolean', "Object"]
         
         if type_1 == type_2:
             return type_1
         
         if type_1 in BASIC_TYPES or type_2 in BASIC_TYPES:
-            return 'object'
+            return "Object"
 
         type_data_1 = self._environment.get_type_data(type_1)
 
@@ -67,6 +73,6 @@ class Resolver:
             return type_1
         
         if type_data_1.ancestor == None:
-            return 'object'
+            return "Object"
         
         return self.resolve_lowest_common_ancestor(type_data_1.ancestor, type_2)

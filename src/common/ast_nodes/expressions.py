@@ -13,9 +13,10 @@ class LetNode(Expr):
         return visitor.visit_let_node(self)
     
 class WhileNode(Expr):
-    def __init__(self, condition : Expr, body : Expr):
+    def __init__(self, condition : Expr, body : Expr, handle : Token = Token("DefaultHandle", "DefaultHandle", 0, 0)):
         self.condition = condition
         self.body = body
+        self.handle = handle
 
     def accept(self, visitor):
         return visitor.visit_while_node(self)
@@ -30,9 +31,10 @@ class ForNode(Expr):
         return visitor.visit_for_node(self)
 
 class IfNode(Expr):
-    def __init__(self, body : list[tuple[Expr, Expr]], elsebody : Expr):
+    def __init__(self, body : list[tuple[Expr, Expr]], elsebody : Expr, handle : Token = Token("DefaultHandle", "DefaultHandle", 0, 0)):
         self.body = body
         self.elsebody = elsebody
+        self.handle = handle
 
     def accept(self, visitor):
         return visitor.visit_if_node(self)
@@ -69,9 +71,10 @@ class BlockNode(Expr):
         return visitor.visit_block_node(self)
 
 class CallNode(Expr):
-    def __init__(self, callee : Expr, args : list[Expr]):
+    def __init__(self, callee : Expr, args : list[Expr], handle : Token = Token("DefaultHandle", "DefaultHandle", 0, 0)):
         self.callee = callee
         self.args = args
+        self.handle = handle
 
     def accept(self, visitor):
         return visitor.visit_call_node(self)
