@@ -129,7 +129,7 @@ def run(inputStr : str):
     file1_name = '.bin/main.asm'
     file2_name = '.bin/std.asm'
     file3_name = '.bin/stack.asm'
-    file4_name = '.bin/vector.asm'
+    # file4_name = '.bin/vector.asm'
 
     try:
         mkdir('.bin/')
@@ -144,9 +144,9 @@ def run(inputStr : str):
         with open(file3_name, 'w') as target:
             target.write(source.read())
     
-    with open('src/code_gen/assembly/vector.asm', 'r') as source:
-        with open(file4_name, 'w') as target:
-            target.write(source.read())
+    # with open('src/code_gen/assembly/vector.asm', 'r') as source:
+    #     with open(file4_name, 'w') as target:
+    #         target.write(source.read())
 
     with open(file1_name, 'w') as file:
         file.write(assembly)
@@ -177,9 +177,9 @@ def run(inputStr : str):
         spim.sendline(f'load "{file3_name}"')
         spim.expect_exact('(spim) ')
 
-        # Load the third file
-        spim.sendline(f'load "{file4_name}"')
-        spim.expect_exact('(spim) ')
+        # # Load the third file
+        # spim.sendline(f'load "{file4_name}"')
+        # spim.expect_exact('(spim) ')
 
         # Run the SPIM process and capture its output
         spim.sendline('run')
