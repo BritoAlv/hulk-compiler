@@ -7,6 +7,7 @@ class VarData:
     def __init__(self, index : int, type : str = None) -> None:
         self.index = index
         self.type = type
+        self.name = ""
 
 class Context:
     def __init__(self) -> None:
@@ -15,30 +16,32 @@ class Context:
         self.variables : dict[str, VarData] = {}
 
 class FunctionData:
-    def __init__(self):
+    def __init__(self, name = ""):
         self.type : str = None
         self.context : Context = Context()
         self.params : dict[str, VarData] = {}
         self.params_index : dict[int, str] = {}
         self.var_count = 0
+        self.name = name
 
 class TypeData:
-    def __init__(self, id : int) -> None:
+    def __init__(self, id : int, name = "") -> None:
         self.id : int = id
         self.attributes : dict[str, VarData] = {}
         self.methods : dict[str, list[str]] = {} # Method name and it's associated assembly name
         self.inherited_offset = 1 # One word is reserved for object metadata (type in this case)
         self.ancestor : str = None
         self.descendants : list[str] = []
+        self.name = name
 
 class Environment:
     def __init__(self) -> None:
         self._functions : dict[str, FunctionData] = {}
         self._types : dict[str, TypeData] = {
-            'Boolean': TypeData(BOOL_TYPE_ID),
-            'Number': TypeData(NUMBER_TYPE_ID),
-            'String': TypeData(STR_TYPE_ID),
-            'Object': TypeData(OBJ_TYPE_ID)
+            'Boolean': TypeData(BOOL_TYPE_ID, "Boolean"),
+            'Number': TypeData(NUMBER_TYPE_ID, "Number"),
+            'String': TypeData(STR_TYPE_ID, "String"),
+            'Object': TypeData(OBJ_TYPE_ID, "Object")
         }
         
         self._types['Object'].descendants += ['Boolean', 'Number', 'String']

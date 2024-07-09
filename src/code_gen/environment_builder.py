@@ -54,6 +54,7 @@ class EnvironmentBuilder(Visitor):
         if self._in_type:
             func_name = f'{func_name}_{self._type_name}'
 
+        func_data.name = func_name
         self._environment.add_function_data(func_name, func_data)
         self._var_index = 0 # Reset var_index
         self._func_name = func_name
@@ -61,6 +62,7 @@ class EnvironmentBuilder(Visitor):
 
         if self._in_type:
             func_data.params['self'] = VarData(self._var_index, self._type_name)
+            func_data.params["self"].name = "self"
             func_data.params_index[self._var_index] = "self"
             self._var_index += 1
 
@@ -71,6 +73,7 @@ class EnvironmentBuilder(Visitor):
                     raise Exception("Params must be named differently")
             
             func_data.params[param_name] = VarData(self._var_index)
+            func_data.params[param_name].name = param_name
             func_data.params_index[self._var_index] = param_name
             self._var_index += 1
                 
@@ -90,6 +93,7 @@ class EnvironmentBuilder(Visitor):
                 continue
             
             self._context.variables[var_name] = VarData(self._var_index)
+            self._context.variables[var_name].name = var_name
             self._var_index += 1
             self._build(value)
 
@@ -121,6 +125,7 @@ class EnvironmentBuilder(Visitor):
         type_data = TypeData(self._type_index)
         self._type_index += 1
         type_name = type_node.id.lexeme
+        type_data.name = type_name
         self._type_name = type_name
         self._in_type = True
 
@@ -130,6 +135,7 @@ class EnvironmentBuilder(Visitor):
             if attribute_name in type_data.attributes:
                 raise Exception(f"Cannot declare attribute '{attribute_name}' twice")
             type_data.attributes[attribute_name] = VarData(i)
+            type_data.attributes[attribute_name].name = attribute_name
             i += 1
         
         for method in type_node.methods:

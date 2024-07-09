@@ -1,7 +1,7 @@
 type Vector
 {
-    head = new Node(null);
-    tail = new Node(null);
+    head : Node = null;
+    tail : Node = null;
     count = 0;
     index = 0;
     currentValue : Object = null;
