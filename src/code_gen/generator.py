@@ -56,6 +56,10 @@ class Generator(Visitor):
             static_data_code += f'str{i}: .asciiz {str_literal} \n' 
             i += 1
 
+        for type in self._resolver.resolve_types():
+            if type not in ['Boolean', 'Number', 'String', 'Object']:
+                static_data_code += f'type_{type}: .asciiz "Instance of type {type}" \n'
+
         i = 0
         for number_literal in self._literal_numbers:
             static_data_code += f'number{i}: .float {number_literal} \n' 
@@ -194,8 +198,26 @@ class Generator(Visitor):
     li $t1 {NUMBER_TYPE_ID}
     beq $t0 $t1 go_print_number_{self._print_index}
     li $t1 {STR_TYPE_ID}
-    beq $t0 $t1 go_print_str_{self._print_index}
-    j go_print_pointer_{self._print_index}
+    beq $t0 $t1 go_print_str_{self._print_index}'''
+                
+                types_snippet = ''
+                for type in self._resolver.resolve_types():
+                    if type not in ['Boolean', 'String', 'Number', 'Object']:
+                        type_data = self._resolver.resolve_type_data(type)
+                        type_id = type_data.id
+                        code += f'''
+    li $t1 {type_id}
+    beq $t0 $t1 go_print__{type}_{self._print_index}
+'''
+                        types_snippet += f'''
+    go_print__{type}_{self._print_index}:
+    la $a0 type_{type}
+    jal print_pointer
+    j go_print_end_{self._print_index}
+'''
+    
+                code += f'''
+    j error
 
     go_print_bool_{self._print_index}:
     jal print_bool
@@ -207,11 +229,11 @@ class Generator(Visitor):
 
     go_print_str_{self._print_index}:
     jal print_str
-    j go_print_end_{self._print_index}
+    j go_print_end_{self._print_index}'''
+                
+                code += types_snippet
 
-    go_print_pointer_{self._print_index}:
-    jal print_pointer
-    j go_print_end_{self._print_index}
+                code += f'''
     go_print_end_{self._print_index}:
     move $a0 $v0
     jal stack_push

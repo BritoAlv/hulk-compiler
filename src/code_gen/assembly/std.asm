@@ -150,19 +150,13 @@ print_bool:
 	jr $ra
 
 print_pointer:
-	addi $sp $sp -8
-	lw $a0 4($sp)
-	move $t0 $a0
-
-	li $v0 1
+	li $v0 4
 	syscall 
 
 	la $a0 nl
 	li $v0 4
 	syscall
-
-	move $v0 $t0
-	addi $sp $sp 8
+	
 	jr $ra
 
 #** String manipulation code
