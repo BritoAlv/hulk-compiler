@@ -821,8 +821,7 @@ class Generator(Visitor):
         while_index = self._while_index
         self._while_index += 1
         code = ''
-        condition_result = self._generate(while_node.condition)
-        code += condition_result.code
+        code += self._generate(while_node.condition).code
         code += f'''
     jal stack_pop
     lw $t0 4($v0)
@@ -831,7 +830,7 @@ class Generator(Visitor):
     j while_body_{while_index}
     while_start_{while_index}:
 '''
-        code += condition_result.code
+        code += self._generate(while_node.condition).code
         code += f'''
     jal stack_pop
     lw $t0 4($v0)
