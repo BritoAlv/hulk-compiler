@@ -53,7 +53,7 @@ class TypeDeducer(Visitor):
                 if obtained_type != data.type:
                     print(f"Symbol {data.name} obtained type : {self._type_determiner[-1][-1]} does not conforms with its actual type :  {data.type}")
                     print(g)
-                    raise Exception(obtained_type, self._type_determiner[-1][-1])
+                    raise Exception(self._type_determiner[-1][-1], data.type)
                 else:
                     print(f"Symbol {data.name} obtained type : {self._type_determiner[-1][-1]} conforms with its actual type :  {data.type}")
                     print(g)
