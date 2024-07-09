@@ -398,17 +398,33 @@ class Generator(Visitor):
 
         if binary_node.op.type == 'isOp' and isinstance(binary_node.right, LiteralNode) and binary_node.right.id.type == 'id':
             type_name = binary_node.right.id.lexeme
-            type_id = self._resolver.resolve_type_data(type_name).id
+            type_data = self._resolver.resolve_type_data(type_name)
+            type_id = type_data.id
             
             code = left_result.code
+
             code += f'''
     jal stack_pop
     lw $t0 ($v0) # Check if null
     beq $t0 -1 null_error
+    li $s2 0
     lw $s0 ($v0)
     li $s1 {type_id}
-    seq $s0 $s0 $s1
-    move $a0 $s0
+    seq $s1 $s0 $s1
+    add $s2 $s2 $s1
+'''
+
+            for descendant in type_data.descendants:
+                descendant_type_data = self._resolver.resolve_type_data(descendant)
+                descendant_type_id = descendant_type_data.id
+                code += f'''
+    li $s1 {descendant_type_id}
+    seq $s1 $s0 $s1
+    add $s2 $s2 $s1
+'''
+
+            code += f'''
+    move $a0 $s2
     jal build_bool
     move $a0 $v0
     jal stack_push
