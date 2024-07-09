@@ -226,32 +226,38 @@ class EnvironmentBuilder(Visitor):
         
         stack : list[str] = ['Object']
         graph = self._type_graph
+        visited_vertices : list[str] = []
         
         while(len(stack) > 0):
-            vertex = stack.pop()
+            vertex = stack[len(stack) - 1] # Pop off the stack
             neighbors = graph.neighbors(vertex)
             vertex_type_data = self._environment.get_type_data(vertex)
 
             for neighbor in neighbors:
-                neighbor_type_data = self._environment.get_type_data(neighbor)
-                
-                # Update inherited offset to descendant types
-                neighbor_type_data.inherited_offset = vertex_type_data.inherited_offset + len(vertex_type_data.attributes)
+                if vertex not in visited_vertices:
+                    neighbor_type_data = self._environment.get_type_data(neighbor)
+                    
+                    # Update inherited offset to descendant types
+                    neighbor_type_data.inherited_offset = vertex_type_data.inherited_offset + len(vertex_type_data.attributes)
 
-                # Update methods to descendant types
-                for method in vertex_type_data.methods:
-                    if method not in neighbor_type_data.methods:
-                        neighbor_type_data.methods[method] = [] + vertex_type_data.methods[method]
-                    else:
-                        neighbor_type_data.methods[method].insert(1, f'{method}_{vertex}')
-                
-                # Add neighbor as a vertex descendant
-                vertex_type_data.descendants.append(neighbor)
-                
-                # Push onto stack
-                stack.append(neighbor)
+                    # Update methods to descendant types
+                    for method in vertex_type_data.methods:
+                        if method not in neighbor_type_data.methods:
+                            neighbor_type_data.methods[method] = [] + vertex_type_data.methods[method]
+                        else:
+                            neighbor_type_data.methods[method].insert(1, f'{method}_{vertex}')
+                    
+                    # Add neighbor as a vertex descendant
+                    vertex_type_data.descendants.append(neighbor)
+
+                    # Push onto stack
+                    stack.append(neighbor) 
             
-            # Update vertex's ancestor descendants
-            if vertex_type_data.ancestor != None:
-                ancestor_type_data = self._environment.get_type_data(vertex_type_data.ancestor)
-                ancestor_type_data.descendants += vertex_type_data.descendants
+            if vertex in visited_vertices:
+                # Update vertex's ancestor descendants
+                if vertex_type_data.ancestor != None:
+                    ancestor_type_data = self._environment.get_type_data(vertex_type_data.ancestor)
+                    ancestor_type_data.descendants += vertex_type_data.descendants
+                stack.pop()
+            else:
+                visited_vertices.append(vertex)
