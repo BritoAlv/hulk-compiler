@@ -55,7 +55,7 @@ def lex(inputStr : str, show = False) -> list[Token]:
         print("\n")
     return tokens
 
-def parse(inputStr : str, show = False) -> ParseTree:
+def parse(inputStr : str, show = False) -> Parser:
     tokens = lex(inputStr)
     parser = Parser()
     parse_tree = parser.parse(tokens, inputStr)
@@ -80,12 +80,12 @@ def ast(inputStr : str, show = False) -> ProgramNode:
 def semantic_clean_analysis(inputStr : str) -> ProgramNode:
     treeAst = ast(inputStr)
     sem_an = SemanticAnalysis()
-    """     
-    errors += sem_an.run(treeAst)
+         
+    errors = sem_an.run(treeAst)
     if len(errors) > 0:
         print(errors)
         sys.exit(1)
-    """
+    
 
     # handle constructors and inheritance. 
     # this modifies the Ast.

@@ -32,7 +32,7 @@ class Context():
     def create_child_context(self):
         return Context(self)
 
-class Vi(Visitor):
+class VariableDefinedVisitor(Visitor):
     def __init__(self):
         self.context = Context()
     

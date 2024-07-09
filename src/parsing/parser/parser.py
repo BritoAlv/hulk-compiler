@@ -197,16 +197,7 @@ class Parser:
         if isinstance(s[1], GetNode):
             return SetNode(s[1].left, s[1].id, s[3])
         if isinstance(s[1], VectorGetNode):
-            return CallNode(
-                GetNode(
-                    s[1].left,
-                    Token('id', 'set')
-                ),
-                [
-                    s[1].index,
-                    s[3]
-                ]
-            )
+            return VectorSetNode(s[1].left, s[1].index, s[3])
         raise Exception("no pincha")
     
     def new_expr(self, s):
@@ -214,37 +205,6 @@ class Parser:
         if isinstance(call_node, CallNode) and isinstance(call_node.callee, LiteralNode) and call_node.callee.id.lexeme != 'self':
             return NewNode(call_node.callee.id, call_node.args)
         raise Exception("New-Expression must be a constructor call")
-    
-    def explicit_vector(self, s):
-        expr_list : list[Expr] = []
-        for expr in s[2]:
-            expr_list.append(
-                CallNode(
-                    GetNode(
-                        LiteralNode(
-                            Token('id', 'vec')
-                        ),
-                        Token('id', 'append')
-                    ),
-                    [expr])
-            )
-
-        expr_list.append(LiteralNode(Token('id', 'vec')))
-
-        node = LetNode(
-            [
-                AttributeNode(
-                    Token('id', 'vec'),
-                    NewNode(
-                        Token('id', 'Vector'), 
-                        [])
-                ),
-            ],
-            BlockNode(expr_list)
-        )
-
-        return node
-
 
     def parse(self, tokens: list[Token], inputStr = "") -> ParseTree:
         return self.parsing_table.parse(tokens, inputStr)
