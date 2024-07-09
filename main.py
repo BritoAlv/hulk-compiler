@@ -3,6 +3,8 @@ from os import mkdir
 import pickle
 import sys
 
+from termcolor import colored
+
 from code_gen.constructor_builder import ConstructorBuilder
 from code_gen.environment import Environment
 from code_gen.environment_builder import EnvironmentBuilder
@@ -35,11 +37,20 @@ parser.add_argument('-r', '--run', action='store_true', help='Run the compiled a
 with open('program.hulk', 'r') as source:
     defaultHulkProgram = source.read()
 
-defaultHulkProgram +="""
-for(x in [1,2,3])
-{
-    print(x);
-};
+defaultHulkProgram ="""
+type A { }
+
+type B inherits A { }
+
+type C inherits B { }
+
+type D inherits B { }
+
+type E inherits D { }
+
+type F inherits E { }
+
+let a : A = new F() in print(a is B); 
 """
 
 inputStr = defaultHulkProgram
@@ -80,10 +91,11 @@ def ast(inputStr : str, show = False) -> ProgramNode:
 def semantic_clean_analysis(inputStr : str) -> ProgramNode:
     treeAst = ast(inputStr)
     sem_an = SemanticAnalysis()
-         
-    errors = sem_an.run(treeAst)
+    errors = []     
+    #errors += sem_an.run(treeAst)
     if len(errors) > 0:
-        print(errors)
+        for error in errors:
+            print(colored(error, "red"))
         sys.exit(1)
     
 
@@ -104,13 +116,13 @@ def semantic_corrupted_analysis(inputStr : str) -> tuple[ProgramNode, Resolver]:
     environment_builder = EnvironmentBuilder()
     errors = environment_builder.build(environment, ast)
     resolver = Resolver(environment)
-
     # do some semantich check first.
     semantic_ch = SemanticCheck(resolver)
     errors += semantic_ch.semantic_check(ast)
 
     if len(errors) > 0:
-        print(errors)
+        for error in errors:
+            print(colored(error, "red"))
         sys.exit(1)
 
     # store in the context all annotated types by the user.
@@ -118,7 +130,8 @@ def semantic_corrupted_analysis(inputStr : str) -> tuple[ProgramNode, Resolver]:
     errors += type_picker.pick_types(ast)
 
     if len(errors) > 0:
-        print(errors)
+        for error in errors:
+            print(colored(error, "red"))
         sys.exit(1)
 
     # deduce types for non-annotated types by the user.
@@ -126,7 +139,8 @@ def semantic_corrupted_analysis(inputStr : str) -> tuple[ProgramNode, Resolver]:
     errors += type_deducer.check_types(ast)
 
     if len(errors) > 0:
-        print(errors)
+        for error in errors:
+            print(colored(error, "red"))
         sys.exit(1)
         
     return (ast, resolver)

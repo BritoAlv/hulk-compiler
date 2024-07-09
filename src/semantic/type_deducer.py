@@ -5,6 +5,8 @@ from common.ast_nodes.statements import *
 from common.ast_nodes.expressions import *
 from common.visitor import Visitor
 
+from termcolor import colored
+
 class TypeDeducer(Visitor):
     def __init__(self, resolver : Resolver):
         self._resolver = resolver
@@ -16,15 +18,24 @@ class TypeDeducer(Visitor):
         self._type_determiner : list[list[None | str]] = [[]]
         self._method_name :  str | None = None
         self._type_name : str = None
+        self._deduced = False
 
     def check_types(self, program : ProgramNode) -> list[str]:
-        self._check_types(program)
+        i = 1
+        while True:
+            print(f"Iteration {i} :")
+            self._errors = []
+            self._deduced = False
+            self._check_types(program)
+            if not self._deduced :
+                break
+            i += 1
         return self._errors
 
     def log_error(self, error : str):
         self._errors.append(error)
 
-    def push_type_determiner(self, ob : None | str):
+    def push_type_determiner(self, ob : str):
         self._type_determiner[-1].append(ob)
 
     def match_type_determiner(self, op : str, custom_type):
@@ -43,22 +54,23 @@ class TypeDeducer(Visitor):
         g = "---------------------------------------"
         print(g)
         print(f"Entering due to symbol {data.name}")
-        if (len(self._type_determiner[-1]) > 0):
+        if (len(self._type_determiner[-1]) > 0 and self._type_determiner[-1][-1] != "Any"):
             if data.type == "Any":
                 data.type = self._type_determiner[-1][-1]
-                print(f"Deduced type for symbol {data.name} from Any to {self._type_determiner[-1][-1]}")
+                print(colored(f"Deduced type for symbol {data.name} from Any to {self._type_determiner[-1][-1]}", "blue"))
+                self._deduced = True
                 print(g)
             else:
                 obtained_type = self._resolver.resolve_lowest_common_ancestor(data.type, self._type_determiner[-1][-1])
                 if obtained_type != data.type:
-                    print(f"Symbol {data.name} obtained type : {self._type_determiner[-1][-1]} does not conforms with its actual type :  {data.type}")
+                    print(colored(f"Symbol {data.name} obtained type : {self._type_determiner[-1][-1]} does not conforms with its actual type :  {data.type}", "red" ))
                     print(g)
                     raise Exception(self._type_determiner[-1][-1], data.type)
                 else:
-                    print(f"Symbol {data.name} obtained type : {self._type_determiner[-1][-1]} conforms with its actual type :  {data.type}")
+                    print(colored(f"Symbol {data.name} obtained type : {self._type_determiner[-1][-1]} conforms with its actual type :  {data.type}", "green"))
                     print(g)
         else:
-            print(f"There is nothing on the stack so continue")
+            print(f"There is nothing to do so continue")
             print(g)
         return data.type
         
@@ -67,12 +79,13 @@ class TypeDeducer(Visitor):
             self._check_types(decl)
     
     def visit_attribute_node(self, attribute_node : AttributeNode):
-        self._type_determiner.append([])
-        inferred_type = self._check_types(attribute_node.body)
-        self._type_determiner.pop()
         attr_name = attribute_node.id.lexeme
         type_data = self._resolver.resolve_type_data(self._type_name)
         attr_data = type_data.attributes[attr_name]
+        self._type_determiner.append([])
+        self.push_type_determiner(attr_data.type)
+        inferred_type = self._check_types(attribute_node.body)
+        self._type_determiner.pop()
         if inferred_type == "null" and attribute_node.type == "Any":
             self.log_error(f"Can't set to null attribute declaration without specifiying type at line {attribute_node.id.line}")
 
@@ -103,6 +116,7 @@ class TypeDeducer(Visitor):
         func_data = self._resolver.resolve_function_data(func_name)
         
         self._type_determiner.append([])
+        self.push_type_determiner(func_data.type)
         inferred_type = self._check_types(method_node.body)
         self._type_determiner.pop()
 
@@ -149,6 +163,7 @@ class TypeDeducer(Visitor):
             var_name = assig.id.lexeme
             var_data = self._resolver.resolve_var_data(var_name)
             self._type_determiner.append([])
+            self.push_type_determiner(var_data.type)
             inferred_type = self._check_types(assig.body)
             self._type_determiner.pop()
             if assig.type == "Any" and inferred_type == "null":
@@ -309,7 +324,7 @@ class TypeDeducer(Visitor):
     def visit_call_node(self, call_node : CallNode):
         if isinstance(call_node.callee, LiteralNode):
             if call_node.callee.id.lexeme == "base" and self._in_type and self._in_method:
-                self.check_call_base(call_node)
+                return self.check_call_base(call_node)
             else:
                 fn_name = call_node.callee.id.lexeme
                 if self._in_type and fn_name in self._resolver.resolve_type_data(self._type_name).methods and isinstance(call_node.callee, GetNode):
@@ -463,7 +478,7 @@ class TypeDeducer(Visitor):
         else:
             self.match_type_determiner("", binary_node.right.id.lexeme)
             left_inferred_type = self._check_types(binary_node.left)
-            self.match_type_determiner()
+            self.pop_type_determiner()
             type_data = self._resolver.resolve_type_data(left_inferred_type)
             if is_type not in type_data.descendants:
                 self.log_error(f"Left operand type {left_inferred_type}  of is must be a descendant of right operand type {is_type} at line {binary_node.op.line}")
