@@ -432,17 +432,40 @@ class Generator(Visitor):
             return GenerationResult(code, 'Boolean')
         elif binary_node.op.type == 'asOp' and isinstance(binary_node.right, LiteralNode) and binary_node.right.id.type == 'id':
             type_name = binary_node.right.id.lexeme
+            type_data = self._resolver.resolve_type_data(type_name)
+            type_id = type_data.id
+            
+            code = left_result.code
 
-            try:
-                self._resolver.resolve_type_data(type_name)            
-            except:
-                raise Exception(f'Type {type_name} is not defined')
+            code += f'''
+    jal stack_pop
+    lw $t0 ($v0) # Check if null
+    beq $t0 -1 null_error
+    li $s2 0
+    lw $s0 ($v0)
+    li $s1 {type_id}
+    seq $s1 $s0 $s1
+    add $s2 $s2 $s1
+'''
 
-            return GenerationResult(left_result.code, type_name)
+            for descendant in type_data.descendants:
+                descendant_type_data = self._resolver.resolve_type_data(descendant)
+                descendant_type_id = descendant_type_data.id
+                code += f'''
+    li $s1 {descendant_type_id}
+    seq $s1 $s0 $s1
+    add $s2 $s2 $s1
+'''
+                
+            code += '''
+    beq $s2 0 cast_error
+    move $a0 $v0
+    jal stack_push
+'''
+
+            return GenerationResult(code, type_name)
 
         right_result = self._generate(binary_node.right)
-        left_type = left_result.type
-        right_type = right_result.type
 
         null_check_code = '''
     lw $t0 ($v0) # Check if null
