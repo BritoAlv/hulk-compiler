@@ -35,7 +35,18 @@ with open('program.hulk', 'r') as source:
     defaultHulkProgram = source.read()
 
 defaultHulkProgram +="""
-print("Hola");
+type A {
+    i = new A();
+    son (a: A): A => a;
+    brother():A => self.i.son(self.i).son(new A());
+}
+function range(): Vector => [1,2,3,4,5];
+let squares = [(x as Number)^2 || x in range()] in
+{ print(squares);
+    for (i in [1,2,3]){
+        i;
+    };
+};
 """
 
 inputStr = defaultHulkProgram
