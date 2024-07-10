@@ -39,41 +39,28 @@ with open('program.hulk', 'r') as source:
     defaultHulkProgram = source.read()
 
 defaultHulkProgram = """
-
-protocol Hashable{
-    hash() : Number;
-}
-
-protocol Equatable extends Hashable {
-    equals(other : Object) : Boolean;
-}
-
-type B {
-    hash() => 4;
-}
-
-type C (id : String) inherits B {
-    id = id;
-    getId() => self.id;
-    equals( other : Object ) {
-        if (!(other is C))
-        {
-            false;
-        } 
-        else
-        {
-            true;
-        };
-    }
-}
-let x : Equatable = new C("Alvaro") in 
+protocol Hashable 
 {
-    print(
-        x.equals(
-            new C("Alvaro")
-        )
-    );
-};
+    hash() : Number; 
+}
+
+protocol Equal extends Hashable {
+    equal( other : Object) : Boolean;
+}
+
+function Comparer( a : Hashable, b : Hashable ) {
+    a.hash() == b.hash();
+}
+
+type M {
+    hash() => 5;
+}
+
+type N inherits M {
+    equal(other : Object) => false;
+}
+
+print( Comparer(new N(), new N()) );
 """
 
 inputStr = defaultHulkProgram

@@ -189,7 +189,7 @@ class EnvironmentBuilder(Visitor):
 
             type_data.ancestor = ancestor
             self._type_graph.add((ancestor, protocol_name))
-
+        
         self._environment.add_type_data(protocol_name, type_data)
         self._environment._protocols[protocol_name] = type_data
 

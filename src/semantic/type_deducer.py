@@ -129,6 +129,8 @@ class TypeDeducer(Visitor):
         return data.type
     
     def inherits(self, type : str, data : VarData | FunctionData ) -> bool:
+        if type in self._resolver.resolve_protocols() and data.type == "Object":
+            return True
         return type in self._resolver.resolve_type_data(data.type).descendants or type == data.type
             
     def visit_program_node(self, program_node : ProgramNode): 
@@ -499,13 +501,13 @@ class TypeDeducer(Visitor):
 
             if left_inferred in self._resolver.resolve_protocols():
                 # do another analysis
-                left_type_data = self._resolver.resolve_type_data(left_inferred)
-                if fn_name not in left_type_data.methods:
+                fn_data = self._resolver.resolve_protocol_function_data(fn_name, left_inferred)
+                if fn_data == None:
                     self.log_error(f"{fn_name} is not a method of inferred protocol type {left_inferred} at line {call_node.callee.id.line}")
-                    return "Object"   
-                fn_data = self._resolver.resolve_function_data(left_type_data.methods[fn_name][0])
-                self.check_call_arguments(call_node, fn_data, left_inferred)
-                return fn_data.type
+                    return "Object"
+                else:   
+                    self.check_call_arguments(call_node, fn_data, left_inferred)
+                    return fn_data.type
             else:
                 left_type_data = self._resolver.resolve_type_data(left_inferred)
                 if fn_name not in left_type_data.methods:
