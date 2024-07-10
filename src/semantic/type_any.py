@@ -1,5 +1,6 @@
 from code_gen.environment import FunctionData
 from code_gen.resolver import Resolver
+from common.ErrorLogger import Error
 from common.ast_nodes.base import Statement
 from common.ast_nodes.statements import *
 from common.ast_nodes.expressions import *
@@ -43,7 +44,7 @@ class TypeAny(Visitor):
         type_data = self._resolver.resolve_type_data(self._type_name)
         attr_data = type_data.attributes[attr_name]
         if attr_data.type == "Any": 
-            self.log_error(f"Attribute {attr_name} of type {type_data.name} is not typed at line {attribute_node.id.line}")
+            self.log_error(Error(f"Attribute {attr_name} of type {type_data.name} is not typed " , attribute_node.id.line , attribute_node.id.offsetLine))
         elif attr_data.type in self._resolver.resolve_protocols():
             attr_data.type = "Object"
     
@@ -61,7 +62,7 @@ class TypeAny(Visitor):
         
         for param, type in method_node.params:
             if func_data.params[param.lexeme].type == "Any":
-                self.log_error(f"Param {param.lexeme} of Method {func_name} is not typed {param.line}")
+                self.log_error(Error(f"Param {param.lexeme} of Method {func_name} is not typed " , param.line , param.offsetLine))
             elif func_data.params[param.lexeme].type in self._resolver.resolve_protocols():
                 func_data.params[param.lexeme].type = "Object"
                 
@@ -70,7 +71,7 @@ class TypeAny(Visitor):
         self._check_any(method_node.body)
 
         if func_data.type == "Any":
-            self.log_error(f"Method {func_name} is not typed at line {method_node.id.line}")
+            self.log_error(Error(f"Method {func_name} is not typed " , method_node.id.line , method_node.id.offsetLine))
         elif func_data.type in self._resolver.resolve_protocols():
             func_data.type = "Object"
         self._in_method = False    
@@ -103,7 +104,7 @@ class TypeAny(Visitor):
             op_type = assig.type
             self._check_any(assig.body)
             if var_data.type == "Any":
-                self.log_error(f"Variable {var_name} is not typed at line {assig.id.line}")
+                self.log_error(Error(f"Variable {var_name} is not typed " , assig.id.line , assig.id.offsetLine))
             elif var_data.type in self._resolver.resolve_protocols():
                 var_data.type = "Object"                    
         self._check_any(let_node.body)

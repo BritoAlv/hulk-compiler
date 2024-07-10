@@ -3,7 +3,6 @@ import math
 from pickletools import long4
 from re import L
 from sqlalchemy import False_
-from common.ErrorLogger.ErrorLogger import ErrorLogger
 from common.ast_nodes.expressions import *
 from common.ast_nodes.expressions import VectorGetNode
 from common.ast_nodes.statements import *

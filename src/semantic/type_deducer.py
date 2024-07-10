@@ -1,5 +1,6 @@
 from code_gen.environment import FunctionData, VarData
 from code_gen.resolver import Resolver
+from common.ErrorLogger import Error
 from common.ast_nodes.base import Statement
 from common.ast_nodes.statements import *
 from common.ast_nodes.expressions import *
@@ -146,7 +147,7 @@ class TypeDeducer(Visitor):
         inferred_type = self._check_types(attribute_node.body)
         self._type_determiner.pop()
         if inferred_type == "null" and attribute_node.type == "Any":
-            self.log_error(f"Can't set to null attribute declaration without specifiying type at line {attribute_node.id.line}")
+            self.log_error(Error(f"Can't set to null attribute declaration without specifiying type " , attribute_node.id.line , attribute_node.id.offsetLine))
 
         elif inferred_type == "null":
             pass
@@ -159,11 +160,11 @@ class TypeDeducer(Visitor):
                 else:
                     if attr_data.type in self._resolver.resolve_protocols():
                         if not self.type_implements_protocol(attr_data.type, inferred_type):
-                            self.log_error(f"Inferred type {inferred_type} for attribute {attr_name} does not implement protocol {attr_data.type} at line {attribute_node.id.line}")
+                            self.log_error(Error(f"Inferred type {inferred_type} for attribute {attr_name} does not implement protocol {attr_data.type} " , attribute_node.id.line , attribute_node.id.offsetLine))
                     elif not self.inherits(inferred_type, attr_data):
-                        self.log_error(f"Attribute {attr_name} type inferred {inferred_type} does not conform with actual type {attr_data.type} at line {attribute_node.id.line}")
+                        self.log_error(Error(f"Attribute {attr_name} type inferred {inferred_type} does not conform with actual type {attr_data.type} " , attribute_node.id.line , attribute_node.id.offsetLine))
             except Exception as e:
-                self.log_error(f"Attribute {attr_name} type given {e.args[1]} does not  conform with {e.args[0]} at line {attribute_node.id.line}")
+                self.log_error(Error(f"Attribute {attr_name} type given {e.args[1]} does not  conform with {e.args[0]} " , attribute_node.id.line , attribute_node.id.offsetLine))
                 self.pop_type_determiner()
 
         return type_data.attributes[attr_name].type
@@ -186,7 +187,7 @@ class TypeDeducer(Visitor):
         self._type_determiner.pop()
 
         if method_node.type == "Any" and inferred_type == "null":
-            self.log_error(f"Return of method can't be null if method is not typed at line {method_node.id.line}")
+            self.log_error(Error(f"Return of method can't be null if method is not typed " , method_node.id.line , method_node.id.offsetLine))
 
         self._in_method = False    
         self._method_name = None
@@ -199,11 +200,11 @@ class TypeDeducer(Visitor):
             else:
                 if func_data.type in self._resolver.resolve_protocols():
                     if not self.type_implements_protocol(func_data.type, inferred_type):
-                        self.log_error(f"Inferred type {inferred_type} for method {func_name} does not implement protocol {func_data.type} at line {method_node.id.line}")
+                        self.log_error(Error(f"Inferred type {inferred_type} for method {func_name} does not implement protocol {func_data.type} " , method_node.id.line , method_node.id.offsetLine))
                 elif not self.inherits(inferred_type, func_data):
-                    self.log_error(f"Function {func_name} type inferred {inferred_type} does not conform with actual type {func_data.type} at line {method_node.id.line}")
+                    self.log_error(Error(f"Function {func_name} type inferred {inferred_type} does not conform with actual type {func_data.type} " , method_node.id.line , method_node.id.offsetLine))
         except Exception as e:
-            self.log_error(f"Method {func_name} type given {e.args[1]} does not  conform with {e.args[0]} at line {method_node.id.line}")
+            self.log_error(Error(f"Method {func_name} type given {e.args[1]} does not  conform with {e.args[0]} " , method_node.id.line , method_node.id.offsetLine))
             self.pop_type_determiner()
 
         return func_data.type
@@ -237,7 +238,7 @@ class TypeDeducer(Visitor):
             inferred_type = self._check_types(assig.body)
             self._type_determiner.pop()
             if assig.type == "Any" and inferred_type == "null":
-                self.log_error(f"Can't set to null a non typed variable at line {assig.id.line}")
+                self.log_error(Error(f"Can't set to null a non typed variable " , assig.id.line , assig.id.offsetLine))
                 var_data.type = "Object"
             
             elif inferred_type == "null":
@@ -251,11 +252,11 @@ class TypeDeducer(Visitor):
                 else:
                     if var_data.type in self._resolver.resolve_protocols():
                         if not self.type_implements_protocol(var_data.type, inferred_type):
-                            self.log_error(f"Inferred type {inferred_type} for variable {var_name} does not implement protocol {var_data.type} at line {assig.id.line}")                    
+                            self.log_error(Error(f"Inferred type {inferred_type} for variable {var_name} does not implement protocol {var_data.type} " , assig.id.line , assig.id.offsetLine))                    
                     elif not self.inherits(inferred_type, var_data):
-                        self.log_error(f"Variable {var_name} type inferred {inferred_type} does not conform with actual type {var_data.type} at line {assig.id.line}")
+                        self.log_error(Error(f"Variable {var_name} type inferred {inferred_type} does not conform with actual type {var_data.type} " , assig.id.line , assig.id.offsetLine))
             except Exception as e:
-                self.log_error(f"Variable {var_name} type given {e.args[1]} does not  conform with {e.args[0]} at line {assig.id.line}")
+                self.log_error(Error(f"Variable {var_name} type given {e.args[1]} does not  conform with {e.args[0]} " , assig.id.line , assig.id.offsetLine))
                 self.pop_type_determiner()
 
         f_type = self._check_types(let_node.body)
@@ -267,7 +268,7 @@ class TypeDeducer(Visitor):
         condition_type = self._check_types(while_node.condition)
         self.pop_type_determiner()
         if condition_type != 'Boolean':
-            self.log_error(f'While condition must evaluate to a boolean at line {while_node.handle.line}')
+            self.log_error(Error(f"While condition must evaluate to a boolean " , while_node.handle.line , while_node.handle.offsetLine))
         
         type_r = self._check_types(while_node.body)
         return type_r
@@ -279,7 +280,7 @@ class TypeDeducer(Visitor):
             cond_type = self._check_types(st[0])
             self.pop_type_determiner()
             if cond_type != 'Boolean':
-                self.log_error(f"Conditions of if / elif must evaluate to a boolean not to {cond_type} at line {if_node.handle.line}")
+                self.log_error(Error(f"Conditions of if / elif must evaluate to a boolean not to {cond_type} " , if_node.handle.line , if_node.handle.offsetLine))
             type = self._check_types(st[1])
             initial_type = self._resolver.resolve_lowest_common_ancestor(initial_type, type)
         return initial_type
@@ -300,7 +301,7 @@ class TypeDeducer(Visitor):
         if inferred_type == "null" and var_data.type != "Any":
             return var_data.type
         if inferred_type == "null" and var_data.type == "Any":
-            self.log_error(f"Can't set to null a non typed variable at line {destructor_node.id.line}")
+            self.log_error(Error(f"Can't set to null a non typed variable " , destructor_node.id.line , destructor_node.id.offsetLine))
             return "Object"
         try:
             if var_data.type == "Any":    
@@ -310,11 +311,11 @@ class TypeDeducer(Visitor):
             else:
                 if var_data.type in self._resolver.resolve_protocols():
                     if not self.type_implements_protocol(var_data.type, inferred_type):
-                        self.log_error(f"Inferred type {inferred_type} for variable {var_name} does not implement protocol {var_data.type} at line {destructor_node.id.line}")                   
+                        self.log_error(Error(f"Inferred type {inferred_type} for variable {var_name} does not implement protocol {var_data.type} " , destructor_node.id.line , destructor_node.id.offsetLine))                   
                 elif not self.inherits(inferred_type, var_data):
-                    self.log_error(f"Vairable {var_name} type inferred {inferred_type} does not conform with actual type {var_data.type} at line {destructor_node.id.line}")
+                    self.log_error(Error(f"Variable {var_name} type inferred {inferred_type} does not conform with actual type {var_data.type} " , destructor_node.id.line , destructor_node.id.offsetLine))
         except:
-            self.log_error(f"Infered type {inferred_type} doens't conform with {var_data.type} when using destruct at line {destructor_node.id.line}")
+            self.log_error(Error(f"Infered type {inferred_type} doens't conform with {var_data.type} when using destruct " , destructor_node.id.line , destructor_node.id.offsetLine))
             self.pop_type_determiner()
 
             
@@ -334,7 +335,7 @@ class TypeDeducer(Visitor):
         fn_name = call_node.callee.id.lexeme
 
         if len(call_node.args) != len(fn_data.params):
-            self.log_error(f"Function {fn_name} call at line {call_node.callee.id.line} doesn't match number of arguments, should be {len(fn_data.params)}, got {len(call_node.args)}")
+            self.log_error(Error(f"Function {fn_name} call doesn't match number of arguments, should be {len(fn_data.params)}, got {len(call_node.args)} " , call_node.callee.id.line , call_node.callee.id.offsetLine))
             return fn_data.type
 
         for i, arg in enumerate(call_node.args):
@@ -352,11 +353,11 @@ class TypeDeducer(Visitor):
                     if param_var_data.type != "Any":
                         if param_var_data.type in self._resolver.resolve_protocols():
                             if not self.type_implements_protocol(param_var_data.type, inferred_type):
-                                self.log_error(f"Inferred type {inferred_type} for argument {i+1} does not implement protocol {param_var_data.type} in call to {fn_name} at line {call_node.callee.id.line}")   
+                                self.log_error(Error(f"Inferred type {inferred_type} for argument {i+1} does not implement protocol {param_var_data.type} in call to {fn_name} " , call_node.callee.id.line , call_node.callee.id.offsetLine))   
                         elif not self.inherits(inferred_type, param_var_data):
-                            self.log_error(f"Argument {i+1} inferred type {inferred_type} , in call to {fn_name} at line {call_node.callee.id.line},  doesn't conform with {param_var_data.type}")
+                            self.log_error(Error(f"Argument {i+1} inferred type {inferred_type} , in call to {fn_name} doesn't conform with {param_var_data.type}" , call_node.callee.id.line , call_node.callee.id.offsetLine))
             except:
-                self.log_error(f"Argument {i+1} inferred type {inferred_type} , in call to {fn_name} at line {call_node.callee.id.line},  doesn't conform with {param_var_data.type}")
+                self.log_error(Error(f"Argument {i+1} inferred type {inferred_type} , in call to {fn_name} doesn't conform with {param_var_data.type} " , call_node.callee.id.line , call_node.callee.id.offsetLine))
         return fn_data.type
 
 
@@ -365,7 +366,7 @@ class TypeDeducer(Visitor):
         fn_name += ("_" + method_type_owner)
 
         if len(call_node.args)  != len(fn_data.params):
-            self.log_error(f"Function {fn_name} of type {method_type_owner} call at line {call_node.callee.id.line} doesnt match number of arguments should be {len(fn_data.params)}, got {len(call_node.args)}")
+            self.log_error(Error(f"Function {fn_name} of type {method_type_owner} call  doesnt match number of arguments should be {len(fn_data.params)}, got {len(call_node.args)} " , call_node.callee.id.line , call_node.callee.id.offsetLine))
             return fn_data.type
         
         for i, arg in enumerate(call_node.args):
@@ -377,11 +378,11 @@ class TypeDeducer(Visitor):
                 if param_var_data.type != "Any":
                     if param_var_data.type in self._resolver.resolve_protocols():
                         if not self.type_implements_protocol(param_var_data.type, inferred_type):
-                            self.log_error(f"Inferred type {inferred_type} for argument {i+1} does not implement protocol {param_var_data.type} in call to {fn_name} at line {call_node.callee.id.line}") 
+                            self.log_error(Error(f"Inferred type {inferred_type} for argument {i+1} does not implement protocol {param_var_data.type} in call to {fn_name} " , call_node.callee.id.line , call_node.callee.id.offsetLine)) 
                     elif not self.inherits(inferred_type, param_var_data):
-                            self.log_error(f"Argument {i+1} inferred type {inferred_type} , in call to {fn_name} of type {method_type_owner} at line {call_node.callee.id.line},  doesn't conform with {param_var_data.type}")
+                            self.log_error(Error(f"Argument {i+1} inferred type {inferred_type} , in call to {fn_name} of type {method_type_owner} ,  doesn't conform with {param_var_data.type} " , call_node.callee.id.line , call_node.callee.id.offsetLine))
             except:
-                self.log_error(f"Argument {i+1} inferred type {inferred_type} , in call to {fn_name} of type {method_type_owner} at line {call_node.callee.id.line},  doesn't conform with {param_var_data.type}")
+                self.log_error(Error(f"Argument {i+1} inferred type {inferred_type} , in call to {fn_name} of type {method_type_owner} ,  doesn't conform with {param_var_data.type} " , call_node.callee.id.line , call_node.callee.id.offsetLine))
                 
         return fn_data.type
 
@@ -392,7 +393,7 @@ class TypeDeducer(Visitor):
         fn_name += ("_" + method_type_owner)
 
         if len(call_node.args) != len(fn_data.params) - 1:
-            self.log_error(f"Function {fn_name} of type {method_type_owner} call at line {call_node.callee.id.line} doesn't match number of arguments, should be {len(fn_data.params) - 1}, got {len(call_node.args)}")
+            self.log_error(Error(f"Function {fn_name} of type {method_type_owner} call  doesn't match number of arguments, should be {len(fn_data.params) - 1}, got {len(call_node.args)} " , call_node.callee.id.line , call_node.callee.id.offsetLine))
             return fn_data.type
 
         for i, arg in enumerate(call_node.args):
@@ -410,11 +411,11 @@ class TypeDeducer(Visitor):
                     if param_var_data.type != "Any":
                         if param_var_data.type in self._resolver.resolve_protocols():
                             if not self.type_implements_protocol(param_var_data.type, inferred_type):
-                                self.log_error(f"Inferred type {inferred_type} for argument {i+1} does not implement protocol {param_var_data.type} in call to {fn_name} at line {call_node.callee.id.line}") 
+                                self.log_error(Error(f"Inferred type {inferred_type} for argument {i+1} does not implement protocol {param_var_data.type} in call to {fn_name} " , call_node.callee.id.line , call_node.callee.id.offsetLine)) 
                         elif not self.inherits(inferred_type, param_var_data):
-                            self.log_error(f"Argument {i+1} inferred type {inferred_type} , in call to {fn_name} of type {method_type_owner} at line {call_node.callee.id.line},  doesn't conform with {param_var_data.type}")
+                            self.log_error(Error(f"Argument {i+1} inferred type {inferred_type} , in call to {fn_name} of type {method_type_owner} ,  doesn't conform with {param_var_data.type} " , call_node.callee.id.line , call_node.callee.id.offsetLine))
             except:
-                self.log_error(f"Argument {i+1} inferred type {inferred_type} , in call to {fn_name} of type {method_type_owner} at line {call_node.callee.id.line},  doesn't conform with {param_var_data.type}")
+                self.log_error(Error(f"Argument {i+1} inferred type {inferred_type} , in call to {fn_name} of type {method_type_owner} ,  doesn't conform with {param_var_data.type} " , call_node.callee.id.line , call_node.callee.id.offsetLine))
                 
 
                     
@@ -432,11 +433,11 @@ class TypeDeducer(Visitor):
         type_data = self._resolver.resolve_type_data(self._type_name)
         func_name = self._method_name
         if type_data.ancestor == "Object":
-            self.log_error(f"Call to base in {self._type_name} in {self._method_name} but there is no inheritance")
+            self.log_error(Error(f"Call to base in {self._type_name} in {self._method_name} but there is no inheritance " , call_node.handle.line , call_node.handle.offsetLine))
             return "Object"
         methods = type_data.methods[func_name.split("_")[0]]
         if len(methods) < 2:
-            self.log_error(f"There is no ancestor of {self._type_name} with method {self._method_name} at line {call_node.handle.line}")
+            self.log_error(Error(f"There is no ancestor of {self._type_name} with method {self._method_name} " , call_node.handle.line , call_node.handle.offsetLine))
             return "Object"
         method_name = methods[1]
         fn_name = method_name
@@ -446,7 +447,7 @@ class TypeDeducer(Visitor):
             try:
                 self.update_type(fn_data)
             except:
-                self.log_error(f"Can't deduce correct type for function {fn_name} in line {call_node.handle.line}")
+                self.log_error(Error(f"Can't deduce correct type for function {fn_name} " , call_node.handle.line , call_node.handle.offsetLine))
             
         old_name = call_node.callee.id.lexeme
         call_node.callee.id.lexeme = fn_name.split("_")[0]
@@ -467,21 +468,21 @@ class TypeDeducer(Visitor):
                         try:
                             self.update_type(fn_data)
                         except:
-                            self.log_error(f"Can't deduce correct type for function {fn_name} in line {call_node.handle.line}")
+                            self.log_error(Error(f"Can't deduce correct type for function {fn_name} " , call_node.handle.line , call_node.handle.offsetLine))
                     self.check_call_arguments(call_node, fn_data, self._in_type)
                     return fn_data.type
                 
                 if fn_name not in self._resolver.resolve_functions():
                     if fn_name == "print":
                         if len(call_node.args) != 1:
-                            self.log_error(f"Print only takes one argument at line {call_node.callee.id.line}")
+                            self.log_error(Error(f"Print only takes one argument " , call_node.callee.id.line , call_node.callee.id.offsetLine))
                         for arg in call_node.args:
                             self._type_determiner.append([])
                             self._check_types(arg)
                             self._type_determiner.pop()
                         return "Object"
     
-                    self.log_error(f"Call to {fn_name} at line {call_node.callee.id.line} but can't find this function")
+                    self.log_error(Error(f"Call to {fn_name}, but can't find this function " , call_node.callee.id.line , call_node.callee.id.offsetLine))
                     return "Object"
                 
                 fn_data = self._resolver.resolve_function_data(fn_name)
@@ -489,7 +490,7 @@ class TypeDeducer(Visitor):
                     try:
                         self.update_type(fn_data)
                     except:
-                        self.log_error(f"Can't deduce correct type for function {fn_name} in line {call_node.handle.line}")
+                        self.log_error(Error(f"Can't deduce correct type for function {fn_name} " , call_node.handle.line , call_node.handle.offsetLine))
                 self.check_call_arguments(call_node, fn_data, "")
                 return fn_data.type
         else:
@@ -503,7 +504,7 @@ class TypeDeducer(Visitor):
                 # do another analysis
                 fn_data = self._resolver.resolve_protocol_function_data(fn_name, left_inferred)
                 if fn_data == None:
-                    self.log_error(f"{fn_name} is not a method of inferred protocol type {left_inferred} at line {call_node.callee.id.line}")
+                    self.log_error(Error(f"{fn_name} is not a method of inferred protocol type {left_inferred} " , call_node.callee.id.line , call_node.callee.id.offsetLine))
                     return "Object"
                 else:   
                     self.check_call_arguments(call_node, fn_data, left_inferred)
@@ -511,7 +512,7 @@ class TypeDeducer(Visitor):
             else:
                 left_type_data = self._resolver.resolve_type_data(left_inferred)
                 if fn_name not in left_type_data.methods:
-                    self.log_error(f"{fn_name} is not a method of inferred type {left_inferred} at line {call_node.callee.id.line}")
+                    self.log_error(Error(f"{fn_name} is not a method of inferred type {left_inferred} " , call_node.callee.id.line , call_node.callee.id.offsetLine))
                     return "Object"
                 
                 owner_type = left_type_data.methods[fn_name][0].split("_")[1]
@@ -520,7 +521,7 @@ class TypeDeducer(Visitor):
                     try:
                         self.update_type(fn_data)
                     except:
-                        self.log_error(f"Can't deduce correct type for function {fn_name} in line {call_node.handle.line}")
+                        self.log_error(Error(f"Can't deduce correct type for function {fn_name} " , call_node.handle.line , call_node.handle.offsetLine))
                 self.check_call_arguments(call_node, fn_data, owner_type)
                 return fn_data.type
 
@@ -533,12 +534,12 @@ class TypeDeducer(Visitor):
         attr_name = get_node.id.lexeme
 
         if attr_name not in type_data.attributes:
-            self.log_error(f"Type {left_inferred_type} do no has attribute {attr_name} at line {get_node.id.line}")
+            self.log_error(Error(f"Type {left_inferred_type} do no has attribute {attr_name} " , get_node.id.line , get_node.id.offsetLine))
             return "Object"
         try:
             self.update_type(type_data.attributes[attr_name])
         except Exception as e:
-            self.log_error(f"Can't deduce correct type for attribute {attr_name} in line {get_node.id.line}, obtained {e.args[0]}, should {e.args[1]}")
+            self.log_error(Error(f"Can't deduce correct type for attribute {attr_name} obtained {e.args[0]}, should {e.args[1]} " , get_node.id.line , get_node.id.offsetLine))
         return type_data.attributes[attr_name].type
     
     def visit_set_node(self, set_node : SetNode):
@@ -546,14 +547,14 @@ class TypeDeducer(Visitor):
         left_inferred_type = self._check_types(set_node.left)
         self._type_determiner.pop()
         if not self._in_type or left_inferred_type != self._type_name:
-            self.log_error(f"Attributes are private, at line {set_node.id.line}")
+            self.log_error(Error(f"Attributes are private, " , set_node.id.line , set_node.id.offsetLine))
             self._check_types(set_node.value)
             return "Object"
 
         type_data = self._resolver.resolve_type_data(self._type_name)
         attr_name = set_node.id.lexeme
         if attr_name not in type_data.attributes:
-            self.log_error(f"Type {self._type_name} do no has attribute {attr_name} ")
+            self.log_error(Error(f"Type {self._type_name} do no has attribute {attr_name} " , set_node.id.line , set_node.id.offsetLine))
             self._check_types(set_node.value)
             return 'Object'
 
@@ -567,7 +568,7 @@ class TypeDeducer(Visitor):
             self.update_type(attr_data)
             self.pop_type_determiner()
         except:
-            self.log_error(f"Updating value with type {value_type} for attribute {attr_name} doesn't conform with its type {attr_data.type},  at line {set_node.id.line}")
+            self.log_error(Error(f"Updating value with type {value_type} for attribute {attr_name} doesn't conform with its type {attr_data.type},  " , set_node.id.line , set_node.id.offsetLine))
             self.pop_type_determiner()
             return "Object"
         return attr_data.type
@@ -600,7 +601,7 @@ class TypeDeducer(Visitor):
         fn_data = self._resolver.resolve_function_data(constructor)
 
         if len(new_node.args) != len(fn_data.params) - 1:
-            self.log_error(f"Trying to instantiate a new type with wrong number of arguments at line {new_node.id.line}")
+            self.log_error(Error(f"Trying to instantiate a new type with wrong number of arguments " , new_node.id.line , new_node.id.offsetLine))
             return type_name
         
         for i, arg in enumerate(new_node.args):
@@ -613,14 +614,14 @@ class TypeDeducer(Visitor):
                 self.update_type(param_var_data)
                 self.pop_type_determiner()
             except:
-                self.log_error(f"Argument {i+1} inferred type {inferred_type} , in call to constructor of type {type_name} at line {new_node.id.line},  doesn't conform with {param_var_data.type}")
+                self.log_error(Error(f"Argument {i+1} inferred type {inferred_type} , in call to constructor of type {type_name} ,  doesn't conform with {param_var_data.type} " , new_node.id.line , new_node.id.offsetLine))
                 self.pop_type_determiner()
         return type_name
     
     def visit_is(self, binary_node : BinaryNode):
         is_type = binary_node.right.id.lexeme
         if is_type not in self._resolver.resolve_types():
-            self.log_error(f'Right operand of is : {is_type} must be an existing type at line {binary_node.op.line}')
+            self.log_error(Error(f"Right operand of is : {is_type} must be an existing type " , binary_node.op.line , binary_node.op.offsetLine))
         else:
             self._type_determiner.append([])
             left_inferred_type = self._check_types(binary_node.left)
@@ -630,7 +631,7 @@ class TypeDeducer(Visitor):
     def visit_as(self, binary_node : BinaryNode):
         as_type = binary_node.right.id.lexeme
         if as_type not in self._resolver.resolve_types():
-            self.log_error(f'Right operand of as not found {as_type} at line {binary_node.right.id.line}')
+            self.log_error(Error(f"Right operand of as not found {as_type} " , binary_node.right.id.line , binary_node.right.id.offsetLine))
         else:
             self._type_determiner.append([])
             left_inferred_type = self._check_types(binary_node.left)
@@ -645,9 +646,9 @@ class TypeDeducer(Visitor):
         right_inferred_type = self._check_types(binary_node.right)
         self._type_determiner.pop()
         if left_infered_type not in ["String", "Number"]:
-            self.log_error(f"Can only use @ operator with String and Number at line {binary_node.op.line}, left = {left_infered_type}, right = {right_inferred_type}")
+            self.log_error(Error(f"Can only use @ operator with String and Number , left = {left_infered_type}, right = {right_inferred_type} " , binary_node.op.line , binary_node.op.offsetLine))
         if right_inferred_type not in ["String", "Number"]:
-            self.log_error(f"Can only use @ operator with String and Number at line {binary_node.op.line}, left = {left_infered_type}, right = {right_inferred_type}")
+            self.log_error(Error(f"Can only use @ operator with String and Number , left = {left_infered_type}, right = {right_inferred_type} " , binary_node.op.line , binary_node.op.offsetLine))
         return "String"
 
     def visit_binary_node(self, binary_node : BinaryNode):
@@ -655,7 +656,7 @@ class TypeDeducer(Visitor):
         op = binary_node.op.lexeme
         if op == "is" or op == "as":
             if not isinstance(binary_node.right, LiteralNode):
-                self.log_error(f"Right side of operators is, as should be types at line {line}")
+                self.log_error(Error(f"Right side of operators is, as should be types " , binary_node.op.line , binary_node.op.offsetLine))
                 return "Object"
             else:
                 match op:
@@ -684,7 +685,7 @@ class TypeDeducer(Visitor):
         match binary_node.op.type:
             case 'plus'| 'minus'| 'star'| 'div'| 'powerOp'| 'modOp'| 'greater'| 'less'| 'greaterEq'| 'lessEq':
                 if left_inferred_type != 'Number' or right_inferred_type != 'Number':
-                    self.log_error(f"Cannot apply binary arithmetic operation to non-numerical types : left type is {left_inferred_type}, right type is  {right_inferred_type} at line {binary_node.op.line}")
+                    self.log_error(Error(f"Cannot apply binary arithmetic operation to non-numerical types : left type is {left_inferred_type}, right type is  {right_inferred_type} " , binary_node.op.line , binary_node.op.offsetLine))
 
                 # this allows comparing any two types of objects.
                 if binary_node.op.type in ['greater', 'less', 'greaterEq', 'lessEq']:
@@ -693,7 +694,7 @@ class TypeDeducer(Visitor):
                 return 'Number'
             case 'and' | 'or':
                 if left_inferred_type != 'Boolean' or right_inferred_type != 'Boolean':
-                    self.log_error(f"Cannot apply binary boolean operation to non-numerical types : left type is {left_inferred_type},  right type is {right_inferred_type} at line {binary_node.op.line}")
+                    self.log_error(Error(f"Cannot apply binary boolean operation to non-numerical types : left type is {left_inferred_type},  right type is {right_inferred_type} " , binary_node.op.line , binary_node.op.offsetLine))
                 return 'Boolean'
             case 'doubleEqual' | 'notEqual':
                 return 'Boolean'
@@ -706,11 +707,11 @@ class TypeDeducer(Visitor):
         self.pop_type_determiner()
         if unary_node.op.type == 'not':
             if inferred_type != 'Boolean':
-                self.log_error(f"Cannot negate a non-boolean expression like {inferred_type} at line {unary_node.op.line}")
+                self.log_error(Error(f"Cannot negate a non-boolean expression like {inferred_type} " , unary_node.op.line , unary_node.op.offsetLine))
             return 'Boolean'
         else:
             if inferred_type != 'Number':
-                self.log_error(f"Cannot negate a non-numerical expression like {inferred_type} at line {unary_node.op.line}")
+                self.log_error(Error(f"Cannot negate a non-numerical expression like {inferred_type} " , unary_node.op.line , unary_node.op.offsetLine))
             return 'Number'
             
     def visit_literal_node(self, literal_node : LiteralNode):
@@ -730,11 +731,10 @@ class TypeDeducer(Visitor):
                         self.update_type(t)
                         return t.type
                     except Exception as e:
-                        self.log_error(f"Variable {literal_node.id.lexeme} at line {literal_node.id.line} type {e.args[0]} does not conform with obtained type {e.args[1]}")
+                        self.log_error(Error(f"Variable {literal_node.id.lexeme} type {e.args[0]} does not conform with obtained type {e.args[1]} " , literal_node.id.line , literal_node.id.offsetLine))
                         return t.type
                 except:
-                    self.log_error(f"Variable {literal_node.id.lexeme} at line {
-                        literal_node.id.line} is not declared")
+                    self.log_error(Error(f"Variable {literal_node.id.lexeme} is not declared " , literal_node.id.line , literal_node.id.offsetLine))
                     return "Object"
 
     def _check_types(self, node : Statement) -> str:

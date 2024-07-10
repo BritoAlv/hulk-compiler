@@ -3,8 +3,6 @@ from os import mkdir
 import pickle
 import sys
 
-from termcolor import colored
-
 from code_gen.constructor_builder import ConstructorBuilder
 from code_gen.environment import Environment
 from code_gen.environment_builder import EnvironmentBuilder
@@ -14,6 +12,7 @@ from common.ast_nodes.statements import ProgramNode
 from common.parse_nodes.parse_tree import ParseTree
 from common.printer import TreePrinter
 from common.token_class import Token
+from common.ErrorLogger import Error
 from lexing.lexer.main import *
 from parsing.parser.parser import Parser
 from semantic.ast_modifier import VectorModifier
@@ -38,13 +37,11 @@ parser.add_argument('-r', '--run', action='store_true', help='Run the compiled a
 with open('program.hulk', 'r') as source:
     defaultHulkProgram = source.read()
 
-defaultHulkProgram = """
-protocol A{
-    hash() : Number;
-    hash() : String; 
+defaultHulkProgram += """
+type C{
+    a = self.a;
 }
-protocol B{}
-print(4);
+4;
 """
 
 inputStr = defaultHulkProgram
@@ -84,12 +81,12 @@ def ast(inputStr : str, show = False) -> ProgramNode:
 
 def semantic_clean_analysis(inputStr : str) -> ProgramNode:
     treeAst = ast(inputStr)
-    sem_an = SemanticAnalysis()
-    errors = []     
+    #sem_an = SemanticAnalysis()
+    errors : list[Error] = []     
     #errors += sem_an.run(treeAst)
     if len(errors) > 0:
         for error in errors:
-            print(colored(error, "red"))
+            error.show(inputStr)
         sys.exit(1)
     
 
@@ -100,7 +97,7 @@ def semantic_clean_analysis(inputStr : str) -> ProgramNode:
 
     if len(errors) > 0:
         for error in errors:
-            print(colored(error, "red"))
+            error.show(inputStr)
         sys.exit(1)
 
     # handle vector declarations.
@@ -118,7 +115,7 @@ def semantic_corrupted_analysis(inputStr : str) -> tuple[ProgramNode, Resolver]:
     
     if len(errors) > 0:
         for error in errors:
-            print(colored(error, "red"))
+            error.show(inputStr)
         sys.exit(1)
 
     # do some semantich check first.
@@ -127,7 +124,7 @@ def semantic_corrupted_analysis(inputStr : str) -> tuple[ProgramNode, Resolver]:
 
     if len(errors) > 0:
         for error in errors:
-            print(colored(error, "red"))
+            error.show(inputStr)
         sys.exit(1)
 
     # store in the context all annotated types by the user.
@@ -136,7 +133,7 @@ def semantic_corrupted_analysis(inputStr : str) -> tuple[ProgramNode, Resolver]:
 
     if len(errors) > 0:
         for error in errors:
-            print(colored(error, "red"))
+            error.show(inputStr)
         sys.exit(1)
 
     # deduce types for non-annotated types by the user.
@@ -145,7 +142,7 @@ def semantic_corrupted_analysis(inputStr : str) -> tuple[ProgramNode, Resolver]:
 
     if len(errors) > 0:
         for error in errors:
-            print(colored(error, "red"))
+            error.show(inputStr)
         sys.exit(1)
 
     # check that all symbols are types before sending them to code generation.
@@ -155,7 +152,7 @@ def semantic_corrupted_analysis(inputStr : str) -> tuple[ProgramNode, Resolver]:
 
     if len(errors) > 0:
         for error in errors:
-            print(colored(error, "red"))
+            error.show(inputStr)
         sys.exit(1)
     ast = type_any._program
     return (ast, resolver)

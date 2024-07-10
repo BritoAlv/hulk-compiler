@@ -4,6 +4,7 @@ from common.ast_nodes.statements import AttributeNode, MethodNode, ProgramNode, 
 from common.graph import Graph
 from common.token_class import Token
 from common.visitor import Visitor
+from common.ErrorLogger import Error
 
 class TypeConstructorData:
     def __init__(self, params : list[tuple[Token, Token]], method : MethodNode) -> None:
@@ -108,7 +109,7 @@ class ConstructorBuilder(Visitor):
     
     def _handle_inheritance(self):
         if self._type_graph.is_cyclic():
-            self._errors.append("Can't have cyclic inheritance in types")
+            self._errors.append(Error("Can't have cyclic inheritance in types", 0, 0))
             return
         
         stack : list[str] = [] + self._root_types

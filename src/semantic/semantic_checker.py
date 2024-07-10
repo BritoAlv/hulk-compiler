@@ -3,14 +3,14 @@ from common.ast_nodes.base import Statement
 from common.ast_nodes.statements import *
 from common.ast_nodes.expressions import *
 from common.visitor import Visitor
-
+from common.ErrorLogger import Error
 class SemanticCheck(Visitor):
     """
     Set Types for the given symbols in the Program.
     """
     def __init__(self, resolver : Resolver):
         self._resolver = resolver
-        self._errors : list[str] = []
+        self._errors : list[Error] = []
 
         self._in_type = False
         self._in_method = False
@@ -33,7 +33,7 @@ class SemanticCheck(Visitor):
     def visit_attribute_node(self, attribute_node : AttributeNode):
         attr_name = attribute_node.id.lexeme
         if not self._in_type:
-            self.log_error(f'Attribute {attribute_node.id.lexeme} declaration must be inside a type declaration at line {attribute_node.id.line}')
+            self.log_error(Error(f"Attribute {attribute_node.id.lexeme} declaration must be inside a type declaration", attribute_node.id.line, attribute_node.id.offsetLine))
             self._stack.append([])
             self._semantic_check(attribute_node.body)
             self._stack.pop()
@@ -42,7 +42,7 @@ class SemanticCheck(Visitor):
         type_data = self._resolver.resolve_type_data(self._type_name)
         
         if attr_name not in type_data.attributes:
-            self.log_error(f"Attribute {attr_name} not in {self._type_name} attributes at line {attribute_node.id.line}")
+            self.log_error(Error(f"Attribute {attr_name} not in {self._type_name} attributes " , attribute_node.id.line , attribute_node.id.offsetLine))
             return
         self._in_attribute = True
         self._stack.append([])
@@ -53,14 +53,14 @@ class SemanticCheck(Visitor):
         if attribute_node.type != None: 
             stated_type = attribute_node.type.lexeme
             if stated_type not in self._resolver.resolve_types():
-                self.log_error(f"Type {stated_type} given for attribute {attr_name} in type declaration {self._type_name} does not exist at line {attribute_node.id.line}")
+                self.log_error(Error(f"Type {stated_type} given for attribute {attr_name} in type declaration {self._type_name} does not exist " , attribute_node.id.line , attribute_node.id.offsetLine))
     
     def visit_method_node(self, method_node : MethodNode):
         self._in_method = True
         func_name = method_node.id.lexeme
 
         if func_name in ["print"] and not self._in_type:
-            self.log_error(f"Can't declare a method called [print] at line {method_node.id.line}")
+            self.log_error(Error(f"Can't declare a method called [print] " , method_node.id.line , method_node.id.offsetLine))
 
         if self._in_type:
             func_name = f'{func_name}_{self._type_name}'
@@ -77,7 +77,7 @@ class SemanticCheck(Visitor):
                 func_data.params[param.lexeme].type = type.lexeme
                 continue
             elif type != None:
-                self.log_error(f"Parameter Type {type.lexeme} given for param {param.lexeme} at method {method_node.id.lexeme} " + (f"in type declaration {self._type_name}" if self._in_type else "") + f" does not exist at line {method_node.id.line}")
+                self.log_error(Error(f"Parameter Type {type.lexeme} given for param {param.lexeme} at method {method_node.id.lexeme} " + (f"in type declaration {self._type_name}" if self._in_type else "") + f" does not exist " , method_node.id.line , method_node.id.offsetLine))
 
         declared_type = method_node.type
         self._stack.append([])
@@ -87,7 +87,7 @@ class SemanticCheck(Visitor):
         if declared_type != None:
             declared_type = declared_type.lexeme
             if declared_type not in self._resolver.resolve_types():
-                self.log_error(f"Type {declared_type} given for method {method_node.id.lexeme} " + (f"in type declaration {self._type_name}" if self._in_type else "") + f" does not exist at line {method_node.id.line}")
+                self.log_error(Error(f"Type {declared_type} given for method {method_node.id.lexeme} " + (f"in type declaration {self._type_name}" if self._in_type else "") + f" does not exist " , method_node.id.line , method_node.id.offsetLine))
 
         self._in_method = False    
         self._method_name = None
@@ -98,14 +98,14 @@ class SemanticCheck(Visitor):
         self._type_name = type_node.id.lexeme
 
         if self._type_name in ["Any"]:
-            self.log_error(f"Can't declare [Any] as typenames")
+            self.log_error(Error(f"Can't declare [Any] as typenames " , type_node.id.line , type_node.id.offsetLine))
 
         if type_node.ancestor_id != None:
             ancestor = type_node.ancestor_id.lexeme
             if ancestor not in self._resolver.resolve_types():
-                self.log_error(f"Can't inherit {type_node.id.lexeme} from a non-existing type {ancestor}")
+                self.log_error(Error(f"Can't inherit {type_node.id.lexeme} from a non-existing type {ancestor} " , type_node.id.line , type_node.id.offsetLine))
             elif ancestor in ["Number", "String", "Vector", "Node", "Boolean"]:
-                self.log_error(f"Can't inherit {type_node.id.lexeme} from a basic type like [Number, String, Vector, Node, Boolean]")
+                self.log_error(Error(f"Can't inherit {type_node.id.lexeme} from a basic type like [Number, String, Vector, Node, Boolean] " , type_node.id.line , type_node.id.offsetLine))
 
         for method in type_node.methods:
             self._semantic_check(method)
@@ -130,7 +130,7 @@ class SemanticCheck(Visitor):
             self._semantic_check(assig.body)
             self._stack.pop()
             if op_type != None and op_type.lexeme not in self._resolver.resolve_types():
-                self.log_error(f"Given tipe for variable {var_name} in let_expression doesn't exist at line {assig.id.line}")
+                self.log_error(Error(f"Given tipe for variable {var_name} in let_expression doesn't exist " , assig.id.line , assig.id.offsetLine))
                     
         self._stack.append([])
         self._semantic_check(let_node.body)
@@ -173,7 +173,7 @@ class SemanticCheck(Visitor):
             self._semantic_check(destructor_node.expr)
             self._stack.pop()
         except:
-            self.log_error(f"Trying to destruct a not unitialized variable at line {destructor_node.id.line}" )
+            self.log_error(Error(f"Trying to destruct a not unitialized variable " , destructor_node.id.line , destructor_node.id.offsetLine))
             return 'Object'
 
 
@@ -186,7 +186,7 @@ class SemanticCheck(Visitor):
     def visit_call_node(self, call_node : CallNode):
         self._stack[-1].append(call_node)
         if not isinstance(call_node.callee, GetNode) and not isinstance(call_node.callee, LiteralNode):
-            self.log_error(f"An expression can't return a function at line {call_node.handle.line}") 
+            self.log_error(Error(f"An expression can't return a function " , call_node.handle.line , call_node.handle.offsetLine)) 
         self._semantic_check(call_node.callee)
         self._stack[-1].pop()
         for arg in call_node.args:
@@ -197,18 +197,18 @@ class SemanticCheck(Visitor):
     def visit_get_node(self, get_node : GetNode):
         self._stack[-1].append(get_node)
         if isinstance(get_node.left, LiteralNode) and get_node.left.id.lexeme == "self" and self._in_attribute and self._resolver.resolve_var_data("self").type == self._type_name:
-            self.log_error(f"Cannot access to self in attribute declaration at line {get_node.left.id.line}")
+            self.log_error(Error(f"Cannot access to self in attribute declaration " , get_node.left.id.line , get_node.left.id.offsetLine))
             return "Object"
         
         if isinstance(get_node.left, LiteralNode) and not self._in_type and isinstance(self._stack[-2], GetNode) :
-            self.log_error(f"Attributes are private at line {get_node.left.id.line}")
+            self.log_error(Error(f"Attributes are private " , get_node.left.id.line , get_node.left.id.offsetLine))
 
         self._semantic_check(get_node.left)
         self._stack[-1].pop()
     
     def visit_set_node(self, set_node : SetNode):
         if isinstance(set_node.left, LiteralNode) and set_node.left.id.lexeme == "self" and self._in_attribute and self._resolver.resolve_var_data("self").type == self._type_name:
-            self.log_error(f"Cannot access to self in attribute declaration at line {set_node.left.id.line}")
+            self.log_error(Error(f"Cannot access to self in attribute declaration " , set_node.left.id.line , set_node.left.id.offsetLine))
             return "Object"
         self._semantic_check(set_node.left)
         self._semantic_check(set_node.value)
@@ -224,10 +224,10 @@ class SemanticCheck(Visitor):
         type_name = new_node.id.lexeme
 
         if type_name in self._resolver.resolve_protocols():
-            self.log_error(f"Cannot instantiate a protocol {type_name} at line {new_node.id.line}")
+            self.log_error(Error(f"Cannot instantiate a protocol {type_name} " , new_node.id.line , new_node.id.offsetLine))
 
         if type_name not in self._resolver.resolve_types():
-            self.log_error(f'Cannot instantiate a not declared type {type_name} at line {new_node.id.line}')
+            self.log_error(Error(f"Cannot instantiate a not declared type {type_name} " , new_node.id.line , new_node.id.offsetLine))
             return 'Object'
         for arg in new_node.args:
             self._semantic_check(arg)
