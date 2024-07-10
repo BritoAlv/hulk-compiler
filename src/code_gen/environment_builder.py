@@ -47,6 +47,8 @@ class EnvironmentBuilder(Visitor):
     def visit_method_node(self, method_node: MethodNode):
         func_data = FunctionData()
         func_name = method_node.id.lexeme
+        if not self._in_type and func_name in self._environment._functions:
+            self._errors.append(f"Cannot declare two functions with the same name at line {method_node.id.line}")
         # func_type = method_node.type.lexeme
         # func_data.type = func_type
 
@@ -121,6 +123,12 @@ class EnvironmentBuilder(Visitor):
             self._build(expr)
 
     def visit_type_node(self, type_node: TypeNode):
+        if type_node.id.lexeme in self._environment._types:
+            self._errors.append(f"Cannot declare two types with the same name at line {type_node.id.line}")
+            return 
+        if type_node.id.lexeme in self._environment._protocols:
+            self._errors.append(f"Cannot declare a type with the same name that a protocol at line {type_node.id.line}")
+            return
         type_data = TypeData(self._type_index)
         self._type_index += 1
         type_name = type_node.id.lexeme
@@ -132,7 +140,7 @@ class EnvironmentBuilder(Visitor):
         for attribute, _ in type_node.attributes:
             attribute_name = attribute.lexeme
             if attribute_name in type_data.attributes:
-                raise Exception(f"Cannot declare attribute '{attribute_name}' twice")
+                self._errors.append(f"Cannot declare attribute {attribute_name} in {type_name} twice at line {attribute.line}")
             type_data.attributes[attribute_name] = VarData(i)
             type_data.attributes[attribute_name].name = attribute_name
             i += 1
@@ -140,7 +148,7 @@ class EnvironmentBuilder(Visitor):
         for method in type_node.methods:
             method_name = method.id.lexeme
             if method_name in type_data.methods:
-                raise Exception(f"Cannot declare method '{method_name}' twice")
+                self._errors.append(f"Cannot declare method {method_name} twice in type {type_name} at line {method.id.line}")
             type_data.methods[method_name] = [f'{method_name}_{type_name}']
 
         if type_node.ancestor_id != None:
@@ -168,6 +176,13 @@ class EnvironmentBuilder(Visitor):
         self._build(unary_node.expr)
 
     def visit_protocol_node(self, protocol_node: ProtocolNode):
+        if protocol_node.id.lexeme in self._environment._types:
+            self._errors.append(f"Cannot declare a protocolo with the same name that a type in line {protocol_node.id.line}")
+            return 
+        if protocol_node.id.lexeme in self._environment._protocols:
+            self._errors.append(f"Cannot declare a protocol with the same name that a protocol at line {protocol_node.id.line}")
+            return
+        
         type_data = TypeData(self._type_index)
         self._type_index += 1
         protocol_name = protocol_node.id.lexeme
@@ -178,15 +193,14 @@ class EnvironmentBuilder(Visitor):
         for signature in protocol_node.signatures:
             signature_name = signature.id.lexeme
             if signature_name in type_data.methods:
-                raise Exception(f"Cannot declare the same signature twice, there is no overloading")
+                self._errors.append(f"Cannot declare the same signature twice in a protocol, there is no overloading at line {signature.id.line}")
             type_data.methods[signature_name] = [f"{signature_name}_{protocol_name}"]
         
         if protocol_node.ancestor_node != None:
             ancestor = protocol_node.ancestor_node.lexeme
 
             if ancestor in [protocol_name]:
-                raise Exception("Can't inherit from self")
-
+                self._errors.append(f"Protocol {protocol_name} can't extend from self at line {protocol_node.id.line}")
             type_data.ancestor = ancestor
             self._type_graph.add((ancestor, protocol_name))
         
@@ -203,8 +217,9 @@ class EnvironmentBuilder(Visitor):
         self._build(attribute_node.body)
 
     def visit_signature_node(self, signature_node: SignatureNode):
-        func_data = FunctionData()
+
         func_name = signature_node.id.lexeme
+        func_data = FunctionData()
         func_type = signature_node.type.lexeme
         func_data.type = func_type
 
@@ -213,8 +228,10 @@ class EnvironmentBuilder(Visitor):
         
         func_data.name = func_name
 
-        self._environment.add_function_data(func_name, func_data)
-
+        try:
+            self._environment.add_function_data(func_name, func_data)
+        except:
+            return 
         self._var_index = 0
         self._func_name = func_name
 
@@ -225,7 +242,7 @@ class EnvironmentBuilder(Visitor):
             param_type = param[1].lexeme
 
             if param_name in func_data.params:
-                raise Exception("Params must be named differently")
+                self._errors.append(f"Params must be named differently {param_name}in {func_name} at line {signature_node.id.line}")
             
             func_data.params[param_name] = VarData(self._var_index)
             func_data.params[param_name].name = param_name
@@ -287,7 +304,8 @@ class EnvironmentBuilder(Visitor):
     
     def _handle_inheritance(self):
         if self._type_graph.is_cyclic():
-            raise Exception("Cannot have cyclic inheritance")
+            self._errors.append("Can't have cyclic inheritance")
+            return 
         
         stack : list[str] = ['Object']
         graph = self._type_graph

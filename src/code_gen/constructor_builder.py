@@ -15,10 +15,12 @@ class ConstructorBuilder(Visitor):
         self._type_graph = Graph()
         self._root_types : list[str] = []
         self._type_constructors : dict[str, TypeConstructorData] = {}
+        self._errors = []
 
     def build(self, program : ProgramNode): 
         self._build(program)
         self._handle_inheritance()
+        return self._errors
 
     def visit_program_node(self, program_node: ProgramNode):
         for decl in program_node.decls:
@@ -106,7 +108,8 @@ class ConstructorBuilder(Visitor):
     
     def _handle_inheritance(self):
         if self._type_graph.is_cyclic():
-            raise Exception("Cannot have cyclic inheritance")
+            self._errors.append("Can't have cyclic inheritance in types")
+            return
         
         stack : list[str] = [] + self._root_types
         graph = self._type_graph

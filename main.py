@@ -39,28 +39,12 @@ with open('program.hulk', 'r') as source:
     defaultHulkProgram = source.read()
 
 defaultHulkProgram = """
-protocol Hashable 
-{
-    hash() : Number; 
+protocol A{
+    hash() : Number;
+    hash() : String; 
 }
-
-protocol Equal extends Hashable {
-    equal( other : Object) : Boolean;
-}
-
-function Comparer( a : Hashable, b : Hashable ) {
-    a.hash() == b.hash();
-}
-
-type M {
-    hash() => 5;
-}
-
-type N inherits M {
-    equal(other : Object) => false;
-}
-
-print( Comparer(new N(), new N()) );
+protocol B{}
+print(4);
 """
 
 inputStr = defaultHulkProgram
@@ -112,7 +96,12 @@ def semantic_clean_analysis(inputStr : str) -> ProgramNode:
     # handle constructors and inheritance. 
     # this modifies the Ast.
     constructor_builder = ConstructorBuilder()
-    constructor_builder.build(treeAst)
+    errors += constructor_builder.build(treeAst)
+
+    if len(errors) > 0:
+        for error in errors:
+            print(colored(error, "red"))
+        sys.exit(1)
 
     # handle vector declarations.
     # this modifies the Ast.
@@ -127,6 +116,11 @@ def semantic_corrupted_analysis(inputStr : str) -> tuple[ProgramNode, Resolver]:
     errors = environment_builder.build(environment, ast)
     resolver = Resolver(environment)
     
+    if len(errors) > 0:
+        for error in errors:
+            print(colored(error, "red"))
+        sys.exit(1)
+
     # do some semantich check first.
     semantic_ch = SemanticCheck(resolver)
     errors += semantic_ch.semantic_check(ast)
