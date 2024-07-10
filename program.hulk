@@ -1,13 +1,13 @@
 type Vector
 {
-    head = new Node(null);
-    tail = new Node(null);
+    head : Node11235 = null;
+    tail : Node11235 = null;
     count = 0;
     index = 0;
     currentValue : Object = null;
     length() : Number => self.count;
 
-    append(value : Object) : Object => let node = new Node(value) in
+    append(value : Object) : Object => let node = new Node11235(value) in
     {
         if(self.count == 0)
         {
@@ -25,7 +25,7 @@ type Vector
         node;
     };
 
-    getNodeAt(index : Number) : Node 
+    getNodeAt(index : Number) : Node11235 
     {
         index := floor(index);
 
@@ -33,11 +33,11 @@ type Vector
         {
             # error("Error: Index was outside of the bounds of the vector");
             print("Error: Index was outside of the bounds of the vector");
-            new Node(null);   
+            new Node11235(null);   
         }
         else
         {
-            let i = -1, current = new Node(null) in 
+            let i = -1, current = new Node11235(null) in 
                 while(i < index)
                 {
                     if (i < 0)
@@ -75,17 +75,17 @@ type Vector
     current() : Object => self.currentValue;
 }
 
-type Node(value : Object) 
+type Node11235(value : Object) 
 {
     value = value;
-    previous : Node = null;
-    next : Node = null;
+    previous : Node11235 = null;
+    next : Node11235 = null;
     getValue() : Object => self.value;
     setValue(value : Object) : Object => self.value := value; 
-    getNext() : Node => self.next;
-    getPrevious() : Node => self.previous;
-    setNext(node : Node) : Node => self.next := node;
-    setPrevious(node : Node) : Node => self.previous := node;
+    getNext() : Node11235 => self.next;
+    getPrevious() : Node11235 => self.previous;
+    setNext(node : Node11235) : Node11235 => self.next := node;
+    setPrevious(node : Node11235) : Node11235 => self.previous := node;
 }
 
 function floor(n : Number) : Number => let i = 0 in 
@@ -98,3 +98,35 @@ function floor(n : Number) : Number => let i = 0 in
     else
         i;
 };
+
+
+type Range(st:Number, ed:Number, offset : Number) {
+    st = st;
+    ed = ed;
+    current = st - offset;
+    offset = offset;
+    next(): Boolean => (self.current := self.current + self.offset) < self.ed;
+    current(): Number => self.current;
+}
+
+function range(s: Number, e: Number): Range => new Range(s,e, 1);
+ 
+
+function sin(x: Number): Number =>
+    let result = 0 in {
+        for (i in range(1, 10)) 
+        {
+            let f = 1 in 
+            { 
+                for (j in range(1, 2 * i + 1)) {
+                    f:= f * (j + 1) ;
+                };
+                print(f);
+ 
+                let term = (-1)^i * x^(2*i + 1) / f in {
+                    result := result + term;
+                };
+            };
+        };
+        result;
+    };

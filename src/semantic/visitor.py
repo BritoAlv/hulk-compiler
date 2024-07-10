@@ -1,4 +1,4 @@
-from sqlalchemy import false
+from common.ErrorLogger import Error
 from common.ErrorLogger.ErrorLogger import ErrorLogger
 from common.ast_nodes.expressions import *
 from common.ast_nodes.statements import *
@@ -152,7 +152,7 @@ class Context():
     def get(self, name):
         return self.context_lower.get(name)     
     
-    def set(self, name, type_new,value):
+    def set(self, name, type_new = None, value = None):
         self.context_lower.dict[name] = ComputedValue(type_new, value)
 
     def define(self, var, type = None, value = None) -> bool:
@@ -223,6 +223,76 @@ class Context():
 #     def create_child_context(self):
 #         return Context(self)
 
+
+
+class FunctionCollectorVisitor(Visitor):
+    def __init__(self, context : Context):
+        self.context = context
+        self.error_logger = []
+
+    def visit_program_node(self, program_node : ProgramNode):
+        j = 1
+        for i in program_node.decls:
+            if j < len(program_node.decls):
+                i.accept(self)
+            j+=1
+
+    def visit_attribute_node(self, attribute_node : AttributeNode):
+        pass
+    def visit_method_node(self, method_node : MethodNode):
+        id = method_node.id.lexeme
+        args = method_node.params
+        ret = method_node.type.lexeme if method_node.type != None else "Object"
+
+        if (self.context.is_defined_func(id, args)) == None:
+            self.context.define_func(id, ret, args)
+            return
+        self.error_logger.append(Error(f"function {id} already exist", {method_node.id.line}, {method_node.id.offsetLine}))
+
+    def visit_type_node(self, type_node : TypeNode):
+        pass
+    def visit_signature_node(self, signature_node : SignatureNode):
+        pass
+    def visit_protocol_node(self, protocol_node : ProtocolNode):
+        pass
+    def visit_let_node(self, let_node : LetNode):
+        pass
+    def visit_while_node(self, while_node : WhileNode):
+        pass
+    def visit_for_node(self, for_node : ForNode):
+        pass
+    def visit_if_node(self, if_node : IfNode):
+        pass
+    def visit_explicit_vector_node(self, explicit_vector_node : ExplicitVectorNode):
+        pass
+    def visit_implicit_vector_node(self, implicit_vector_node : ImplicitVectorNode):
+        pass
+    def visit_destructor_node(self, destructor_node : DestructorNode):
+        pass
+    def visit_block_node(self, block_node : BlockNode):
+        pass
+    def visit_call_node(self, call_node : CallNode):
+        pass
+    def visit_get_node(self, get_node : GetNode):
+        pass
+    def visit_set_node(self, set_node : SetNode):
+        pass
+    def visit_vector_set_node(self, vector_set_node : VectorSetNode):
+        pass
+    def visit_vector_get_node(self, vector_get_node : VectorGetNode):
+        pass
+    def visit_new_node(self, new_node : NewNode):
+        pass
+    def visit_binary_node(self, binary_node : BinaryNode):
+        pass
+    def visit_unary_node(self, unary_node : UnaryNode):
+        pass
+    def visit_literal_node(self, literal_node : LiteralNode):
+        pass
+
+
+
+
 class VariableDefinedVisitor(Visitor):
     def __init__(self, context):
         self.context: Context = context
@@ -240,15 +310,18 @@ class VariableDefinedVisitor(Visitor):
             id = 'self.' + id
         if self.context.is_defined_local(id) == False: # variable no declarada antes
             self.context.define(id)
-            body = attribute_node.body.accept(self)
             if self.is_instanciated_type_attr == True:
+                self.is_instanciated_type_attr = False
+                attribute_node.body.accept(self)
                 return ComputedValue(None, id)
+            attribute_node.body.accept(self)
             return
         else:   # pq si estoy en un let puede ya estar definida y se puede sobrescribir
             if len(self.queue_call) > 0 and (self.queue_call[len(self.queue_call) - 1]) == "let":
-                body = attribute_node.body.accept(self)
+                attribute_node.body.accept(self)
+                self.context.set(id)
             else:
-                self.error_logger.add(f"attribute {id} already defined")
+                self.error_logger.append(Error("attribute {id} already defined", {attribute_node.id.line}, {attribute_node.id.offsetLine}))
         
             
     def visit_method_node(self, method_node : MethodNode):
@@ -256,19 +329,12 @@ class VariableDefinedVisitor(Visitor):
         attr = []
         if id == "main":
             return method_node.body.accept(self)
-
-        args = method_node.params
-
-        if self.actual_type == None:
-            if (self.context.is_defined_func(id, args)) != None:
-                self.error_logger.add(f"function already exist at {method_node.id.line}, {method_node.id.offsetLine}")
-            else:
-                self.context.define_func(id, "Object", [])
+ 
         self.context.create_child_context()
         for (i, j) in method_node.params:
             d = self.context.is_defined(i.lexeme)
             if d != False:
-                self.error_logger.add(f"param of function already exist at {method_node.id.line}, {method_node.id.offsetLine}" )
+                self.error_logger.append(Error(f"param of function already exist", {method_node.id.line}, {method_node.id.offsetLine}))
             else:
                 self.context.define(i.lexeme)
         method_node.body.accept(self)            
@@ -279,7 +345,7 @@ class VariableDefinedVisitor(Visitor):
         last_type = self.actual_type
         self.actual_type = type_node.id.lexeme
         self.context.create_child_context()
-        self.context.define("self")
+        self.context.define("self", "self")
         self.context.define_func("base", "base", []) # base es un llamado de funcion
 
         for i in type_node.methods:
@@ -295,7 +361,8 @@ class VariableDefinedVisitor(Visitor):
                 self.is_instanciated_type_attr = False
 
                 for j in attr:
-                    self.context.define(j.value, j.type)
+                    if j != None:
+                        self.context.define(j.value, j.type)
 
                 for j in i.params:
                     self.context.remove_define(j[0].lexeme)
@@ -309,7 +376,7 @@ class VariableDefinedVisitor(Visitor):
             if dict.get(i.lexeme) == None:
                 dict[i.lexeme] = True
             else:
-                self.error_logger.add(f"param already exist in signature at {signature_node.id.line}, {signature_node.id.offsetLine}")
+                self.error_logger.append(Error(f"param already exist in signature ", {signature_node.id.line}, {signature_node.id.offsetLine}))
 
     def visit_protocol_node(self, protocol_node : ProtocolNode):
         for i in protocol_node.signatures:
@@ -317,8 +384,10 @@ class VariableDefinedVisitor(Visitor):
             
     def visit_let_node(self, let_node : LetNode):
         self.context.create_child_context()
+        self.queue_call.append("let")
         for i in let_node.assignments:
             i.accept(self)
+        self.queue_call.pop()
         let_node.body.accept(self)             
         self.context.remove_child_context()
 
@@ -356,14 +425,20 @@ class VariableDefinedVisitor(Visitor):
         if self.context.is_defined_local(implicit_vector_node.target.lexeme) == False:
             self.context.define(implicit_vector_node.target.lexeme)
         else:
-            self.error_logger.add(f"variable not defined at {implicit_vector_node.target.line}, {implicit_vector_node.target.offsetLine}")
+            self.error_logger.append(Error(f"variable {implicit_vector_node.target.lexeme} not defined", {implicit_vector_node.target.line}, {implicit_vector_node.target.offsetLine}))
         implicit_vector_node.iterable.accept(self)
         implicit_vector_node.result.accept(self)
         self.context.remove_child_context()
 
     def visit_destructor_node(self, destructor_node : DestructorNode):
         if self.context.is_defined(destructor_node.id.lexeme) == False:
-            self.error_logger.add(f"variable not defined at {destructor_node.id.line}, {destructor_node.id.offsetLine}") 
+            self.error_logger.append(Error(f"variable {destructor_node.id.lexeme} not defined ",{destructor_node.id.line}, {destructor_node.id.offsetLine}))
+        
+        id = destructor_node.id.lexeme
+        type = self.context.get(id).type
+        if id == "self" and  type == "self":
+            self.error_logger.append(Error(f"self not cant use in a destructor_node", {destructor_node.id.line}, {destructor_node.id.offsetLine}))
+            return
         destructor_node.expr.accept(self)
         
 
@@ -419,6 +494,23 @@ class VariableDefinedVisitor(Visitor):
         match literal_node.id.type: 
             case "id":
                 defined = self.context.is_defined(id)
+
+                if id == "self" and defined:
+                    if self.context.get("self").type == "self":
+                        if (len(self.queue_call) == 2) and self.queue_call[0] == 'get' and self.queue_call[1] == 'get':
+                            self.error_logger.append(Error(f"trying to get a attribute private", {literal_node.id.line}, {literal_node.id.offsetLine}))
+                            
+                        if len(self.queue_call) > 2:
+                            mk = self.queue_call[0] 
+                            for i in range(1, len(self.queue_call) - 2):
+                                ele = self.queue_call[i]
+                                if ele != "get" and ele != "call":
+                                    break
+                                if mk != ele:
+                                    mk = ele
+                                else:
+                                    self.error_logger.append(Error(f"not correct use of callist", {literal_node.id.line}, {literal_node.id.offsetLine}))
+                    return
                 if defined != False and len(self.queue_call) > 0 and (self.queue_call[len(self.queue_call) - 1]) == "get":
                     var = self.context.get(id)
                     return ComputedValue(var.type, var.value)
@@ -426,13 +518,12 @@ class VariableDefinedVisitor(Visitor):
                     if self.context.is_defined_func_whithout_params(id) == True:
                         return ComputedValue(None, id)
                     else:
-                        self.error_logger.add(f"function {id} not defined at {literal_node.id.line}, {literal_node.id.offsetLine}")
+                        self.error_logger.append(Error(f"function {id} not defined", {literal_node.id.line}, {literal_node.id.offsetLine}))
                         return
 
                 if defined != False:
                     var = self.context.get(id)
                 else:
-                    self.error_logger.add("variable no definida " + id)
+                   self.error_logger.append(Error(f"varialbe {id} not defined", {literal_node.id.line}, {literal_node.id.offsetLine}))
                 return ComputedValue(None)
         return ComputedValue("Object", None)
-

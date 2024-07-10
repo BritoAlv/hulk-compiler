@@ -86,19 +86,25 @@ class TreePrinter(Visitor):
         return self.current
         
     def visit_signature_node(self, signature_node : SignatureNode):
-        self.add_word("Signature Node " + signature_node.id.lexeme + " of type " + signature_node.type.lexeme)
-        self.add_word("Params:")
+        self.add_word("Signature " + signature_node.id.lexeme + " of type " + signature_node.type.lexeme)
         with IndentManager(self):
-            for param in signature_node.params:
-                self.add_word(param[0].lexeme + " of type " + param[1].lexeme)
+            self.add_word("Params:")
+            with IndentManager(self):
+                for param in signature_node.params:
+                    self.add_word(param[0].lexeme + " of type " + param[1].lexeme)
         return self.current
     
     def visit_protocol_node(self, protocol_node : ProtocolNode):
-        self.add_word("Protocol Node")
         opt_type = ""
         if protocol_node.ancestor_node != None:
             opt_type = " inheriting: " + protocol_node.ancestor_node.lexeme
-        self.add_word("Protocol Node " + protocol_node.id.lexeme + opt_type)
+        self.add_word("Protocol " + protocol_node.id.lexeme + opt_type)
+        with IndentManager(self):
+            self.add_word("Signatures")
+            with IndentManager(self):
+                for signature in protocol_node.signatures:
+                    signature.accept(self)
+
         return self.current
 
     def visit_let_node(self, let_node : LetNode):

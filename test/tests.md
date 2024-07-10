@@ -89,6 +89,43 @@ print(fibonacci(40));
 ##
 
 ##
+protocol Hashable{
+    hash() : Number;
+}
+
+protocol Equatable extends Hashable {
+    equals(other : Object) : Boolean;
+}
+
+type B {
+    hash() => 4;
+}
+
+type C (id : String) inherits B {
+    id = id;
+    getId() => self.id;
+    equals( other : Object ) {
+        if (!(other is C))
+        {
+            false;
+        } 
+        else
+        {
+            true;
+        };
+    }
+}
+let x : Equatable = new C("Alvaro") in 
+{
+    print(
+        x.equals(
+            new C("Alvaro")
+        )
+    );
+};
+##
+
+##
 function fib(n : number) : number => if (n == 0 | n == 1) 1 else fib(n-1) + fib(n-2);
 
 print(fib(6));

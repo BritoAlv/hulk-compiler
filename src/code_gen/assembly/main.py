@@ -12,7 +12,6 @@ from common.ast_nodes.statements import ProgramNode
 from common.parse_nodes.parse_tree import ParseTree
 from common.printer import TreePrinter
 from common.token_class import Token
-from common.ErrorLogger import Error
 from lexing.lexer.main import *
 from parsing.parser.parser import Parser
 from semantic.ast_modifier import VectorModifier
@@ -20,7 +19,6 @@ from semantic.tipos import SemanticAnalysis
 import re
 import pexpect
 
-from semantic.type_any import TypeAny
 from semantic.type_deducer import TypeDeducer
 from semantic.type_picker import TypePicker
 from semantic.semantic_checker import SemanticCheck
@@ -37,11 +35,11 @@ parser.add_argument('-r', '--run', action='store_true', help='Run the compiled a
 with open('program.hulk', 'r') as source:
     defaultHulkProgram = source.read()
 
-defaultHulkProgram += """
-type C{
-    a = self.a;
-}
-4;
+defaultHulkProgram +="""
+for(x in [1,2,3])
+{
+    print(x);
+};
 """
 
 inputStr = defaultHulkProgram
@@ -57,7 +55,7 @@ def lex(inputStr : str, show = False) -> list[Token]:
         print("\n")
     return tokens
 
-def parse(inputStr : str, show = False) -> Parser:
+def parse(inputStr : str, show = False) -> ParseTree:
     tokens = lex(inputStr)
     parser = Parser()
     parse_tree = parser.parse(tokens, inputStr)
@@ -81,24 +79,18 @@ def ast(inputStr : str, show = False) -> ProgramNode:
 
 def semantic_clean_analysis(inputStr : str) -> ProgramNode:
     treeAst = ast(inputStr)
-    #sem_an = SemanticAnalysis()
-    errors : list[Error] = []     
-    #errors += sem_an.run(treeAst)
+    sem_an = SemanticAnalysis()
+    """     
+    errors += sem_an.run(treeAst)
     if len(errors) > 0:
-        for error in errors:
-            error.show(inputStr)
+        print(errors)
         sys.exit(1)
-    
+    """
 
     # handle constructors and inheritance. 
     # this modifies the Ast.
     constructor_builder = ConstructorBuilder()
-    errors += constructor_builder.build(treeAst)
-
-    if len(errors) > 0:
-        for error in errors:
-            error.show(inputStr)
-        sys.exit(1)
+    constructor_builder.build(treeAst)
 
     # handle vector declarations.
     # this modifies the Ast.
@@ -112,19 +104,13 @@ def semantic_corrupted_analysis(inputStr : str) -> tuple[ProgramNode, Resolver]:
     environment_builder = EnvironmentBuilder()
     errors = environment_builder.build(environment, ast)
     resolver = Resolver(environment)
-    
-    if len(errors) > 0:
-        for error in errors:
-            error.show(inputStr)
-        sys.exit(1)
 
     # do some semantich check first.
     semantic_ch = SemanticCheck(resolver)
     errors += semantic_ch.semantic_check(ast)
 
     if len(errors) > 0:
-        for error in errors:
-            error.show(inputStr)
+        print(errors)
         sys.exit(1)
 
     # store in the context all annotated types by the user.
@@ -132,8 +118,7 @@ def semantic_corrupted_analysis(inputStr : str) -> tuple[ProgramNode, Resolver]:
     errors += type_picker.pick_types(ast)
 
     if len(errors) > 0:
-        for error in errors:
-            error.show(inputStr)
+        print(errors)
         sys.exit(1)
 
     # deduce types for non-annotated types by the user.
@@ -141,20 +126,9 @@ def semantic_corrupted_analysis(inputStr : str) -> tuple[ProgramNode, Resolver]:
     errors += type_deducer.check_types(ast)
 
     if len(errors) > 0:
-        for error in errors:
-            error.show(inputStr)
+        print(errors)
         sys.exit(1)
-
-    # check that all symbols are types before sending them to code generation.
-
-    type_any = TypeAny(resolver)
-    errors += type_any.check_any(ast)
-
-    if len(errors) > 0:
-        for error in errors:
-            error.show(inputStr)
-        sys.exit(1)
-    ast = type_any._program
+        
     return (ast, resolver)
 
 def codeGen(inputStr : str, show = False) -> str:
@@ -175,7 +149,7 @@ def run(inputStr : str):
     file1_name = '.bin/main.asm'
     file2_name = '.bin/std.asm'
     file3_name = '.bin/stack.asm'
-    # file4_name = '.bin/vector.asm'
+    file4_name = '.bin/vector.asm'
 
     try:
         mkdir('.bin/')
@@ -190,9 +164,9 @@ def run(inputStr : str):
         with open(file3_name, 'w') as target:
             target.write(source.read())
     
-    # with open('src/code_gen/assembly/vector.asm', 'r') as source:
-    #     with open(file4_name, 'w') as target:
-    #         target.write(source.read())
+    with open('src/code_gen/assembly/vector.asm', 'r') as source:
+        with open(file4_name, 'w') as target:
+            target.write(source.read())
 
     with open(file1_name, 'w') as file:
         file.write(assembly)
@@ -223,9 +197,9 @@ def run(inputStr : str):
         spim.sendline(f'load "{file3_name}"')
         spim.expect_exact('(spim) ')
 
-        # # Load the third file
-        # spim.sendline(f'load "{file4_name}"')
-        # spim.expect_exact('(spim) ')
+        # Load the third file
+        spim.sendline(f'load "{file4_name}"')
+        spim.expect_exact('(spim) ')
 
         # Run the SPIM process and capture its output
         spim.sendline('run')

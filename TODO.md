@@ -1,29 +1,13 @@
 ## Semantic Requirements:
-- Length of args in calls must match length of params in methods/functions definition
-- Expression after **in** in for expressions must be of type **Iterable**
-- Resolve types of functions and arguments
-- After is, as should follow type names.
-
+- attribute re-declaration is broking.
+- errors are wrong due to corrupt ast.
+- vector get node do no has handle token to report errors.
+- for to while ruins error report.
+- explicit vector corruption ruins semantic check.
+- cuando hay cyclic inheritance decir cuales son.
+- fix new in grammar.
 ## CodeGen Requirements:
-- Print floats as floats
-- Compare strings (equality) char by char
-- Handle method dispatch when object
-- Is returns true on ancestors
-- Remove type inference during CodeGen
-
-## Lexer and Parser Error Handling:
-- how get lexer tell errors.
-- lexer printing errors have bugs.
-
-# Testing:
-
-## Exceptions should be logged and not raised.
-
-#
-- infer parameter types.
-- for each protocol know which type implements it.
-- infer type of functions.
-- keep track of constructors. semantic check for constructors. type of params in the constructors.
-- covariance and contravariance.
-
-fix call node, if, while, add at least one token to print semantic error.
+- Compare strings (equality) char by char.
+- RunTime Error for overflow.
+- Implement Random function.
+- Add to the environment the program.hulk

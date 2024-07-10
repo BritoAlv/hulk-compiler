@@ -56,6 +56,10 @@ class Generator(Visitor):
             static_data_code += f'str{i}: .asciiz {str_literal} \n' 
             i += 1
 
+        for type in self._resolver.resolve_types():
+            if type not in ['Boolean', 'Number', 'String', 'Object']:
+                static_data_code += f'type_{type}: .asciiz "Instance of type {type}" \n'
+
         i = 0
         for number_literal in self._literal_numbers:
             static_data_code += f'number{i}: .float {number_literal} \n' 
@@ -194,8 +198,26 @@ class Generator(Visitor):
     li $t1 {NUMBER_TYPE_ID}
     beq $t0 $t1 go_print_number_{self._print_index}
     li $t1 {STR_TYPE_ID}
-    beq $t0 $t1 go_print_str_{self._print_index}
-    j go_print_pointer_{self._print_index}
+    beq $t0 $t1 go_print_str_{self._print_index}'''
+                
+                types_snippet = ''
+                for type in self._resolver.resolve_types():
+                    if type not in ['Boolean', 'String', 'Number', 'Object']:
+                        type_data = self._resolver.resolve_type_data(type)
+                        type_id = type_data.id
+                        code += f'''
+    li $t1 {type_id}
+    beq $t0 $t1 go_print__{type}_{self._print_index}
+'''
+                        types_snippet += f'''
+    go_print__{type}_{self._print_index}:
+    la $a0 type_{type}
+    jal print_pointer
+    j go_print_end_{self._print_index}
+'''
+    
+                code += f'''
+    j error
 
     go_print_bool_{self._print_index}:
     jal print_bool
@@ -207,11 +229,11 @@ class Generator(Visitor):
 
     go_print_str_{self._print_index}:
     jal print_str
-    j go_print_end_{self._print_index}
+    j go_print_end_{self._print_index}'''
+                
+                code += types_snippet
 
-    go_print_pointer_{self._print_index}:
-    jal print_pointer
-    j go_print_end_{self._print_index}
+                code += f'''
     go_print_end_{self._print_index}:
     move $a0 $v0
     jal stack_push
@@ -398,17 +420,33 @@ class Generator(Visitor):
 
         if binary_node.op.type == 'isOp' and isinstance(binary_node.right, LiteralNode) and binary_node.right.id.type == 'id':
             type_name = binary_node.right.id.lexeme
-            type_id = self._resolver.resolve_type_data(type_name).id
+            type_data = self._resolver.resolve_type_data(type_name)
+            type_id = type_data.id
             
             code = left_result.code
+
             code += f'''
     jal stack_pop
     lw $t0 ($v0) # Check if null
     beq $t0 -1 null_error
+    li $s2 0
     lw $s0 ($v0)
     li $s1 {type_id}
-    seq $s0 $s0 $s1
-    move $a0 $s0
+    seq $s1 $s0 $s1
+    add $s2 $s2 $s1
+'''
+
+            for descendant in type_data.descendants:
+                descendant_type_data = self._resolver.resolve_type_data(descendant)
+                descendant_type_id = descendant_type_data.id
+                code += f'''
+    li $s1 {descendant_type_id}
+    seq $s1 $s0 $s1
+    add $s2 $s2 $s1
+'''
+
+            code += f'''
+    move $a0 $s2
     jal build_bool
     move $a0 $v0
     jal stack_push
@@ -416,17 +454,40 @@ class Generator(Visitor):
             return GenerationResult(code, 'Boolean')
         elif binary_node.op.type == 'asOp' and isinstance(binary_node.right, LiteralNode) and binary_node.right.id.type == 'id':
             type_name = binary_node.right.id.lexeme
+            type_data = self._resolver.resolve_type_data(type_name)
+            type_id = type_data.id
+            
+            code = left_result.code
 
-            try:
-                self._resolver.resolve_type_data(type_name)            
-            except:
-                raise Exception(f'Type {type_name} is not defined')
+            code += f'''
+    jal stack_pop
+    lw $t0 ($v0) # Check if null
+    beq $t0 -1 null_error
+    li $s2 0
+    lw $s0 ($v0)
+    li $s1 {type_id}
+    seq $s1 $s0 $s1
+    add $s2 $s2 $s1
+'''
 
-            return GenerationResult(left_result.code, type_name)
+            for descendant in type_data.descendants:
+                descendant_type_data = self._resolver.resolve_type_data(descendant)
+                descendant_type_id = descendant_type_data.id
+                code += f'''
+    li $s1 {descendant_type_id}
+    seq $s1 $s0 $s1
+    add $s2 $s2 $s1
+'''
+                
+            code += '''
+    beq $s2 0 cast_error
+    move $a0 $v0
+    jal stack_push
+'''
+
+            return GenerationResult(code, type_name)
 
         right_result = self._generate(binary_node.right)
-        left_type = left_result.type
-        right_type = right_result.type
 
         null_check_code = '''
     lw $t0 ($v0) # Check if null
@@ -759,7 +820,7 @@ class Generator(Visitor):
         return GenerationResult(code)
 
     def visit_signature_node(self, signature_node: SignatureNode):
-        pass
+        pass 
     
     def visit_if_node(self, if_node: IfNode):
         if_index = self._if_index
@@ -821,8 +882,7 @@ class Generator(Visitor):
         while_index = self._while_index
         self._while_index += 1
         code = ''
-        condition_result = self._generate(while_node.condition)
-        code += condition_result.code
+        code += self._generate(while_node.condition).code
         code += f'''
     jal stack_pop
     lw $t0 4($v0)
@@ -831,7 +891,7 @@ class Generator(Visitor):
     j while_body_{while_index}
     while_start_{while_index}:
 '''
-        code += condition_result.code
+        code += self._generate(while_node.condition).code
         code += f'''
     jal stack_pop
     lw $t0 4($v0)

@@ -3,12 +3,11 @@ import math
 from pickletools import long4
 from re import L
 from sqlalchemy import False_
-from common.ErrorLogger.ErrorLogger import ErrorLogger
 from common.ast_nodes.expressions import *
 from common.ast_nodes.expressions import VectorGetNode
 from common.ast_nodes.statements import *
 from common.visitor import Visitor
-from semantic.visitor import VariableDefinedVisitor
+from semantic.visitor import FunctionCollectorVisitor, VariableDefinedVisitor
 
 class ComputedValue:
     def __init__(self, type, value = None) -> None:
@@ -1531,8 +1530,14 @@ class SemanticAnalysis:
 
     def runVariable(self, ast):
         context = Context()
+        context.define_func("print", "Object", [(Token("Object", "name"), Token("Object", "Object"))])
+
+        functionCollectorVisitor = FunctionCollectorVisitor(context)
+        ast.accept(functionCollectorVisitor)
+
         variableDefinedVisitor = VariableDefinedVisitor(context)
         ast.accept(variableDefinedVisitor)
+        
         return variableDefinedVisitor.error_logger.errors
 
     def run(self, ast):
