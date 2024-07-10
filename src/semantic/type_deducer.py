@@ -54,7 +54,7 @@ class TypeDeducer(Visitor):
         g = "---------------------------------------"
         print(g)
         print(f"Entering due to symbol {data.name}")
-        if (len(self._type_determiner[-1]) > 0 and self._type_determiner[-1][-1] != "Any"):
+        if (len(self._type_determiner[-1]) > 0 and self._type_determiner[-1][-1] != "Any" and self._type_determiner[-1][-1] != "null"):
             if data.type == "Any":
                 data.type = self._type_determiner[-1][-1]
                 print(colored(f"Deduced type for symbol {data.name} from Any to {self._type_determiner[-1][-1]}", "blue"))
@@ -63,7 +63,7 @@ class TypeDeducer(Visitor):
             else:
                 obtained_type = self._resolver.resolve_lowest_common_ancestor(data.type, self._type_determiner[-1][-1])
                 # if there is some type there already then it should be good enough.
-                if obtained_type != data.type:
+                if obtained_type != self._type_determiner[-1][-1]:
                     print(colored(f"Symbol {data.name} obtained type : {self._type_determiner[-1][-1]} does not conforms with its actual type :  {data.type}", "red" ))
                     print(g)
                     raise Exception(self._type_determiner[-1][-1], data.type)
@@ -74,7 +74,10 @@ class TypeDeducer(Visitor):
             print(f"There is nothing to do so continue")
             print(g)
         return data.type
-        
+    
+    def inherits(self, type : str, data : VarData | FunctionData ) -> bool:
+        return type in self._resolver.resolve_type_data(data.type).descendants or type == data.type
+            
     def visit_program_node(self, program_node : ProgramNode): 
         for decl in program_node.decls:
             self._check_types(decl)
@@ -93,11 +96,14 @@ class TypeDeducer(Visitor):
         elif inferred_type == "null":
             pass
         else:
-            
             try:
-                self.push_type_determiner(inferred_type)
-                self.update_type(attr_data)
-                self.pop_type_determiner()
+                if attr_data.type == "Any":
+                    self.push_type_determiner(inferred_type)
+                    self.update_type(attr_data)
+                    self.pop_type_determiner()
+                else:
+                    if not self.inherits(inferred_type, attr_data):
+                        self.log_error(f"Attribute {attr_name} type inferred {inferred_type} does not conform with actual type {attr_data.type} at line {attribute_node.id.line}")
             except Exception as e:
                 self.log_error(f"Attribute {attr_name} type given {e.args[1]} does not  conform with {e.args[0]} at line {attribute_node.id.line}")
                 self.pop_type_determiner()
@@ -128,9 +134,13 @@ class TypeDeducer(Visitor):
         self._method_name = None
 
         try:
-            self.push_type_determiner(inferred_type)
-            self.update_type(func_data)
-            self.pop_type_determiner()
+            if func_data.type == "Any":
+                self.push_type_determiner(inferred_type)
+                self.update_type(func_data)
+                self.pop_type_determiner()
+            else:
+                if not self.inherits(inferred_type, func_data):
+                    self.log_error(f"Function {func_name} type inferred {inferred_type} does not conform with actual type {func_data.type} at line {method_node.id.line}")
         except Exception as e:
             self.log_error(f"Method {func_name} type given {e.args[1]} does not  conform with {e.args[0]} at line {method_node.id.line}")
             self.pop_type_determiner()
@@ -175,9 +185,13 @@ class TypeDeducer(Visitor):
                 continue
 
             try:
-                self.push_type_determiner(inferred_type)
-                self.update_type(var_data)
-                self.pop_type_determiner()
+                if var_data.type == "Any":
+                    self.push_type_determiner(inferred_type)
+                    self.update_type(var_data)
+                    self.pop_type_determiner()
+                else:
+                    if not self.inherits(inferred_type, var_data):
+                        self.log_error(f"Variable {var_name} type inferred {inferred_type} does not conform with actual type {var_data.type} at line {assig.id.line}")
             except Exception as e:
                 self.log_error(f"Variable {var_name} type given {e.args[1]} does not  conform with {e.args[0]} at line {assig.id.line}")
                 self.pop_type_determiner()
@@ -227,9 +241,13 @@ class TypeDeducer(Visitor):
             self.log_error(f"Can't set to null a non typed variable at line {destructor_node.id.line}")
             return "Object"
         try:
-            self.push_type_determiner(inferred_type)
-            self.update_type(var_data)
-            self.pop_type_determiner()
+            if var_data.type == "Any":    
+                self.push_type_determiner(inferred_type)
+                self.update_type(var_data)
+                self.pop_type_determiner()
+            else:
+                if not self.inherits(inferred_type, var_data):
+                    self.log_error(f"Vairable {var_name} type inferred {inferred_type} does not conform with actual type {var_data.type} at line {destructor_node.id.line}")
         except:
             self.log_error(f"Infered type {inferred_type} doens't conform with {var_data.type} when using destruct at line {destructor_node.id.line}")
             self.pop_type_determiner()
@@ -261,9 +279,13 @@ class TypeDeducer(Visitor):
             index = i
             param_var_data = fn_data.params[fn_data.params_index[index]]
             try:
-                self.push_type_determiner(inferred_type)
-                self.update_type(param_var_data)
-                self.pop_type_determiner()
+                if self._in_method and self._method_name == fn_name:
+                    self.push_type_determiner(inferred_type)
+                    self.update_type(param_var_data)
+                    self.pop_type_determiner()
+                else:
+                    if not self.inherits(inferred_type, param_var_data):
+                        self.log_error(f"Argument {i+1} inferred type {inferred_type} , in call to {fn_name} at line {call_node.callee.id.line},  doesn't conform with {param_var_data.type}")
             except:
                 self.log_error(f"Argument {i+1} inferred type {inferred_type} , in call to {fn_name} at line {call_node.callee.id.line},  doesn't conform with {param_var_data.type}")
                 self.pop_type_determiner()
@@ -284,9 +306,13 @@ class TypeDeducer(Visitor):
             index = i + 1 
             param_var_data = fn_data.params[fn_data.params_index[index]]
             try:
-                self.push_type_determiner(inferred_type)
-                self.update_type(param_var_data)
-                self.pop_type_determiner()
+                if self._in_method and self._method_name == fn_name:
+                    self.push_type_determiner(inferred_type)
+                    self.update_type(param_var_data)
+                    self.pop_type_determiner()
+                else:
+                    if not self.inherits(inferred_type, param_var_data):
+                        self.log_error(f"Argument {i+1} inferred type {inferred_type} , in call to {fn_name} of type {method_type_owner} at line {call_node.callee.id.line},  doesn't conform with {param_var_data.type}")
             except:
                 self.log_error(f"Argument {i+1} inferred type {inferred_type} , in call to {fn_name} of type {method_type_owner} at line {call_node.callee.id.line},  doesn't conform with {param_var_data.type}")
                 self.pop_type_determiner()
@@ -403,7 +429,9 @@ class TypeDeducer(Visitor):
         return type_data.attributes[attr_name].type
     
     def visit_set_node(self, set_node : SetNode):
+        self._type_determiner.append([])
         left_inferred_type = self._check_types(set_node.left)
+        self._type_determiner.pop()
         if not self._in_type or left_inferred_type != self._type_name:
             self.log_error(f"Attributes are private, at line {set_node.id.line}")
             self._check_types(set_node.value)
@@ -426,7 +454,7 @@ class TypeDeducer(Visitor):
             self.update_type(attr_data)
             self.pop_type_determiner()
         except:
-            self.log_error(f"Setting new value with type {value_type} for attribute {attr_name} doesn't conform,  at line {set_node.id.line}")
+            self.log_error(f"Updating value with type {value_type} for attribute {attr_name} doesn't conform with its type {attr_data.type},  at line {set_node.id.line}")
             self.pop_type_determiner()
             return "Object"
         return attr_data.type
@@ -481,12 +509,9 @@ class TypeDeducer(Visitor):
         if is_type not in self._resolver.resolve_types():
             self.log_error(f'Right operand of is : {is_type} must be an existing type at line {binary_node.op.line}')
         else:
-            self.match_type_determiner("", binary_node.right.id.lexeme)
+            self._type_determiner.append([])
             left_inferred_type = self._check_types(binary_node.left)
-            self.pop_type_determiner()
-            type_data = self._resolver.resolve_type_data(left_inferred_type)
-            if is_type not in type_data.descendants:
-                self.log_error(f"Left operand type {left_inferred_type}  of is must be a descendant of right operand type {is_type} at line {binary_node.op.line}")
+            self._type_determiner.pop()
         return 'Boolean'
 
     def visit_as(self, binary_node : BinaryNode):
@@ -494,19 +519,18 @@ class TypeDeducer(Visitor):
         if as_type not in self._resolver.resolve_types():
             self.log_error(f'Right operand of as not found {as_type} at line {binary_node.right.id.line}')
         else:
-            self.match_type_determiner("", as_type)
+            self._type_determiner.append([])
             left_inferred_type = self._check_types(binary_node.left)
-            type_data = self._resolver.resolve_type_data(left_inferred_type)
-            self.pop_type_determiner()
-            if as_type not in type_data.descendants:
-                self.log_error(f'Left operand type {left_inferred_type} must be an ancestor of right operand type {as_type} at line {binary_node.op.line}')
-
+            self._type_determiner.pop()
         return as_type
 
     def visit_at(self, binary_node :  BinaryNode):
-
+        self._type_determiner.append([])
         left_infered_type = self._check_types(binary_node.left)
+        self._type_determiner.pop()
+        self._type_determiner.append([])
         right_inferred_type = self._check_types(binary_node.right)
+        self._type_determiner.pop()
         if left_infered_type not in ["String", "Number"]:
             self.log_error(f"Can only use @ operator with String and Number at line {binary_node.op.line}, left = {left_infered_type}, right = {right_inferred_type}")
         if right_inferred_type not in ["String", "Number"]:
@@ -547,7 +571,7 @@ class TypeDeducer(Visitor):
         match binary_node.op.type:
             case 'plus'| 'minus'| 'star'| 'div'| 'powerOp'| 'modOp'| 'greater'| 'less'| 'greaterEq'| 'lessEq':
                 if left_inferred_type != 'Number' or right_inferred_type != 'Number':
-                    self.log_error(f"Cannot apply binary operation to non-numerical types : {left_inferred_type} {right_inferred_type} at line {binary_node.op.line}")
+                    self.log_error(f"Cannot apply binary arithmetic operation to non-numerical types : left type is {left_inferred_type}, right type is  {right_inferred_type} at line {binary_node.op.line}")
 
                 # this allows comparing any two types of objects.
                 if binary_node.op.type in ['greater', 'less', 'greaterEq', 'lessEq']:
@@ -556,7 +580,7 @@ class TypeDeducer(Visitor):
                 return 'Number'
             case 'and' | 'or':
                 if left_inferred_type != 'Boolean' or right_inferred_type != 'Boolean':
-                    self.log_error(f"Cannot apply binary operation to non-numerical types : {left_inferred_type} {right_inferred_type} at line {binary_node.op.line}")
+                    self.log_error(f"Cannot apply binary boolean operation to non-numerical types : left type is {left_inferred_type},  right type is {right_inferred_type} at line {binary_node.op.line}")
                 return 'Boolean'
             case 'doubleEqual' | 'notEqual':
                 return 'Boolean'
@@ -587,13 +611,18 @@ class TypeDeducer(Visitor):
             case 'null':
                 return "null"
             case 'id':
-                t = self._resolver.resolve_var_data(literal_node.id.lexeme)
                 try:
-                    self.update_type(t)
-                    return t.type
-                except Exception as e:
-                    self.log_error(f"Variable {literal_node.id.lexeme} at line {literal_node.id.line} type {e.args[0]} does not conform with obtained type {e.args[1]}")
-                    return t.type
+                    t = self._resolver.resolve_var_data(literal_node.id.lexeme)
+                    try:
+                        self.update_type(t)
+                        return t.type
+                    except Exception as e:
+                        self.log_error(f"Variable {literal_node.id.lexeme} at line {literal_node.id.line} type {e.args[0]} does not conform with obtained type {e.args[1]}")
+                        return t.type
+                except:
+                    self.log_error(f"Variable {literal_node.id.lexeme} at line {
+                        literal_node.id.line} is not declared")
+                    return "Object"
 
     def _check_types(self, node : Statement) -> str:
         return node.accept(self)

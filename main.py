@@ -21,6 +21,7 @@ from semantic.tipos import SemanticAnalysis
 import re
 import pexpect
 
+from semantic.type_any import TypeAny
 from semantic.type_deducer import TypeDeducer
 from semantic.type_picker import TypePicker
 from semantic.semantic_checker import SemanticCheck
@@ -37,20 +38,21 @@ parser.add_argument('-r', '--run', action='store_true', help='Run the compiled a
 with open('program.hulk', 'r') as source:
     defaultHulkProgram = source.read()
 
-defaultHulkProgram ="""
-type A { }
+defaultHulkProgram = """
+type H {
+    m = 20;
+    hash(x : String) => self.m @ x ;
+}
 
-type B inherits A { }
+type M inherits H {
+    hash() => 20 @ base("10") @ base("30") @ base(
+      (new H()).hash(
+            (new H()).hash("10")
+        )
+      );
+}
 
-type C inherits B { }
-
-type D inherits B { }
-
-type E inherits D { }
-
-type F inherits E { }
-
-let a : A = new F() in print(a is B); 
+let x = new M() in print(x.hash());
 """
 
 inputStr = defaultHulkProgram
@@ -137,6 +139,16 @@ def semantic_corrupted_analysis(inputStr : str) -> tuple[ProgramNode, Resolver]:
     # deduce types for non-annotated types by the user.
     type_deducer = TypeDeducer(resolver)
     errors += type_deducer.check_types(ast)
+
+    if len(errors) > 0:
+        for error in errors:
+            print(colored(error, "red"))
+        sys.exit(1)
+
+    # check that all symbols are types before sending them to code generation.
+
+    type_any = TypeAny(resolver)
+    errors += type_any.check_any(ast)
 
     if len(errors) > 0:
         for error in errors:
