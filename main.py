@@ -39,20 +39,41 @@ with open('program.hulk', 'r') as source:
     defaultHulkProgram = source.read()
 
 defaultHulkProgram = """
-type H {
-    m = 20;
-    hash(x : String) => self.m @ x ;
+
+protocol Hashable{
+    hash() : Number;
 }
 
-type M inherits H {
-    hash() => 20 @ base("10") @ base("30") @ base(
-      (new H()).hash(
-            (new H()).hash("10")
+protocol Equatable extends Hashable {
+    equals(other : Object) : Boolean;
+}
+
+type B {
+    hash() => 4;
+}
+
+type C (id : String) inherits B {
+    id = id;
+    getId() => self.id;
+    equals( other : Object ) {
+        if (!(other is C))
+        {
+            false;
+        } 
+        else
+        {
+            true;
+        };
+    }
+}
+let x : Equatable = new C("Alvaro") in 
+{
+    print(
+        x.equals(
+            new C("Alvaro")
         )
-      );
-}
-
-let x = new M() in print(x.hash());
+    );
+};
 """
 
 inputStr = defaultHulkProgram
@@ -118,6 +139,7 @@ def semantic_corrupted_analysis(inputStr : str) -> tuple[ProgramNode, Resolver]:
     environment_builder = EnvironmentBuilder()
     errors = environment_builder.build(environment, ast)
     resolver = Resolver(environment)
+    
     # do some semantich check first.
     semantic_ch = SemanticCheck(resolver)
     errors += semantic_ch.semantic_check(ast)
@@ -154,7 +176,7 @@ def semantic_corrupted_analysis(inputStr : str) -> tuple[ProgramNode, Resolver]:
         for error in errors:
             print(colored(error, "red"))
         sys.exit(1)
-        
+    ast = type_any._program
     return (ast, resolver)
 
 def codeGen(inputStr : str, show = False) -> str:
