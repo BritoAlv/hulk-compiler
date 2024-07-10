@@ -34,7 +34,6 @@ class EnvironmentBuilder(Visitor):
         self._type_graph = Graph()
         self._type_graph.add_vertex("Object")
         self._errors : list[str] = []
-
         self._build(program)
 
         self._handle_inheritance()
@@ -147,7 +146,7 @@ class EnvironmentBuilder(Visitor):
         if type_node.ancestor_id != None:
             ancestor = type_node.ancestor_id.lexeme
 
-            if ancestor in ['Number', 'Boolean', 'String', 'Vector']:
+            if ancestor in ['Number', 'Boolean', 'String', 'Vector', type_name]:
                 self._errors.append(f'Cannot inherit {ancestor}')
 
             type_data.ancestor = ancestor
@@ -169,13 +168,73 @@ class EnvironmentBuilder(Visitor):
         self._build(unary_node.expr)
 
     def visit_protocol_node(self, protocol_node: ProtocolNode):
-        pass
+        type_data = TypeData(self._type_index)
+        self._type_index += 1
+        protocol_name = protocol_node.id.lexeme
+        type_data.name = protocol_name
+        self._type_name = protocol_name
+        self._in_type = True
+
+        for signature in protocol_node.signatures:
+            signature_name = signature.id.lexeme
+            if signature_name in type_data.methods:
+                raise Exception(f"Cannot declare the same signature twice, there is no overloading")
+            type_data.methods[signature_name] = [f"{signature_name}_{protocol_name}"]
+        
+        if protocol_node.ancestor_node != None:
+            ancestor = protocol_node.ancestor_node.lexeme
+
+            if ancestor in [protocol_name]:
+                raise Exception("Can't inherit from self")
+
+            type_data.ancestor = ancestor
+            self._type_graph.add((ancestor, protocol_name))
+
+        self._environment.add_type_data(protocol_name, type_data)
+        self._environment._protocols[protocol_name] = type_data
+
+        for signature in protocol_node.signatures:
+            self._build(signature)
+        
+        self._in_type = False
+        self._type_name = None
 
     def visit_attribute_node(self, attribute_node: AttributeNode):
         self._build(attribute_node.body)
 
     def visit_signature_node(self, signature_node: SignatureNode):
-        pass
+        func_data = FunctionData()
+        func_name = signature_node.id.lexeme
+        func_type = signature_node.type.lexeme
+        func_data.type = func_type
+
+        if self._in_type:
+            func_name = f'{func_name}_{self._type_name}'
+        
+        func_data.name = func_name
+
+        self._environment.add_function_data(func_name, func_data)
+
+        self._var_index = 0
+        self._func_name = func_name
+
+        self._context = func_data.context
+
+        for param in signature_node.params:
+            param_name = param[0].lexeme
+            param_type = param[1].lexeme
+
+            if param_name in func_data.params:
+                raise Exception("Params must be named differently")
+            
+            func_data.params[param_name] = VarData(self._var_index)
+            func_data.params[param_name].name = param_name
+            func_data.params[param_name].type = param_type
+            func_data.params_index[self._var_index] = param_name
+            self._var_index += 1
+
+        self._func_name = None
+        func_data.var_count = self._var_index
     
     def visit_if_node(self, if_node: IfNode):
         for if_pair in if_node.body:

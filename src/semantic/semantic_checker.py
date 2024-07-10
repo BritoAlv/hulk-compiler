@@ -114,11 +114,9 @@ class SemanticCheck(Visitor):
         self._type_name = None   
 
     def visit_signature_node(self, signature_node : SignatureNode):
-        print("Not Needed")
         pass
     
     def visit_protocol_node(self, protocol_node : ProtocolNode):
-        print("Not needed")
         pass
 
     def visit_let_node(self, let_node : LetNode):  
@@ -224,6 +222,10 @@ class SemanticCheck(Visitor):
 
     def visit_new_node(self, new_node : NewNode):
         type_name = new_node.id.lexeme
+
+        if type_name in self._resolver.resolve_protocols():
+            self.log_error(f"Cannot instantiate a protocol {type_name} at line {new_node.id.line}")
+
         if type_name not in self._resolver.resolve_types():
             self.log_error(f'Cannot instantiate a not declared type {type_name} at line {new_node.id.line}')
             return 'Object'

@@ -49,6 +49,8 @@ class Environment:
         self._types['Number'].ancestor = 'Object'
         self._types['String'].ancestor = 'Object'
 
+        self._protocols : dict [str, TypeData] = {}
+
     def get_function_data(self, function_name : str) -> FunctionData:
         if function_name not in self._functions:
             raise Exception(f"Function {function_name} is not declared")

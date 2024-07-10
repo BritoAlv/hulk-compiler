@@ -820,7 +820,7 @@ class Generator(Visitor):
         return GenerationResult(code)
 
     def visit_signature_node(self, signature_node: SignatureNode):
-        pass
+        pass 
     
     def visit_if_node(self, if_node: IfNode):
         if_index = self._if_index

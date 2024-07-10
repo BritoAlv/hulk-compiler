@@ -7,7 +7,7 @@ from common.constants import EOF
 
 import pickle
 
-MAX_LEN_REPAIR = 5
+MAX_LEN_REPAIR = 4
 CONSECUTIVE_INSERTS_MAX = 3
 MAX_NUMBER_SHIFTS = 4
 

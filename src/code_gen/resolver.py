@@ -57,6 +57,9 @@ class Resolver:
 
     def resolve_type_data(self, type_name : str) -> TypeData:
         return self._environment.get_type_data(type_name)
+
+    def resolve_protocols(self) -> dict[str, TypeData]:
+        return self._environment._protocols
     
     def resolve_lowest_common_ancestor(self, type_1 : str, type_2 : str) -> str:
         BASIC_TYPES = ['Number', 'String', 'Boolean', "Object"]
