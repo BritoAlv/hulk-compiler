@@ -84,11 +84,9 @@ class TypePicker(Visitor):
         self._type_name = None   
 
     def visit_signature_node(self, signature_node : SignatureNode):
-        print("No need")
         pass
     
     def visit_protocol_node(self, protocol_node : ProtocolNode):
-        print("No need")
         pass
 
     def visit_let_node(self, let_node : LetNode):

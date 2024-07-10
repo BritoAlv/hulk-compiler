@@ -18,6 +18,7 @@ class TypeAny(Visitor):
         self._method_name :  str | None = None
         self._type_name : str = None
         self._stack : list[GetNode] = []
+        self._program = None
 
     def check_any(self, program : ProgramNode) -> list[str]:
         self._check_any(program)
@@ -27,8 +28,14 @@ class TypeAny(Visitor):
         self._errors.append(error)
 
     def visit_program_node(self, program_node : ProgramNode):
+        new_program = ProgramNode([])
         for decl in program_node.decls:
+            if isinstance(decl, ProtocolNode):
+                continue
             self._check_any(decl)
+            new_program.decls.append(decl)
+        self._program = new_program
+        
     
     def visit_attribute_node(self, attribute_node : AttributeNode):
         attr_name = attribute_node.id.lexeme
@@ -37,6 +44,8 @@ class TypeAny(Visitor):
         attr_data = type_data.attributes[attr_name]
         if attr_data.type == "Any": 
             self.log_error(f"Attribute {attr_name} of type {type_data.name} is not typed at line {attribute_node.id.line}")
+        elif attr_data.type in self._resolver.resolve_protocols():
+            attr_data.type = "Object"
     
     def visit_method_node(self, method_node : MethodNode):
         self._in_method = True
@@ -52,14 +61,18 @@ class TypeAny(Visitor):
         
         for param, type in method_node.params:
             if func_data.params[param.lexeme].type == "Any":
-                self.log_error(f"Param {param.type} of Method {func_name} is not typed {param.line}")
+                self.log_error(f"Param {param.lexeme} of Method {func_name} is not typed {param.line}")
+            elif func_data.params[param.lexeme].type in self._resolver.resolve_protocols():
+                func_data.params[param.lexeme].type = "Object"
+                
 
         declared_type = method_node.type
         self._check_any(method_node.body)
 
         if func_data.type == "Any":
             self.log_error(f"Method {func_name} is not typed at line {method_node.id.line}")
-
+        elif func_data.type in self._resolver.resolve_protocols():
+            func_data.type = "Object"
         self._in_method = False    
         self._method_name = None
         return None
@@ -75,11 +88,9 @@ class TypeAny(Visitor):
         self._type_name = None   
 
     def visit_signature_node(self, signature_node : SignatureNode):
-        print("No need")
         pass
     
     def visit_protocol_node(self, protocol_node : ProtocolNode):
-        print("No need")
         pass
 
     def visit_let_node(self, let_node : LetNode):
@@ -92,7 +103,9 @@ class TypeAny(Visitor):
             op_type = assig.type
             self._check_any(assig.body)
             if var_data.type == "Any":
-                self.log_error(f"Variable {var_name} is not typed at line {assig.id.line}")                    
+                self.log_error(f"Variable {var_name} is not typed at line {assig.id.line}")
+            elif var_data.type in self._resolver.resolve_protocols():
+                var_data.type = "Object"                    
         self._check_any(let_node.body)
         self._resolver.next()
 
