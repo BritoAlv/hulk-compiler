@@ -62,6 +62,7 @@ class TypeDeducer(Visitor):
                 print(g)
             else:
                 obtained_type = self._resolver.resolve_lowest_common_ancestor(data.type, self._type_determiner[-1][-1])
+                # if there is some type there already then it should be good enough.
                 if obtained_type != data.type:
                     print(colored(f"Symbol {data.name} obtained type : {self._type_determiner[-1][-1]} does not conforms with its actual type :  {data.type}", "red" ))
                     print(g)
@@ -238,8 +239,12 @@ class TypeDeducer(Visitor):
 
 
     def visit_block_node(self, block_node : BlockNode):
-        for expr in block_node.exprs:
-            type = self._check_types(expr)
+        for i in range(0, len(block_node.exprs)-1):
+            self._type_determiner.append([])
+            type = self._check_types(block_node.exprs[i])
+            self._type_determiner.pop()
+        
+        type = self._check_types(block_node.exprs[-1])
         return type
     
     def _check_call_arguments_static(self, call_node : CallNode, fn_data : FunctionData):
@@ -524,7 +529,7 @@ class TypeDeducer(Visitor):
         if op == "@" or op == "@@":
             return self.visit_at(binary_node)
 
-        if op != "==":
+        if op != "==" and op != "!=":
             self.match_type_determiner(binary_node.op.lexeme, "")
             left_inferred_type = self._check_types(binary_node.left)
             self.pop_type_determiner()
