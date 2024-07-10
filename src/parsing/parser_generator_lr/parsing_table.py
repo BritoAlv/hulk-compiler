@@ -7,9 +7,9 @@ from common.constants import EOF
 
 import pickle
 
-MAX_LEN_REPAIR = 4
-CONSECUTIVE_INSERTS_MAX = 2
-MAX_NUMBER_SHIFTS = 3
+MAX_LEN_REPAIR = 5
+CONSECUTIVE_INSERTS_MAX = 3
+MAX_NUMBER_SHIFTS = 4
 
 class ParsingTable:
     def __init__(
@@ -453,14 +453,13 @@ class RecoveryItem:
             if self.tokens[i] != value.tokens[i]:
                 return False
         
-        """
+        
         if len(value.repair) != len(self.repair):
             return False
 
         for i in range(0, len(self.repair)):
             if self.repair[i] != value.repair[i]:
                 return False
-        """
         return True
 
     def rep_len(self) -> int:
