@@ -8,6 +8,7 @@ from common.ast_nodes.expressions import *
 from common.ast_nodes.expressions import VectorGetNode
 from common.ast_nodes.statements import *
 from common.visitor import Visitor
+from semantic.visitor import VariableDefinedVisitor
 
 class ComputedValue:
     def __init__(self, type, value = None) -> None:
@@ -1527,7 +1528,13 @@ class TypeCheckerVisitor(Visitor):
 class SemanticAnalysis:
     def __init__(self) -> None:
         pass
-    
+
+    def runVariable(self, ast):
+        context = Context()
+        variableDefinedVisitor = VariableDefinedVisitor(context)
+        ast.accept(variableDefinedVisitor)
+        return variableDefinedVisitor.error_logger.errors
+
     def run(self, ast):
         context = Context()
         hierarchy = Hierarchy()

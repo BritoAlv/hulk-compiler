@@ -38,14 +38,11 @@ defaultHulkProgram +="""
 type A {
     i = new A();
     son (a: A): A => a;
-    brother():A => self.i.son(self.i).son(new A());
+    brother():number => 1;
 }
 function range(): Vector => [1,2,3,4,5];
 let squares = [(x as Number)^2 || x in range()] in
-{ print(squares);
-    for (i in [1,2,3]){
-        i;
-    };
+{ 9;
 };
 """
 
@@ -88,7 +85,7 @@ def semantic_clean_analysis(inputStr : str) -> ProgramNode:
     treeAst = ast(inputStr)
     sem_an = SemanticAnalysis()
          
-    errors = sem_an.run(treeAst)
+    errors = sem_an.runVariable(treeAst)
     if len(errors) > 0:
         print(errors)
         sys.exit(1)

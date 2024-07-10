@@ -50,7 +50,7 @@ VectorExpr -> lbracket VectorElems rbracket | lbracket Expr doubleOr id in Expr 
 VectorElems -> Expr VectorTail | .
 VectorTail -> comma Expr VectorTail | .
 
-NewExpr -> new CallList .
+NewExpr -> new id lparen ArgList rparen .
 
 As -> LogicOr asOp id | LogicOr .
 LogicOr -> LogicOr or LogicAnd | LogicAnd .
