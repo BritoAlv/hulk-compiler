@@ -1,5 +1,4 @@
 from common.ErrorLogger import Error
-from common.ErrorLogger.ErrorLogger import ErrorLogger
 from common.ast_nodes.expressions import *
 from common.ast_nodes.statements import *
 from common.visitor import Visitor

@@ -121,7 +121,6 @@ function sin(x: Number): Number =>
                 for (j in range(1, 2 * i + 1)) {
                     f:= f * (j + 1) ;
                 };
-                print(f);
  
                 let term = (-1)^i * x^(2*i + 1) / f in {
                     result := result + term;
@@ -129,4 +128,24 @@ function sin(x: Number): Number =>
             };
         };
         result;
+    };
+
+
+function cos(x: Number): Number =>
+    let cosine = 0, sign = 1 in {
+        for (i in range(1, 11)) 
+        {
+            let f = 1 in 
+            { 
+                for (j in range(1, 2 * i)) {
+                    f:= f * (j + 1) ;
+                };
+ 
+                let term = sign * x^(2*i) / f in {
+                    cosine := cosine + term;
+                    sign := sign * (-1);
+                };
+            };
+        };
+        cosine;
     };

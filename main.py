@@ -39,7 +39,7 @@ with open('program.hulk', 'r') as source:
 
 defaultHulkProgram += """
 type C{
-    a = self.a;
+    a = 2;
 }
 4;
 """
