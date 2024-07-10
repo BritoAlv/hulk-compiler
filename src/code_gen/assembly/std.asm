@@ -3,7 +3,8 @@ nl: .asciiz "\n"
 true: .asciiz "true"
 false: .asciiz "false"
 null: .asciiz "Runtime Error: Null reference"
-method: .asciiz "Runtime Error: Type does not contain method" 
+method: .asciiz "Runtime Error: Type does not contain method"
+cast: .asciiz "Runtime Error: Invalid cast operation"
 one: .float 1.0
 
 .text
@@ -24,6 +25,7 @@ one: .float 1.0
 .globl build_null
 .globl null_error
 .globl method_error
+.globl cast_error
 .globl error
 # .globl done # Simulation code
 
@@ -148,19 +150,13 @@ print_bool:
 	jr $ra
 
 print_pointer:
-	addi $sp $sp -8
-	lw $a0 4($sp)
-	move $t0 $a0
-
-	li $v0 1
+	li $v0 4
 	syscall 
 
 	la $a0 nl
 	li $v0 4
 	syscall
-
-	move $v0 $t0
-	addi $sp $sp 8
+	
 	jr $ra
 
 #** String manipulation code
@@ -462,6 +458,15 @@ null_error:
 
 method_error:
 	la $a0 method
+	jal build_str
+	sw $v0 -4($sp)
+	jal print_str
+	li $a0 1
+	li $v0 17
+	syscall
+
+cast_error:
+	la $a0 cast
 	jal build_str
 	sw $v0 -4($sp)
 	jal print_str
