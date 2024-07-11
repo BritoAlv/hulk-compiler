@@ -98,3 +98,127 @@ function floor(n : Number) : Number => let i = 0 in
     else
         i;
 };
+
+
+type Range(st:Number, ed:Number, offset : Number) {
+    st = st;
+    ed = ed;
+    current = st - offset;
+    offset = offset;
+    next(): Boolean => (self.current := self.current + self.offset) < self.ed;
+    current(): Number => self.current;
+}
+
+function range(s: Number, e: Number): Range => new Range(s,e, 1);
+
+function floatMod(x : Number, mod : Number)
+{
+    if(x >= 0)
+    {
+        while(x > mod)
+        {
+            x := x - mod;
+        };
+        x;
+    }
+    else
+    {
+        while(x < mod)
+        {
+            x := x + mod;
+        };
+        if (x >= mod)
+        {
+            x := x - mod;
+        }
+        else
+        {
+            x;
+        };
+        x;
+    };
+} 
+
+function sin(x: Number): Number =>
+    let result = 0, pi = 3.141592653589793, div = floatMod(x, 2 * pi) in {
+        x := div;
+        for (i in range(0, 10)) 
+        {
+            let f = 1 in 
+            { 
+                for (j in range(1, 2 * i + 1)) {
+                    f:= f * (j + 1) ;
+                };
+                let term = (-1)^i * x^(2*i + 1) / f in {
+                    result := result + term;
+                };
+                
+            };
+        };
+        result;
+    };
+
+
+function cos(x: Number): Number =>
+    let cosine = 0, pi = 3.141592653589793, sign = 1, div = floatMod(x, 2 * pi) in {
+        x := div;
+        for (i in range(0, 10)) 
+        {
+            let f = 1 in 
+            { 
+                for (j in range(1, 2 * i)) {
+                    f:= f * (j + 1) ;
+                };
+ 
+                let term = sign * x^(2*i) / f in {
+                    cosine := cosine + term;
+                    sign := sign * (-1);
+                };
+            };
+        };
+        cosine;
+    };
+
+function abss(a: Number): Number {
+    if (a > 0) a else -a;
+}
+
+function sqrt(x:Number): Number {
+    if (x < 0) 0 else
+    let guess = x / 2 in {
+        let mk = true in {
+            while (mk == true) {
+                let next_guess = (guess + x / guess) / 2 in {
+                    if (abss(next_guess - guess) < 0.000001) mk := false else 1;
+                    guess := next_guess;
+                };
+            };
+        };
+        guess;
+    };
+}
+
+
+
+ function ln(x: Number): Number =>
+    let log: Number = 0, e = 2.718281828, sign = 1 in {
+        for (i in range(0, 21)) 
+        {
+            let term = sign * (x - 1) ^ i / i in {
+                log := log + term;
+                sign := sign * (-1);
+            };
+        };
+        log;
+    };
+
+function log(x: Number): Number =>
+    let a: Number = 0, b = x, tol = 0.00001, e = 2.718281828 in {
+        while (abss(b - a) > tol) 
+        {
+            let c = (a + b) / 2 in {
+                if (e ^ c > x) b:= c else a:= c;
+                c;
+            };
+        };
+    };

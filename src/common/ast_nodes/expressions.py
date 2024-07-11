@@ -107,9 +107,10 @@ class VectorSetNode(Expr):
         return visitor.visit_vector_set_node(self)
 
 class VectorGetNode(Expr):
-    def __init__(self, left : Expr, index : Expr):
+    def __init__(self, left : Expr, index : Expr, handle : Token | None):
         self.left = left
         self.index = index
+        self.handle = handle
 
     def accept(self, visitor):
         return visitor.visit_vector_get_node(self)

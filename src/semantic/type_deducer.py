@@ -346,11 +346,13 @@ class TypeDeducer(Visitor):
             return fn_data.type
 
         for i, arg in enumerate(call_node.args):
-            self._type_determiner.append([])
-            inferred_type = self._check_types(arg)
-            self._type_determiner.pop()
             index = i
             param_var_data = fn_data.params[fn_data.params_index[index]]
+            self._type_determiner.append([])
+            self.push_type_determiner(param_var_data.type)
+            inferred_type = self._check_types(arg)
+            self.pop_type_determiner()
+            self._type_determiner.pop()
             try:
                 if self._in_method and self._method_name == fn_name:
                     self.push_type_determiner(inferred_type)
@@ -377,10 +379,11 @@ class TypeDeducer(Visitor):
             return fn_data.type
         
         for i, arg in enumerate(call_node.args):
+            param_var_data = fn_data.params[fn_data.params_index[i]]
             self._type_determiner.append([])
+            self.push_type_determiner(param_var_data.type)
             inferred_type = self._check_types(arg)
             self._type_determiner.pop()
-            param_var_data = fn_data.params[fn_data.params_index[i]]
             try:
                 if param_var_data.type != "Any":
                     if param_var_data.type in self._resolver.resolve_protocols():
@@ -404,11 +407,12 @@ class TypeDeducer(Visitor):
             return fn_data.type
 
         for i, arg in enumerate(call_node.args):
-            self._type_determiner.append([])
-            inferred_type = self._check_types(arg)
-            self._type_determiner.pop()
             index = i + 1 
             param_var_data = fn_data.params[fn_data.params_index[index]]
+            self._type_determiner.append([])
+            self.push_type_determiner(param_var_data.type)
+            inferred_type = self._check_types(arg)
+            self._type_determiner.pop()
             try:
                 if self._in_method and self._method_name == fn_name:
                     self.push_type_determiner(inferred_type)
@@ -588,14 +592,14 @@ class TypeDeducer(Visitor):
         infered_index = self._check_types(vector_get_node.index)
         self.pop_type_determiner()
         if infered_index != "Number":
-            self.log_error(f'Cannot index a vector with a non-numerical type {infered_index}')
+            self.log_error(Error(f"Cannot index a vector with a non-numerical type {infered_index} " , vector_get_node.handle.line , vector_get_node.handle.offsetLine))
         
         self.push_type_determiner("Vector")
         inferred_type = self._check_types(vector_get_node.left)
         self.pop_type_determiner()
 
         if inferred_type != ('Vector'):
-            self.log_error(f'Cannot index a non-vector type like {inferred_type}')
+            self.log_error(Error(f"Cannot index a non-vector type like {inferred_type} " , vector_get_node.handle.line , vector_get_node.handle.offsetLine))
             return 'Object'
         
         return "Object"
