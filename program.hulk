@@ -131,7 +131,7 @@ function sin(x: Number): Number =>
     };
 
 
-function co(x: Number): Number =>
+function cos(x: Number): Number =>
     let cosine = 0, sign = 1 in {
         for (i in range(1, 11)) 
         {

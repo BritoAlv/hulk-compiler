@@ -11,6 +11,6 @@ class Error:
         position = self.offset
         lines = inputStr.split("\n")
         error_line = lines[line]
-        print(colored(f"Error on line {line}, " + "message :" + self.message, "red"))
+        print(colored(f"Error on line {line}, " + "message : " + self.message, "red"))
         print(error_line)
         print(" " * (position) + "^")

@@ -339,11 +339,13 @@ class TypeDeducer(Visitor):
             return fn_data.type
 
         for i, arg in enumerate(call_node.args):
-            self._type_determiner.append([])
-            inferred_type = self._check_types(arg)
-            self._type_determiner.pop()
             index = i
             param_var_data = fn_data.params[fn_data.params_index[index]]
+            self._type_determiner.append([])
+            self.push_type_determiner(param_var_data.type)
+            inferred_type = self._check_types(arg)
+            self.pop_type_determiner()
+            self._type_determiner.pop()
             try:
                 if self._in_method and self._method_name == fn_name:
                     self.push_type_determiner(inferred_type)
@@ -370,10 +372,11 @@ class TypeDeducer(Visitor):
             return fn_data.type
         
         for i, arg in enumerate(call_node.args):
+            param_var_data = fn_data.params[fn_data.params_index[i]]
             self._type_determiner.append([])
+            self.push_type_determiner(param_var_data.type)
             inferred_type = self._check_types(arg)
             self._type_determiner.pop()
-            param_var_data = fn_data.params[fn_data.params_index[i]]
             try:
                 if param_var_data.type != "Any":
                     if param_var_data.type in self._resolver.resolve_protocols():
@@ -397,11 +400,12 @@ class TypeDeducer(Visitor):
             return fn_data.type
 
         for i, arg in enumerate(call_node.args):
-            self._type_determiner.append([])
-            inferred_type = self._check_types(arg)
-            self._type_determiner.pop()
             index = i + 1 
             param_var_data = fn_data.params[fn_data.params_index[index]]
+            self._type_determiner.append([])
+            self.push_type_determiner(param_var_data.type)
+            inferred_type = self._check_types(arg)
+            self._type_determiner.pop()
             try:
                 if self._in_method and self._method_name == fn_name:
                     self.push_type_determiner(inferred_type)
