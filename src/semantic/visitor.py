@@ -343,8 +343,8 @@ class VariableDefinedVisitor(Visitor):
 
     def visit_signature_node(self, signature_node : SignatureNode):
         for (i, j) in signature_node.params :
-            if dict.get(i.lexeme) == None:
-                dict[i.lexeme] = True
+            if self.context.context_lower.dict.get(i.lexeme) == None:
+                self.context.context_lower.dict[i.lexeme] = True
             else:
                 self.error_logger.append(Error(f"param already exist in signature ", signature_node.id.line, signature_node.id.offsetLine))
 
