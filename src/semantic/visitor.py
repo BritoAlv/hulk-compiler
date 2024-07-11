@@ -460,6 +460,9 @@ class VariableDefinedVisitor(Visitor):
         binary_node.expr.accept(self)    
 
     def visit_literal_node(self, literal_node : LiteralNode):
+        if literal_node.id.lexeme == "PI":
+            literal_node.id.lexeme = "3.1415"
+            literal_node.id.type = "number"
         id = literal_node.id.lexeme
         match literal_node.id.type: 
             case "id":
