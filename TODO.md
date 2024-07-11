@@ -2,7 +2,6 @@
 - errors are wrong due to corrupt ast.
 - for to while ruins error report.
 - explicit vector corruption ruins semantic check.
-- fix new in grammar.
 ## CodeGen Requirements:
 - Compare strings (equality) char by char.
 - RunTime Error for overflow.

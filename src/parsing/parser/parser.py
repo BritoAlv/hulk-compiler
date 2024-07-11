@@ -137,7 +137,7 @@ class Parser:
                 lambda s: ImplicitVectorNode(s[2], s[4].token, s[6])],
             "VectorElems": [lambda s: [s[1]] + s[2], lambda s: []],
             "VectorTail": [lambda s: [s[2]] + s[3], lambda s: []],
-            'NewExpr': [self.new_expr],
+            'NewExpr': [lambda s: NewNode(s[1].token, s[3])],
             "As": [lambda s: BinaryNode(s[1], s[2].token, LiteralNode(s[3].token)), lambda s: s[1]],
             "LogicOr": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
             "LogicAnd": [lambda s: BinaryNode(s[1], s[2].token, s[3]), lambda s: s[1]],
