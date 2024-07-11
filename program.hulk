@@ -217,20 +217,3 @@ function log(x: Number, b: Number): Number =>
     if (b != 2.718281828) ln(x) / ln(b) else ln(x);
 
 
-
-
-function tan(x: Number): Number => sin(x) / cos(x);
-function cot(x: Number) => 1 / tan(x);
-function operate(x, y) {
-    print(x + y);
-    print(x - y);
-    print(x * y);
-    print(x / y);
-}
-function fib(n) => if (n == 0 | n == 1) 1 else fib(n-1) + fib(n-2);
-function fact(x) => let f = 1 in for (i in range(1, x+1)) f := f * i;
-function gcd(a, b) => while (a > 0)
-        let m = a % b in {
-            b := a;
-            a := m;
-        };
