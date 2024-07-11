@@ -181,7 +181,7 @@ class Parser:
             "CallList": [
                 lambda s: GetNode(s[1], s[3].token),
                 lambda s: CallNode(s[1], s[3], s[2].token),
-                lambda s: VectorGetNode(s[1], s[3]),
+                lambda s: VectorGetNode(s[1], s[3], s[2].token),
                 lambda s: LiteralNode(s[1].token),
                 lambda s: LiteralNode(s[1].token),
                 lambda s: s[2],
