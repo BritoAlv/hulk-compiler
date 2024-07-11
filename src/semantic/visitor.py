@@ -320,7 +320,7 @@ class VariableDefinedVisitor(Visitor):
         else:   # pq si estoy en un let puede ya estar definida y se puede sobrescribir
             if len(self.queue_call) > 0 and (self.queue_call[len(self.queue_call) - 1]) == "let":
                 attribute_node.body.accept(self)
-                self.context.set(id)
+                self.context.context_lower.dict[id] = ComputedValue(None, None)
             else:
                 self.error_logger.append(Error("attribute {id} already defined", {attribute_node.id.line}, {attribute_node.id.offsetLine}))
         
