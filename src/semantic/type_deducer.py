@@ -184,6 +184,7 @@ class TypeDeducer(Visitor):
         self._type_determiner.append([])
         self.push_type_determiner(func_data.type)
         inferred_type = self._check_types(method_node.body)
+        self.pop_type_determiner()
         self._type_determiner.pop()
 
         if method_node.type == "Any" and inferred_type == "null":
@@ -231,14 +232,16 @@ class TypeDeducer(Visitor):
         for assig in let_node.assignments:
             # let assignments should be taken into account.
             var_name = assig.id.lexeme
-
+            
+            self._type_determiner.append([])
             self._resolver.next()
             if assig.type != None:
                 self.push_type_determiner(assig.type.lexeme)
             inferred_type = self._check_types(assig.body)
             if assig.type != None:
-                self._type_determiner.pop()
+                self.pop_type_determiner()
             self._resolver.next()
+            self._type_determiner.pop()
             var_data = self._resolver.resolve_var_data(var_name)
             if assig.type == "Any" and inferred_type == "null":
                 self.log_error(Error(f"Can't set to null a non typed variable " , assig.id.line , assig.id.offsetLine))
