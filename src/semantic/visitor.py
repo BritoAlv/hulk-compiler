@@ -295,9 +295,11 @@ class FunctionCollectorVisitor(Visitor):
 class VariableDefinedVisitor(Visitor):
     def __init__(self, context):
         self.context: Context = context
-        self.error_logger: ErrorLogger = ErrorLogger()
+        self.error_logger = []
         self.actual_type = None
         self.queue_call = []
+        self.is_instanciated_type_attr = False
+        self.analize_attr_type = False
     
     def visit_program_node(self, program_node : ProgramNode):
         for i in program_node.decls:

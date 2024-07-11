@@ -110,59 +110,30 @@ type Range(st:Number, ed:Number, offset : Number) {
 }
 
 function range(s: Number, e: Number): Range => new Range(s,e, 1);
-
-function floatMod(x : Number, mod : Number)
-{
-    if(x >= 0)
-    {
-        while(x > mod)
-        {
-            x := x - mod;
-        };
-        x;
-    }
-    else
-    {
-        while(x < mod)
-        {
-            x := x + mod;
-        };
-        if (x >= mod)
-        {
-            x := x - mod;
-        }
-        else
-        {
-            x;
-        };
-        x;
-    };
-} 
+ 
 
 function sin(x: Number): Number =>
-    let result = 0, pi = 3.141592653589793, div = floatMod(x, 2 * pi) in {
-        x := div;
-        for (i in range(0, 10)) 
+    let result = 0 in {
+        for (i in range(1, 10)) 
         {
             let f = 1 in 
             { 
                 for (j in range(1, 2 * i + 1)) {
                     f:= f * (j + 1) ;
                 };
+ 
                 let term = (-1)^i * x^(2*i + 1) / f in {
                     result := result + term;
                 };
-                
             };
         };
         result;
     };
 
 
-function cos(x: Number): Number =>
-    let cosine = 0, pi = 3.141592653589793, sign = 1, div = floatMod(x, 2 * pi) in {
-        x := div;
-        for (i in range(0, 10)) 
+function co(x: Number): Number =>
+    let cosine = 0, sign = 1 in {
+        for (i in range(1, 11)) 
         {
             let f = 1 in 
             { 
