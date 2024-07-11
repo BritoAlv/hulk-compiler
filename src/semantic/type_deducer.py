@@ -581,14 +581,14 @@ class TypeDeducer(Visitor):
         infered_index = self._check_types(vector_get_node.index)
         self.pop_type_determiner()
         if infered_index != "Number":
-            self.log_error(f'Cannot index a vector with a non-numerical type {infered_index}')
+            self.log_error(Error(f"Cannot index a vector with a non-numerical type {infered_index} " , vector_get_node.handle.line , vector_get_node.handle.offsetLine))
         
         self.push_type_determiner("Vector")
         inferred_type = self._check_types(vector_get_node.left)
         self.pop_type_determiner()
 
         if inferred_type != ('Vector'):
-            self.log_error(f'Cannot index a non-vector type like {inferred_type}')
+            self.log_error(Error(f"Cannot index a non-vector type like {inferred_type} " , vector_get_node.handle.line , vector_get_node.handle.offsetLine))
             return 'Object'
         
         return "Object"
