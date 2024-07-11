@@ -38,7 +38,7 @@ with open('program.hulk', 'r') as source:
     defaultHulkProgram = source.read()
 
 defaultHulkProgram += """
- print(ln(1));
+ print(log(16));
 """
 
 inputStr = defaultHulkProgram

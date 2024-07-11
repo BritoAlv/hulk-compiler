@@ -211,3 +211,14 @@ function sqrt(x:Number): Number {
         };
         log;
     };
+
+function log(x: Number): Number =>
+    let a: Number = 0, b = x, tol = 0.00001, e = 2.718281828 in {
+        while (abss(b - a) > tol) 
+        {
+            let c = (a + b) / 2 in {
+                if (e ^ c > x) b:= c else a:= c;
+                c;
+            };
+        };
+    };
