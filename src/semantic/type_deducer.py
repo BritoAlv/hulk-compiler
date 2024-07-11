@@ -24,7 +24,7 @@ class TypeDeducer(Visitor):
     def check_types(self, program : ProgramNode) -> list[str]:
         i = 1
         while True:
-            print(f"Iteration {i} :")
+            # print(f"Iteration {i} :")
             self._errors = []
             self._deduced = False
             self._check_types(program)
@@ -106,27 +106,29 @@ class TypeDeducer(Visitor):
 
     def update_type(self, data : FunctionData | VarData):
         g = "---------------------------------------"
-        print(g)
-        print(f"Entering due to symbol {data.name}")
+        # print(g)
+        # print(f"Entering due to symbol {data.name}")
         if (len(self._type_determiner[-1]) > 0 and self._type_determiner[-1][-1] != "Any" and self._type_determiner[-1][-1] != "null"):
             if data.type == "Any":
                 data.type = self._type_determiner[-1][-1]
-                print(colored(f"Deduced type for symbol {data.name} from Any to {self._type_determiner[-1][-1]}", "blue"))
+                # print(colored(f"Deduced type for symbol {data.name} from Any to {self._type_determiner[-1][-1]}", "blue"))
                 self._deduced = True
-                print(g)
+                # print(g)
             else:
                 obtained_type = self._resolver.resolve_lowest_common_ancestor(data.type, self._type_determiner[-1][-1])
                 # if there is some type there already then it should be good enough.
                 if obtained_type != self._type_determiner[-1][-1]:
-                    print(colored(f"Symbol {data.name} obtained type : {self._type_determiner[-1][-1]} does not conforms with its actual type :  {data.type}", "red" ))
-                    print(g)
+                    # print(colored(f"Symbol {data.name} obtained type : {self._type_determiner[-1][-1]} does not conforms with its actual type :  {data.type}", "red" ))
+                    # print(g)
                     raise Exception(self._type_determiner[-1][-1], data.type)
                 else:
-                    print(colored(f"Symbol {data.name} obtained type : {self._type_determiner[-1][-1]} conforms with its actual type :  {data.type}", "green"))
-                    print(g)
+                    # print(colored(f"Symbol {data.name} obtained type : {self._type_determiner[-1][-1]} conforms with its actual type :  {data.type}", "green"))
+                    # print(g)
+                    pass
         else:
-            print(f"There is nothing to do so continue")
-            print(g)
+            # print(f"There is nothing to do so continue")
+            # print(g)
+            pass
         return data.type
     
     def inherits(self, type : str, data : VarData | FunctionData ) -> bool:
