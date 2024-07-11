@@ -197,28 +197,3 @@ function sqrt(x:Number): Number {
         guess;
     };
 }
-
-
-
- function ln(x: Number): Number =>
-    let log: Number = 0, e = 2.718281828, sign = 1 in {
-        for (i in range(0, 21)) 
-        {
-            let term = sign * (x - 1) ^ i / i in {
-                log := log + term;
-                sign := sign * (-1);
-            };
-        };
-        log;
-    };
-
-function log(x: Number): Number =>
-    let a: Number = 0, b = x, tol = 0.00001, e = 2.718281828 in {
-        while (abss(b - a) > tol) 
-        {
-            let c = (a + b) / 2 in {
-                if (e ^ c > x) b:= c else a:= c;
-                c;
-            };
-        };
-    };

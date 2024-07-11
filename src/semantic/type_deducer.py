@@ -575,8 +575,6 @@ class TypeDeducer(Visitor):
         attr_data = type_data.attributes[attr_name]
         value_type = self._check_types(set_node.value)
 
-        type_data = self._resolver.resolve_type_data(attr_data.type)
-
         try:
             self.push_type_determiner(value_type)
             self.update_type(attr_data)
