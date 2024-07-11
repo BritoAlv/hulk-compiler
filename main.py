@@ -81,9 +81,9 @@ def ast(inputStr : str, show = False) -> ProgramNode:
 
 def semantic_clean_analysis(inputStr : str) -> ProgramNode:
     treeAst = ast(inputStr)
-    #sem_an = SemanticAnalysis()
+    sem_an = SemanticAnalysis()
     errors : list[Error] = []     
-    #errors += sem_an.run(treeAst)
+    errors += sem_an.runVariable(treeAst)
     if len(errors) > 0:
         for error in errors:
             error.show(inputStr)
