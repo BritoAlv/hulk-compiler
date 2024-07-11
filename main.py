@@ -37,8 +37,8 @@ parser.add_argument('-r', '--run', action='store_true', help='Run the compiled a
 with open('program.hulk', 'r') as source:
     defaultHulkProgram = source.read()
 
-defaultHulkProgram = """
-let x = x in print(x);
+defaultHulkProgram += """
+ 
 """
 
 inputStr = defaultHulkProgram
