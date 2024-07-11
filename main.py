@@ -37,12 +37,23 @@ parser.add_argument('-r', '--run', action='store_true', help='Run the compiled a
 with open('program.hulk', 'r') as source:
     defaultHulkProgram = source.read()
 
-defaultHulkProgram = """
-let a = "Thomas", a = "John" in 
+defaultHulkProgram += """
+let PI = 3.14, a = "Thomas", a = "John" in 
 {
     let a = "Shelby" in print(a);
     let b = a @@ "McArthur" in print(b);
     print(a);
+    print(sqrt(4));
+
+    42;
+    print(42);
+    print((((1 + 2) ^ 3) * 4) / 5);
+    print("Hello World");
+    print("The message is Hello World");
+    print("The meaning of life is " @ 42);
+    print(sin(2 * PI) ^ 2 + cos(3 * PI / log(4, 64)));
+     
+    
 };
 """
 
