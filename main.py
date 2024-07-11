@@ -37,11 +37,8 @@ parser.add_argument('-r', '--run', action='store_true', help='Run the compiled a
 with open('program.hulk', 'r') as source:
     defaultHulkProgram = source.read()
 
-defaultHulkProgram += """
-type C{
-    a = 2;
-}
-4;
+defaultHulkProgram = """
+let x = x in print(x);
 """
 
 inputStr = defaultHulkProgram
@@ -81,9 +78,9 @@ def ast(inputStr : str, show = False) -> ProgramNode:
 
 def semantic_clean_analysis(inputStr : str) -> ProgramNode:
     treeAst = ast(inputStr)
-    #sem_an = SemanticAnalysis()
+    sem_an = SemanticAnalysis()
     errors : list[Error] = []     
-    #errors += sem_an.run(treeAst)
+    errors += sem_an.runVariable(treeAst)
     if len(errors) > 0:
         for error in errors:
             error.show(inputStr)
