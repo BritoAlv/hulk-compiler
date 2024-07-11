@@ -1,6 +1,7 @@
 class Graph:
     def __init__(self) -> None:
         self.vertices: dict[str, list[str]] = {}
+        self.cyclic_edge : tuple[str, str] = None
 
     def neighbors(self, vertex : str) -> list[str]:
         if vertex not in self.vertices:
@@ -38,6 +39,7 @@ class Graph:
     
     def is_cyclic(self) -> bool:
         # Initialize vertex tracks
+        self.cyclic_edge = None
         visited_track: dict[str, bool] = {}
         stack_track: dict[str, bool] = {}
         for vertex in self.vertices:
@@ -59,6 +61,7 @@ class Graph:
         for edge_vertex in self.vertices[vertex]:
             # If the stack_track is true, it means there's a path from the edge_vertex to vertex besides of this existing edge, therefore it's a cycle
             if stack_track[edge_vertex]:
+                self.cyclic_edge = (vertex, edge_vertex)
                 return True
             # If not visited, keep moving forward
             if not visited_track[edge_vertex]:

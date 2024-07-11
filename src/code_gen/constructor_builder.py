@@ -109,7 +109,7 @@ class ConstructorBuilder(Visitor):
     
     def _handle_inheritance(self):
         if self._type_graph.is_cyclic():
-            self._errors.append(Error("Can't have cyclic inheritance in types", 0, 0))
+            self._errors.append(Error(f"Can't have cyclic inheritance in types {self._type_graph.cyclic_edge[0]} and {self._type_graph.cyclic_edge[1]}", 0, 0))
             return
         
         stack : list[str] = [] + self._root_types
