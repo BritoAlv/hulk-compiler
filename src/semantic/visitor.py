@@ -523,6 +523,6 @@ class VariableDefinedVisitor(Visitor):
                 if defined != False:
                     var = self.context.get(id)
                 else:
-                   self.error_logger.append(Error(f"varialbe {id} not defined", {literal_node.id.line}, {literal_node.id.offsetLine}))
+                   self.error_logger.append(Error(f"variable {id} not defined", {literal_node.id.line}, {literal_node.id.offsetLine}))
                 return ComputedValue(None)
         return ComputedValue("Object", None)
