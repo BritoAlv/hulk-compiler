@@ -120,14 +120,18 @@ class SemanticCheck(Visitor):
         pass
 
     def visit_let_node(self, let_node : LetNode):  
-        self._resolver.next()
+        
 
-        for assig in let_node.assignments:
+        for i, assig in enumerate(let_node.assignments):
             # let assignments should be taken into account.
             var_name = assig.id.lexeme
             op_type = assig.type
             self._stack.append([])
+
+            self._resolver.next()
             self._semantic_check(assig.body)
+            self._resolver.next()
+            
             self._stack.pop()
             if op_type != None and op_type.lexeme not in self._resolver.resolve_types():
                 self.log_error(Error(f"Given tipe for variable {var_name} in let_expression doesn't exist " , assig.id.line , assig.id.offsetLine))
@@ -135,7 +139,10 @@ class SemanticCheck(Visitor):
         self._stack.append([])
         self._semantic_check(let_node.body)
         self._stack.pop()
-        self._resolver.next()
+        
+        for _ in range(0, len(let_node.assignments)):
+            self._resolver.next() # Move to next context
+            self._resolver.next() # Move to next context
 
     def visit_while_node(self, while_node : WhileNode):
         self._stack.append([])

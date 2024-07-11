@@ -84,20 +84,20 @@ class EnvironmentBuilder(Visitor):
         func_data.var_count = self._var_index
 
     def visit_let_node(self, let_node: LetNode):
-        old_context = self._create_context()
+        old_context = self._context
 
         for assignment in let_node.assignments:
             var_name = assignment.id.lexeme
             value = assignment.body
-            
-            if var_name in self._context.variables:
-                continue
+
+            self._create_context()
+            self._build(value)
+            self._create_context()
             
             self._context.variables[var_name] = VarData(self._var_index)
             self._context.variables[var_name].name = var_name
             self._var_index += 1
-            self._build(value)
-
+            
         self._build(let_node.body)
 
         self._context = old_context

@@ -90,20 +90,25 @@ class TypePicker(Visitor):
         pass
 
     def visit_let_node(self, let_node : LetNode):
-        self._resolver.next()
-
         for assig in let_node.assignments:
             # let assignments should be taken into account.
             var_name = assig.id.lexeme
-            var_data = self._resolver.resolve_var_data(var_name)
             op_type = assig.type
+
+            self._resolver.next()
             self._pick_types(assig.body)
+            self._resolver.next()
+
+            var_data = self._resolver.resolve_var_data(var_name)
             if op_type != None:
                 var_data.type = op_type.lexeme
             else:
                 var_data.type = "Any"                    
         self._pick_types(let_node.body)
-        self._resolver.next()
+        
+        for _ in range(0, len(let_node.assignments)):
+            self._resolver.next() # Move to next context
+            self._resolver.next() # Move to next context
 
     def visit_while_node(self, while_node : WhileNode):
         self._pick_types(while_node.condition) 

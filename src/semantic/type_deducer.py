@@ -228,15 +228,18 @@ class TypeDeducer(Visitor):
         pass
     
     def visit_let_node(self, let_node : LetNode):
-        self._resolver.next()
         for assig in let_node.assignments:
             # let assignments should be taken into account.
             var_name = assig.id.lexeme
-            var_data = self._resolver.resolve_var_data(var_name)
-            self._type_determiner.append([])
-            self.push_type_determiner(var_data.type)
+
+            self._resolver.next()
+            if assig.type != None:
+                self.push_type_determiner(assig.type.lexeme)
             inferred_type = self._check_types(assig.body)
-            self._type_determiner.pop()
+            if assig.type != None:
+                self._type_determiner.pop()
+            self._resolver.next()
+            var_data = self._resolver.resolve_var_data(var_name)
             if assig.type == "Any" and inferred_type == "null":
                 self.log_error(Error(f"Can't set to null a non typed variable " , assig.id.line , assig.id.offsetLine))
                 var_data.type = "Object"
@@ -260,7 +263,11 @@ class TypeDeducer(Visitor):
                 self.pop_type_determiner()
 
         f_type = self._check_types(let_node.body)
-        self._resolver.next()
+        
+        for _ in range(0, len(let_node.assignments)):
+            self._resolver.next() # Move to next context
+            self._resolver.next() # Move to next context
+
         return f_type
 
     def visit_while_node(self, while_node : WhileNode):

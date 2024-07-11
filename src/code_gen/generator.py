@@ -127,17 +127,17 @@ class Generator(Visitor):
         return GenerationResult(code, type)
     
     def visit_let_node(self, let_node: LetNode):
-        self._resolver.next() # Move to next context
         code = ''
         for assignment in let_node.assignments:
             var_name = assignment.id.lexeme
             value = assignment.body
+            
+            self._resolver.next() # Move to next context
+            result = self._generate(value)
+            self._resolver.next() # Move to next context
             offset = self._get_offset(var_name)
 
-            result = self._generate(value)
             code += result.code
-
-            # self._resolver.resolve_var_data(var_name).type = result.type # TODO: Remove when types are correctly inferred during semantic analysis
 
             code += f'''
     jal stack_pop
@@ -150,7 +150,10 @@ class Generator(Visitor):
         code += result.code
         type = result.type
 
-        self._resolver.next() # Move to next context
+        for _ in range(0, len(let_node.assignments)):
+            self._resolver.next() # Move to next context
+            self._resolver.next() # Move to next context
+        
         return GenerationResult(code, type)
 
     def visit_destructor_node(self, destructor_node: DestructorNode):

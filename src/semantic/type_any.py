@@ -95,20 +95,25 @@ class TypeAny(Visitor):
         pass
 
     def visit_let_node(self, let_node : LetNode):
-        self._resolver.next()
 
-        for assig in let_node.assignments:
+        for i, assig in enumerate(let_node.assignments):
             # let assignments should be taken into account.
+
+            self._resolver.next()
+            self._check_any(assig.body)
+            self._resolver.next()
+
             var_name = assig.id.lexeme
             var_data = self._resolver.resolve_var_data(var_name)
-            op_type = assig.type
-            self._check_any(assig.body)
+            
             if var_data.type == "Any":
                 self.log_error(Error(f"Variable {var_name} is not typed " , assig.id.line , assig.id.offsetLine))
             elif var_data.type in self._resolver.resolve_protocols():
                 var_data.type = "Object"                    
         self._check_any(let_node.body)
-        self._resolver.next()
+        for _ in range(0, len(let_node.assignments)):
+            self._resolver.next() # Move to next context
+            self._resolver.next() # Move to next context
 
     def visit_while_node(self, while_node : WhileNode):
         self._check_any(while_node.condition) 
