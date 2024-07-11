@@ -27,13 +27,13 @@ class Generator(Visitor):
         self._literal_strings : list[str] = []
         self._literal_numbers : list[str] = []
 
-        self._if_index = 0
-        self._logical_index = 0
-        self._while_index = 0
-        self._call_index = 0
-        self._print_index = 0
-        self._equality_index = 0
-        self._concat_index = 0
+        self._if_index = 100
+        self._logical_index = 100
+        self._while_index = 100
+        self._call_index = 100
+        self._print_index = 100
+        self._equality_index = 100
+        self._concat_index = 100
 
     def generate(self, program : ProgramNode) -> str:
         result = self._generate(program)

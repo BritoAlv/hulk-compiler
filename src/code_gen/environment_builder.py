@@ -4,6 +4,9 @@ from common.ast_nodes.expressions import BinaryNode, BlockNode, CallNode, Destru
 from common.ast_nodes.statements import AttributeNode, MethodNode, ProgramNode, ProtocolNode, SignatureNode, Statement, TypeNode
 from common.visitor import Visitor
 from common.ErrorLogger import Error
+
+PREVIOUS_TYPES_AMOUNT = 6
+
 class EnvironmentBuilder(Visitor):
     def __init__(self) -> None:
         self._environment : Environment
@@ -25,7 +28,8 @@ class EnvironmentBuilder(Visitor):
         self._context : Context = None
 
         self._var_index : int = 0
-        self._type_index : int = OBJ_TYPE_ID + 1
+        # self._type_index : int = OBJ_TYPE_ID + 1
+        self._type_index : int = PREVIOUS_TYPES_AMOUNT + 1
 
         self._func_name : str = None
         self._type_name : str = None

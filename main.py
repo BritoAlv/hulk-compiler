@@ -38,12 +38,7 @@ with open('program.hulk', 'r') as source:
     defaultHulkProgram = source.read()
 
 defaultHulkProgram = """
-let a = "Thomas", a = "John" in 
-{
-    let a = "Shelby" in print(a);
-    let b = a @@ "McArthur" in print(b);
-    print(a);
-};
+
 """
 
 inputStr = defaultHulkProgram
@@ -110,9 +105,14 @@ def semantic_clean_analysis(inputStr : str) -> ProgramNode:
 
 def semantic_corrupted_analysis(inputStr : str) -> tuple[ProgramNode, Resolver]:
     ast = semantic_clean_analysis(inputStr)
-    environment = Environment()
+    
+    # environment = Environment()
+    with open('hulk.pkl', 'rb') as file:
+        environment = pickle.load(file)
+
     environment_builder = EnvironmentBuilder()
     errors = environment_builder.build(environment, ast)
+
     resolver = Resolver(environment)
     
     if len(errors) > 0:
@@ -152,6 +152,10 @@ def semantic_corrupted_analysis(inputStr : str) -> tuple[ProgramNode, Resolver]:
     type_any = TypeAny(resolver)
     errors += type_any.check_any(ast)
 
+    # environment._functions.pop('main')
+    # with open('hulk.pkl', "wb") as file:
+    #         pickle.dump(environment, file)
+
     if len(errors) > 0:
         for error in errors:
             error.show(inputStr)
@@ -177,7 +181,7 @@ def run(inputStr : str):
     file1_name = '.bin/main.asm'
     file2_name = '.bin/std.asm'
     file3_name = '.bin/stack.asm'
-    # file4_name = '.bin/vector.asm'
+    file4_name = '.bin/hulk.asm'
 
     try:
         mkdir('.bin/')
@@ -192,9 +196,9 @@ def run(inputStr : str):
         with open(file3_name, 'w') as target:
             target.write(source.read())
     
-    # with open('src/code_gen/assembly/vector.asm', 'r') as source:
-    #     with open(file4_name, 'w') as target:
-    #         target.write(source.read())
+    with open('src/code_gen/assembly/hulk.asm', 'r') as source:
+        with open(file4_name, 'w') as target:
+            target.write(source.read())
 
     with open(file1_name, 'w') as file:
         file.write(assembly)
@@ -225,9 +229,9 @@ def run(inputStr : str):
         spim.sendline(f'load "{file3_name}"')
         spim.expect_exact('(spim) ')
 
-        # # Load the third file
-        # spim.sendline(f'load "{file4_name}"')
-        # spim.expect_exact('(spim) ')
+        # Load the third file
+        spim.sendline(f'load "{file4_name}"')
+        spim.expect_exact('(spim) ')
 
         # Run the SPIM process and capture its output
         spim.sendline('run')
