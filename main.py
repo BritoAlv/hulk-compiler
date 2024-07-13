@@ -457,7 +457,7 @@ else:
     args = parser.parse_args()
 
     # Use the input argument
-    # inputStr = sys.stdin.read().strip()
+    inputStr = sys.stdin.read().strip()
 
     if inputStr == None or inputStr == "":
         inputStr = defaultHulkProgram

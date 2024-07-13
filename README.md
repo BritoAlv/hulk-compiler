@@ -7,7 +7,7 @@
 Ejecutar *main.py* para ver la ayuda.
 
 ```bash
-python3 main.py -r
+python3 main.py -r {./something/program.hulk} > {./output.txt}
 ```
 El flag *-cg* puede ser substituido por :
 
