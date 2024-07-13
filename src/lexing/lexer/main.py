@@ -44,9 +44,11 @@ stringg += "\\\'" + const.plus
 
 stringg += "\\\"" + const.plus + digits + const.plus + letter + const.cpar + const.star + const.cpar + "\""
 
+exp = "^" + const.plus + "**"
+
 hulk_lexer = Lexer(
     [
-        ("powerOp", "^"),
+        ("powerOp", exp),
         ("modOp", "%"),
         ("at", "@"),
         ("doubleAt", "@@"),
